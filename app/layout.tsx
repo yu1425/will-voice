@@ -2,16 +2,31 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "うぃる AIボイス",
+  title: "うぃるvoice",
+  applicationName: "うぃるvoice",
   description:
-    "社会人テニスサークル WILL.tennis のマスコット「うぃる」と音声でお話しできるアプリです🎾",
+    "社会人テニスサークル WILL.tennis のマスコット「うぃる」のAI音声アシスタント。テニス会の進行サポートに。",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "うぃるvoice",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [{ url: "/favicon.png", type: "image/png", sizes: "32x32" }],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#5fae6e",
+  themeColor: "#FF6B9D",
 };
 
 export default function RootLayout({
