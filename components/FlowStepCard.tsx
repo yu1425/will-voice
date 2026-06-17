@@ -69,6 +69,9 @@ export default function FlowStepCard({
       <div className="flow-card__head">
         <span className="flow-card__step">STEP {script.step}</span>
         <h2 className="flow-card__title">{script.title}</h2>
+        {script.audioSrc && (
+          <span className="flow-card__audio-tag">録音音声あり</span>
+        )}
         {isEdited && <span className="flow-card__edited-tag">編集済み</span>}
       </div>
 

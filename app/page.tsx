@@ -22,6 +22,7 @@ import {
   type VoicevoxHandle,
   type ZundamonStyle,
 } from "@/lib/voicevox";
+import { playRecordedAudio, stopRecordedAudio } from "@/lib/recordedAudio";
 
 /** 簡易ID生成 */
 function makeId() {
@@ -35,7 +36,7 @@ function isLocalhost(): boolean {
   return h === "localhost" || h === "127.0.0.1";
 }
 
-type VoiceMode = "standard" | "voicevox";
+type VoiceMode = "standard" | "voicevox" | "recorded";
 type VoicevoxStatus = "unknown" | "connected" | "disconnected" | "fallback";
 type Tab = "chat" | "flow";
 
@@ -80,7 +81,7 @@ export default function Page() {
   const [notice, setNotice] = useState<string | null>(null);
   const [recognitionOk, setRecognitionOk] = useState(true);
 
-  const [voiceMode, setVoiceMode] = useState<VoiceMode>("standard");
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>("recorded");
   const [voicevoxStatus, setVoicevoxStatus] = useState<VoicevoxStatus>("unknown");
   const [zundamonStyles, setZundamonStyles] = useState<ZundamonStyle[]>([]);
   const [styleId, setStyleId] = useState<number | null>(null);
@@ -112,7 +113,7 @@ export default function Page() {
       // 公開環境では VOICEVOX モードを復元しない（localhost のみ有効）
       if (local) {
         const savedVoice = window.localStorage.getItem(VOICE_MODE_STORAGE_KEY);
-        if (savedVoice === "voicevox" || savedVoice === "standard") {
+        if (savedVoice === "voicevox" || savedVoice === "standard" || savedVoice === "recorded") {
           setVoiceMode(savedVoice);
         }
       }
@@ -215,7 +216,7 @@ export default function Page() {
       /* no-op */
     }
     setNotice(null);
-    if (mode === "standard") setVoicevoxStatus("unknown");
+    if (mode === "standard" || mode === "recorded") setVoicevoxStatus("unknown");
   }, []);
 
   const handleStyleChange = useCallback((id: number) => {
@@ -243,19 +244,32 @@ export default function Page() {
   const stopAllSpeaking = useCallback(() => {
     stopSpeaking();
     stopVoicevox();
+    stopRecordedAudio();
     voicevoxHandleRef.current = null;
     setIsSpeaking(false);
   }, []);
 
   /**
    * 任意のテキストを現在の音声モードで読み上げる(進行モードからも利用)。
+   * audioSrc がある場合は録音音声モードでその音声を再生し、失敗時は標準音声にフォールバック。
    * VOICEVOX 失敗時は内部で SpeechSynthesis にフォールバックする。
    */
   const speak = useCallback(
-    async (text: string) => {
+    async (text: string, audioSrc?: string) => {
       // 連続して呼ばれたときに備えて前回の再生を止める
       stopAllSpeaking();
       setIsSpeaking(true);
+
+      if (voiceMode === "recorded" && audioSrc) {
+        playRecordedAudio(audioSrc, {
+          onEnd: () => setIsSpeaking(false),
+          onError: () => {
+            // 録音音声の再生失敗時は標準音声にフォールバック
+            speakText(text, { onEnd: () => setIsSpeaking(false) });
+          },
+        });
+        return;
+      }
 
       if (voiceMode === "voicevox") {
         if (!isLocalhost()) {
@@ -412,8 +426,21 @@ export default function Page() {
             voiceMode === "standard" ? "voice-mode__btn--active" : ""
           }`}
           onClick={() => handleVoiceModeChange("standard")}
+          title="ブラウザ標準の音声合成で読み上げます"
         >
           標準音声
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={voiceMode === "recorded"}
+          className={`voice-mode__btn ${
+            voiceMode === "recorded" ? "voice-mode__btn--active" : ""
+          }`}
+          onClick={() => handleVoiceModeChange("recorded")}
+          title="録音済みのうぃる音声で再生します（進行モードのみ）"
+        >
+          録音音声
         </button>
         <button
           type="button"
@@ -428,6 +455,11 @@ export default function Page() {
           VOICEVOX
         </button>
       </div>
+      {voiceMode === "recorded" && (
+        <div className="recorded-panel">
+          進行モードの各ステップで、うぃるの録音音声を再生します。録音のないステップは標準音声で読み上げます。チャットモードは標準音声を使用します。
+        </div>
+      )}
 
       {/* VOICEVOX 詳細パネル */}
       {voiceMode === "voicevox" && (

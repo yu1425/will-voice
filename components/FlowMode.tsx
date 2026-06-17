@@ -45,8 +45,8 @@ const VIEW_MODE_KEY = "will-flow-view-mode";
 type ViewMode = "prepare" | "live";
 
 type Props = {
-  /** 読み上げ実行(VOICEVOX/標準音声は親側で判定) */
-  speak: (text: string) => void;
+  /** 読み上げ実行(VOICEVOX/標準音声/録音音声は親側で判定) */
+  speak: (text: string, audioSrc?: string) => void;
   /** 読み上げ停止 */
   stopSpeaking: () => void;
   /** 現在読み上げ中か */
@@ -202,7 +202,7 @@ export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
 
   const handleSpeak = useCallback(
     (script: FlowScript) => {
-      speak(buildSpeakText(script));
+      speak(buildSpeakText(script), script.audioSrc);
     },
     [speak, buildSpeakText]
   );
