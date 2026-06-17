@@ -1,0 +1,107 @@
+/**
+ * ============================================================
+ *  将来 AI API に差し替えるときのサンプル API ルート
+ * ============================================================
+ *
+ *  ⚠️ これは「.ts.example」のサンプルです。そのままでは動きません。
+ *     実際に使うときは、このファイルを `route.ts` にリネームして、
+ *     不要なコメントや片方のSDKを整理し、.env.local にキーを入れてください。
+ *
+ *       app/api/reply/route.ts.example  ->  app/api/reply/route.ts
+ *
+ *  なぜサーバー側(Route Handler)で呼ぶのか:
+ *    - APIキーをブラウザに出さないため(漏洩防止)
+ *    - 将来、利用制限・ログ保存・不正利用対策を入れやすいため
+ *    - うぃるのキャラ設定(WILL_SYSTEM_PROMPT)をサーバー側で固定できるため
+ *
+ *  フロント側(lib/generateWillReply.ts)は、この /api/reply に
+ *  { userMessage, history } を POST して、{ reply } を受け取るだけにします。
+ * ============================================================
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { WILL_SYSTEM_PROMPT } from "@/lib/willPrompt";
+import { findMockReply } from "@/lib/generateWillReply";
+
+// 会話履歴の型(フロントから送られてくる想定)
+type HistoryItem = { role: "user" | "will"; text: string };
+
+export async function POST(req: NextRequest) {
+  try {
+    const { userMessage, history = [] } = (await req.json()) as {
+      userMessage: string;
+      history?: HistoryItem[];
+    };
+
+    if (!userMessage || typeof userMessage !== "string") {
+      return NextResponse.json({ error: "userMessage is required" }, { status: 400 });
+    }
+
+    // ============================================================
+    // ★ 差し替えポイント A : Claude API (Anthropic) を使う場合
+    // ------------------------------------------------------------
+    // 1. パッケージを追加:  npm install @anthropic-ai/sdk
+    // 2. .env.local に ANTHROPIC_API_KEY を設定
+    // 3. 下のコメントを外して使う
+    // ============================================================
+    //
+    // import Anthropic from "@anthropic-ai/sdk";
+    // const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    //
+    // const res = await client.messages.create({
+    //   model: process.env.ANTHROPIC_MODEL ?? "claude-opus-4-8",
+    //   max_tokens: 1024,
+    //   system: WILL_SYSTEM_PROMPT,
+    //   messages: [
+    //     // うぃる(will)は assistant、参加者(user)は user に変換する
+    //     ...history.map((h) => ({
+    //       role: h.role === "will" ? ("assistant" as const) : ("user" as const),
+    //       content: h.text,
+    //     })),
+    //     { role: "user" as const, content: userMessage },
+    //   ],
+    // });
+    // const reply = res.content[0]?.type === "text" ? res.content[0].text : "";
+    // return NextResponse.json({ reply });
+
+    // ============================================================
+    // ★ 差し替えポイント B : OpenAI API を使う場合
+    // ------------------------------------------------------------
+    // 1. パッケージを追加:  npm install openai
+    // 2. .env.local に OPENAI_API_KEY を設定
+    // 3. 下のコメントを外して使う
+    // ============================================================
+    //
+    // import OpenAI from "openai";
+    // const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    //
+    // const res = await openai.chat.completions.create({
+    //   model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+    //   messages: [
+    //     { role: "system", content: WILL_SYSTEM_PROMPT },
+    //     ...history.map((h) => ({
+    //       role: h.role === "will" ? ("assistant" as const) : ("user" as const),
+    //       content: h.text,
+    //     })),
+    //     { role: "user" as const, content: userMessage },
+    //   ],
+    // });
+    // const reply = res.choices[0]?.message?.content ?? "";
+    // return NextResponse.json({ reply });
+
+    // ------------------------------------------------------------
+    // ★ 今(サンプル状態): AIキーがまだ無いので、モック返答を返す。
+    //    WILL_SYSTEM_PROMPT は上のAI呼び出しで system に渡す前提で import 済み。
+    //    (この行はAI接続後は削除してOK)
+    // ------------------------------------------------------------
+    void WILL_SYSTEM_PROMPT; // AI接続時に system として使う
+    const reply = findMockReply(userMessage);
+    return NextResponse.json({ reply });
+  } catch (err) {
+    console.error("[/api/reply] error:", err);
+    return NextResponse.json(
+      { error: "返答の生成に失敗しました。" },
+      { status: 500 }
+    );
+  }
+}
