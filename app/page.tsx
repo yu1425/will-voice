@@ -455,11 +455,6 @@ export default function Page() {
           VOICEVOX
         </button>
       </div>
-      {voiceMode === "recorded" && (
-        <div className="recorded-panel">
-          進行モードの各ステップで、うぃるの録音音声を再生します。録音のないステップは標準音声で読み上げます。チャットモードは標準音声を使用します。
-        </div>
-      )}
 
       {/* VOICEVOX 詳細パネル */}
       {voiceMode === "voicevox" && (

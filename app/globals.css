@@ -534,15 +534,6 @@ body {
 /* ------------------------------------------------------------
    VOICEVOX 詳細パネル (話者選択 + 接続状態 + クレジット)
    ------------------------------------------------------------ */
-.recorded-panel {
-  flex: 0 0 auto;
-  padding: 8px 14px;
-  background: #e8f5e9;
-  border-bottom: 1px solid #c8e6c9;
-  font-size: 12px;
-  color: #2e7d32;
-}
-
 .voicevox-panel {
   flex: 0 0 auto;
   display: flex;
