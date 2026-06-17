@@ -2,14 +2,14 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "うぃるvoice",
-  applicationName: "うぃるvoice",
+  title: "うぃるくん進行",
+  applicationName: "うぃるくん進行",
   description:
     "社会人テニスサークル WILL.tennis のマスコット「うぃる」のAI音声アシスタント。テニス会の進行サポートに。",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "うぃるvoice",
+    title: "うぃるくん進行",
   },
   formatDetection: {
     telephone: false,
@@ -26,7 +26,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#FF6B9D",
+  themeColor: "#5fae6e",
 };
 
 export default function RootLayout({

@@ -2,14 +2,14 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "うぃるvoice",
+    name: "うぃるくん進行",
     short_name: "うぃる",
     description:
       "WILL.tennis マスコット「うぃる」のAI音声アシスタント。テニス会の進行をサポートします。",
     start_url: "/",
     display: "standalone",
-    background_color: "#fff0f5",
-    theme_color: "#FF6B9D",
+    background_color: "#F3FAF4",
+    theme_color: "#5fae6e",
     orientation: "portrait",
     icons: [
       {
