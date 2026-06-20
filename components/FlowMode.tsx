@@ -328,6 +328,8 @@ export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
             onPrev={handlePrev}
             onNext={handleNext}
             onSpeakRaw={speak}
+            scriptsForCourt={scriptsForCourt}
+            onStepJump={handleStepJump}
             timerRemaining={timerRemaining}
             timerRunning={timerRunning}
             timerSec={timerSec}

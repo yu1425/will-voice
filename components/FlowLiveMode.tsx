@@ -17,6 +17,7 @@
 
 import { FLOW_QUICK_CAUTIONS, VOICE_TEST_TEXT } from "@/lib/flowCautions";
 import type { FlowScript } from "@/lib/tennisFlowScripts";
+import { TENNIS_FLOW_SCRIPTS, TOTAL_STEPS } from "@/lib/tennisFlowScripts";
 
 type Props = {
   currentScript: FlowScript;
@@ -30,6 +31,8 @@ type Props = {
   onPrev: () => void;
   onNext: () => void;
   onSpeakRaw: (text: string) => void;
+  scriptsForCourt: FlowScript[];
+  onStepJump: (step: number) => void;
   // Timer
   timerRemaining: number;
   timerRunning: boolean;
@@ -56,6 +59,8 @@ export default function FlowLiveMode({
   onPrev,
   onNext,
   onSpeakRaw,
+  scriptsForCourt,
+  onStepJump,
   timerRemaining,
   timerRunning,
   timerSec,
@@ -130,6 +135,34 @@ export default function FlowLiveMode({
         >
           ← 戻る
         </button>
+      </div>
+
+      {/* ステップ一覧チップ */}
+      <div className="flow-live__steps" role="tablist" aria-label="ステップ選択">
+        {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((n) => {
+          const matched =
+            scriptsForCourt.find((s) => s.step === n) ??
+            TENNIS_FLOW_SCRIPTS.find((s) => s.step === n);
+          const isActive = currentScript.step === n;
+          return (
+            <button
+              key={n}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={`flow-step-chip ${
+                isActive ? "flow-step-chip--active" : ""
+              }`}
+              onClick={() => onStepJump(n)}
+              title={matched?.title}
+            >
+              <span className="flow-step-chip__num">{n}</span>
+              <span className="flow-step-chip__label">
+                {matched?.shortLabel ?? ""}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* タイマー(コンパクト) */}

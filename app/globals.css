@@ -860,6 +860,12 @@ body {
   cursor: not-allowed;
 }
 
+.flow-live__steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 6px;
+}
+
 /* タイマー(コンパクト) */
 .flow-live__timer {
   display: flex;
