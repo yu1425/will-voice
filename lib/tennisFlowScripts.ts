@@ -290,7 +290,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "サーブリターン (2面)",
     shortLabel: "サーブ/リターン",
     courtMode: "double",
-    audioSrc: "/audio/flow/05-serve-return-detail.wav",
+    audioSrc: "/audio/flow/04-serve-return.wav",
     displayText: `以上でクロスラリー終わりです！
 
 次はサーブリターンに移ります。

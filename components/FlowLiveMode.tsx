@@ -16,8 +16,7 @@
  */
 
 import { FLOW_QUICK_CAUTIONS, VOICE_TEST_TEXT } from "@/lib/flowCautions";
-import type { FlowScript } from "@/lib/tennisFlowScripts";
-import { TENNIS_FLOW_SCRIPTS, TOTAL_STEPS } from "@/lib/tennisFlowScripts";
+import { TENNIS_FLOW_SCRIPTS, type FlowScript } from "@/lib/tennisFlowScripts";
 
 type Props = {
   currentScript: FlowScript;
@@ -139,7 +138,7 @@ export default function FlowLiveMode({
 
       {/* ステップ一覧チップ */}
       <div className="flow-live__steps" role="tablist" aria-label="ステップ選択">
-        {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((n) => {
+        {Array.from({ length: totalSteps }, (_, i) => i + 1).map((n) => {
           const matched =
             scriptsForCourt.find((s) => s.step === n) ??
             TENNIS_FLOW_SCRIPTS.find((s) => s.step === n);
