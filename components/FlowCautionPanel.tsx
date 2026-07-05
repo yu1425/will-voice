@@ -13,9 +13,10 @@ import { FLOW_CAUTIONS } from "@/lib/flowCautions";
 
 type Props = {
   speak: (text: string) => void;
+  voiceMode: "standard" | "voicevox" | "recorded";
 };
 
-export default function FlowCautionPanel({ speak }: Props) {
+export default function FlowCautionPanel({ speak, voiceMode }: Props) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -49,6 +50,7 @@ export default function FlowCautionPanel({ speak }: Props) {
           </div>
           <p className="caution-panel__hint">
             押すと、うぃるが短くやさしく読み上げます。
+            {voiceMode === "recorded" && "(この注意喚起は録音音声非対応のため標準音声で読み上げます)"}
           </p>
         </div>
       )}

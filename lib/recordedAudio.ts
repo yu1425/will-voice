@@ -1,16 +1,32 @@
 let currentAudio: HTMLAudioElement | null = null;
 
+/** 事前読み込み済みの <audio> をキャッシュ(次に流しそうな音声を先読みしておく) */
+const preloadCache = new Map<string, HTMLAudioElement>();
+
 /**
- * 録音音声（public/audio 以下の WAV など）を再生する。
+ * 次に読み上げそうな録音音声を先読みしておく(初回再生のラグを減らす)。
+ * 実際の再生では使わず、ブラウザのHTTPキャッシュを温めるだけの軽量な処理。
+ */
+export function preloadRecordedAudio(src: string | undefined): void {
+  if (!src || preloadCache.has(src)) return;
+  const audio = new Audio();
+  audio.preload = "auto";
+  audio.src = src;
+  preloadCache.set(src, audio);
+}
+
+/**
+ * 録音音声（public/audio 以下の音声ファイル）を再生する。
  * 再生に失敗した場合は onError を一度だけ呼ぶ(呼び出し側で標準音声にフォールバック)。
  */
 export function playRecordedAudio(
   src: string,
-  options?: { onEnd?: () => void; onError?: () => void }
+  options?: { onEnd?: () => void; onError?: () => void; volume?: number }
 ): void {
   stopRecordedAudio();
 
   const audio = new Audio(src);
+  audio.volume = options?.volume ?? 1;
   currentAudio = audio;
 
   // play() の reject と error イベントは同時に発火しうるため、

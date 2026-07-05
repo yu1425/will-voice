@@ -7,6 +7,7 @@ import FlowMode from "@/components/FlowMode";
 import { generateWillReply } from "@/lib/generateWillReply";
 import { WILL_GREETING } from "@/lib/willPrompt";
 import {
+  getJapaneseVoices,
   isSpeechRecognitionSupported,
   isSpeechSynthesisSupported,
   speakText,
@@ -45,6 +46,8 @@ const VOICEVOX_STYLE_STORAGE_KEY = "will-voicevox-style-id";
 const TAB_STORAGE_KEY = "will-active-tab";
 const VOICEVOX_PRESET_STORAGE_KEY = "will-voicevox-preset";
 const VOICEVOX_PARAMS_STORAGE_KEY = "will-voicevox-params";
+const STANDARD_VOICE_STORAGE_KEY = "will-standard-voice-uri";
+const RECORDED_VOLUME_STORAGE_KEY = "will-recorded-volume";
 
 type VoicevoxPresetName = "標準" | "明るめ" | "聞き取りやすさ重視" | "ゆっくり";
 
@@ -89,6 +92,9 @@ export default function Page() {
   const [audioPreset, setAudioPreset] = useState<VoicevoxPresetName>(DEFAULT_PRESET);
   const [audioParams, setAudioParams] = useState<AudioPresetParams>(AUDIO_PRESETS[DEFAULT_PRESET]);
   const [isLocal, setIsLocal] = useState(true);
+  const [japaneseVoices, setJapaneseVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [standardVoiceURI, setStandardVoiceURI] = useState<string | null>(null);
+  const [recordedVolume, setRecordedVolume] = useState(1);
 
   const listeningRef = useRef<ListeningHandle | null>(null);
   const voicevoxHandleRef = useRef<VoicevoxHandle | null>(null);
@@ -133,9 +139,26 @@ export default function Page() {
           setAudioParams(AUDIO_PRESETS[p]);
         }
       }
+      const savedVoiceURI = window.localStorage.getItem(STANDARD_VOICE_STORAGE_KEY);
+      if (savedVoiceURI) setStandardVoiceURI(savedVoiceURI);
+
+      const savedVolume = window.localStorage.getItem(RECORDED_VOLUME_STORAGE_KEY);
+      if (savedVolume) {
+        const v = Number(savedVolume);
+        if (Number.isFinite(v) && v >= 0 && v <= 1) setRecordedVolume(v);
+      }
     } catch {
       /* no-op */
     }
+  }, []);
+
+  // 標準音声のボイス一覧を取得(ブラウザによっては非同期でロードされる)
+  useEffect(() => {
+    if (!isSpeechSynthesisSupported()) return;
+    const load = () => setJapaneseVoices(getJapaneseVoices());
+    load();
+    window.speechSynthesis.addEventListener("voiceschanged", load);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
   /** VOICEVOX 話者一覧を取得し、状態を更新 */
@@ -240,6 +263,24 @@ export default function Page() {
     }
   }, []);
 
+  const handleStandardVoiceChange = useCallback((uri: string) => {
+    setStandardVoiceURI(uri);
+    try {
+      window.localStorage.setItem(STANDARD_VOICE_STORAGE_KEY, uri);
+    } catch {
+      /* no-op */
+    }
+  }, []);
+
+  const handleRecordedVolumeChange = useCallback((v: number) => {
+    setRecordedVolume(v);
+    try {
+      window.localStorage.setItem(RECORDED_VOLUME_STORAGE_KEY, String(v));
+    } catch {
+      /* no-op */
+    }
+  }, []);
+
   /** 全方式の読み上げ停止 */
   const stopAllSpeaking = useCallback(() => {
     stopSpeaking();
@@ -262,10 +303,14 @@ export default function Page() {
 
       if (voiceMode === "recorded" && audioSrc) {
         playRecordedAudio(audioSrc, {
+          volume: recordedVolume,
           onEnd: () => setIsSpeaking(false),
           onError: () => {
             // 録音音声の再生失敗時は標準音声にフォールバック
-            speakText(text, { onEnd: () => setIsSpeaking(false) });
+            speakText(text, {
+              onEnd: () => setIsSpeaking(false),
+              voiceURI: standardVoiceURI ?? undefined,
+            });
           },
         });
         return;
@@ -274,7 +319,10 @@ export default function Page() {
       if (voiceMode === "voicevox") {
         if (!isLocalhost()) {
           // 公開環境では VOICEVOX ENGINE に接続できないため標準音声で再生
-          speakText(text, { onEnd: () => setIsSpeaking(false) });
+          speakText(text, {
+            onEnd: () => setIsSpeaking(false),
+            voiceURI: standardVoiceURI ?? undefined,
+          });
           return;
         }
         const result = await speakWithVoicevox(text, {
@@ -292,10 +340,11 @@ export default function Page() {
       } else {
         speakText(text, {
           onEnd: () => setIsSpeaking(false),
+          voiceURI: standardVoiceURI ?? undefined,
         });
       }
     },
-    [voiceMode, styleId, audioParams, stopAllSpeaking]
+    [voiceMode, styleId, audioParams, stopAllSpeaking, standardVoiceURI, recordedVolume]
   );
 
   /** ユーザー発話受領 → うぃる返答生成 → 読み上げ */
@@ -455,6 +504,50 @@ export default function Page() {
           VOICEVOX
         </button>
       </div>
+
+      {/* 標準音声 詳細パネル */}
+      {voiceMode === "standard" && japaneseVoices.length > 0 && (
+        <div className="voicevox-panel">
+          <div className="voicevox-panel__row">
+            <label htmlFor="standard-voice" className="voicevox-panel__label">
+              ボイス:
+            </label>
+            <select
+              id="standard-voice"
+              className="voicevox-panel__select"
+              value={standardVoiceURI ?? ""}
+              onChange={(e) => handleStandardVoiceChange(e.target.value)}
+            >
+              <option value="">自動選択</option>
+              {japaneseVoices.map((v) => (
+                <option key={v.voiceURI} value={v.voiceURI}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* 録音音声 詳細パネル */}
+      {voiceMode === "recorded" && (
+        <div className="voicevox-panel">
+          <div className="voicevox-panel__row">
+            <label htmlFor="recorded-volume" className="voicevox-panel__label">
+              音量: {Math.round(recordedVolume * 100)}%
+            </label>
+            <input
+              id="recorded-volume"
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={recordedVolume}
+              onChange={(e) => handleRecordedVolumeChange(Number(e.target.value))}
+            />
+          </div>
+        </div>
+      )}
 
       {/* VOICEVOX 詳細パネル */}
       {voiceMode === "voicevox" && (
@@ -635,6 +728,8 @@ export default function Page() {
             </div>
             <p className="footer__credit">
               音声: VOICEVOX:ずんだもん / ブラウザ標準音声
+              {voiceMode === "recorded" &&
+                "(録音音声は進行モード専用のため、チャットでは標準音声で読み上げます)"}
             </p>
           </footer>
         </>
@@ -645,6 +740,7 @@ export default function Page() {
               speak={speak}
               stopSpeaking={stopAllSpeaking}
               isSpeaking={isSpeaking}
+              voiceMode={voiceMode}
             />
           </div>
 
@@ -662,7 +758,7 @@ export default function Page() {
 
           <footer className="footer footer--slim">
             <p className="footer__credit">
-              音声: VOICEVOX:ずんだもん / ブラウザ標準音声
+              音声: 録音音声(うぃる) / VOICEVOX:ずんだもん / ブラウザ標準音声
             </p>
           </footer>
         </>

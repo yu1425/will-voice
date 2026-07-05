@@ -152,7 +152,15 @@ export type SpeakOptions = {
   onStart?: () => void;
   onEnd?: () => void;
   lang?: string;
+  /** 使用するボイスの voiceURI(未指定・見つからない場合は自動選択にフォールバック) */
+  voiceURI?: string;
 };
+
+/** 日本語のボイス一覧を返す(取得できていなければ空配列) */
+export function getJapaneseVoices(): SpeechSynthesisVoice[] {
+  if (!isSpeechSynthesisSupported()) return [];
+  return window.speechSynthesis.getVoices().filter((v) => v.lang.startsWith("ja"));
+}
 
 /**
  * テキストを読み上げる。
@@ -179,11 +187,13 @@ export function speakText(text: string, options: SpeakOptions = {}): void {
   utterance.rate = 1.0;
   utterance.pitch = 1.05; // ほんの少し明るく
 
-  // 日本語ボイスがあれば優先して選ぶ
+  // 指定されたボイスがあれば優先、なければ最初に見つかった日本語ボイス
   const voices = window.speechSynthesis.getVoices();
-  const jaVoice = voices.find((v) => v.lang.startsWith("ja"));
-  if (jaVoice) {
-    utterance.voice = jaVoice;
+  const chosen =
+    (options.voiceURI && voices.find((v) => v.voiceURI === options.voiceURI)) ||
+    voices.find((v) => v.lang.startsWith("ja"));
+  if (chosen) {
+    utterance.voice = chosen;
   }
 
   utterance.onstart = () => options.onStart?.();

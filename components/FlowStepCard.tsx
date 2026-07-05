@@ -61,7 +61,7 @@ export default function FlowStepCard({
   const handleCopy = async () => {
     await onCopy();
     setCopiedFlash(true);
-    window.setTimeout(() => setCopiedFlash(false), 1500);
+    window.setTimeout(() => setCopiedFlash(false), 2500);
   };
 
   return (

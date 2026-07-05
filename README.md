@@ -84,24 +84,26 @@ npm run dev
 
 | ステップ | 録音ファイル |
 | --- | --- |
-| 開始あいさつ | `public/audio/flow/01-opening.wav` |
-| ロングラリー | `public/audio/flow/02-long-rally.wav` |
-| クロスラリー | `public/audio/flow/03-cross-rally.wav` |
-| サーブリターン（1面） | `public/audio/flow/04-serve-return.wav` |
-| サーブリターン（2面） | `public/audio/flow/05-serve-return-detail.wav` |
-| 自己紹介 / 乱数表説明 | `public/audio/flow/06-self-intro.wav` |
-| 試合ルール・配慮事項 | `public/audio/flow/07-game.wav` |
-| ミニゲーム | `public/audio/flow/08-mini-game.wav` |
-| 終了あいさつ | `public/audio/flow/09-closing.wav` |
+| 開始あいさつ | `public/audio/flow/01-opening.m4a` |
+| ロングラリー | `public/audio/flow/02-long-rally.m4a` |
+| クロスラリー | `public/audio/flow/03-cross-rally.m4a` |
+| サーブリターン（1面/2面） | `public/audio/flow/04-serve-return.m4a` |
+| 自己紹介 / 乱数表説明 | `public/audio/flow/06-self-intro.m4a` |
+| 試合ルール・配慮事項 | `public/audio/flow/07-game.m4a` |
+| ミニゲーム | `public/audio/flow/08-mini-game.m4a` |
+| 終了あいさつ | `public/audio/flow/09-closing.m4a` |
 
 - 録音ファイルが存在するステップには「**録音音声あり**」バッジが表示されます（ショートラリー/ボレーボレーステップには録音なし）
+- 音声ファイルは AAC(.m4a, 48kbps) に変換して軽量化しており、次のステップの音声は事前に読み込まれるため再生ラグが少なくなっています
 - 録音音声の再生に失敗した場合は自動的にブラウザ標準音声でフォールバックします
+- 音量は「読み上げ: 録音音声」パネルのスライダーで調整できます
 - チャットモードでは録音音声モード選択中も標準音声で読み上げます
+- クイック注意喚起・やさしい注意喚起は録音音声非対応のため、常に標準音声で読み上げます
 
 ### 録音ファイルの差し替え
 
-`public/audio/flow/` フォルダの WAV ファイルを差し替えるだけで音声を更新できます。
-元音声ファイルのバックアップは `public/audio/うぃる音声/` に保持しています。
+`public/audio/flow/` フォルダの音声ファイルを差し替えるだけで音声を更新できます。
+元音声ファイル(WAV)のバックアップは `public/audio/うぃる音声/` に保持しています。
 
 ---
 

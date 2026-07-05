@@ -35,6 +35,7 @@ import {
   type FlowDurationHours,
   type FlowVibe,
 } from "@/lib/flowPlan";
+import { preloadRecordedAudio } from "@/lib/recordedAudio";
 
 const STEP_KEY = "will-flow-step";
 const EDIT_KEY = "will-flow-edits";
@@ -51,9 +52,16 @@ type Props = {
   stopSpeaking: () => void;
   /** 現在読み上げ中か */
   isSpeaking: boolean;
+  /** 現在の読み上げ音声モード(注意喚起は録音音声非対応なので案内表示に使う) */
+  voiceMode: "standard" | "voicevox" | "recorded";
 };
 
-export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
+export default function FlowMode({
+  speak,
+  stopSpeaking,
+  isSpeaking,
+  voiceMode,
+}: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>("prepare");
   const [conditions, setConditions] = useState<FlowConditions>(DEFAULT_CONDITIONS);
   const [stepNumber, setStepNumber] = useState(1);
@@ -123,10 +131,24 @@ export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
     [scriptsForCourt, stepNumber]
   );
 
+  // コート数切替などで stepNumber が現在の courtMode に存在しない場合、
+  // 無言で先頭ステップへ飛ばすのではなく stepNumber 自体を実際のステップに
+  // 合わせて補正する(表示中の「ステップ X」ラベルと中身がズレないようにする)。
+  useEffect(() => {
+    if (currentScript && currentScript.step !== stepNumber) {
+      setStepNumber(currentScript.step);
+    }
+  }, [currentScript, stepNumber]);
+
   const nextScript = useMemo(
     () => scriptsForCourt.find((s) => s.step === stepNumber + 1) ?? null,
     [scriptsForCourt, stepNumber]
   );
+
+  // 次のステップの録音音声を先読みしておき、実際に読み上げる際のラグを減らす
+  useEffect(() => {
+    preloadRecordedAudio(nextScript?.audioSrc);
+  }, [nextScript]);
 
   const persist = (key: string, value: string) => {
     try {
@@ -202,9 +224,12 @@ export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
 
   const handleSpeak = useCallback(
     (script: FlowScript) => {
-      speak(buildSpeakText(script), script.audioSrc);
+      // テキストを編集している場合、録音音声(元の内容)ではなく
+      // 表示中のテキストが読み上げられるよう、audioSrc は渡さない
+      const isEdited = edits[script.id] !== undefined;
+      speak(buildSpeakText(script), isEdited ? undefined : script.audioSrc);
     },
-    [speak, buildSpeakText]
+    [speak, buildSpeakText, edits]
   );
 
   const handleSpeakBeginnerTip = useCallback(
@@ -228,7 +253,12 @@ export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
   );
 
   // ============ タイマー ============
+  // 実時刻(Date.now())ベースで残り時間を計算する。setInterval のカウンタを
+  // 直接減算する方式だと、画面ロックやタブのバックグラウンド化で tick が
+  // 間引かれた際に実際の経過時間とズレるため、常に「終了予定時刻との差」から
+  // 残り秒数を再計算する。
   const timerIntervalRef = useRef<number | null>(null);
+  const timerEndAtRef = useRef<number | null>(null);
 
   const clearTimerInterval = () => {
     if (timerIntervalRef.current !== null) {
@@ -241,12 +271,25 @@ export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
     if (sec <= 0) return;
     setTimerSec(sec);
     setTimerRemaining(sec);
+    timerEndAtRef.current = Date.now() + sec * 1000;
     setTimerRunning(true);
   }, []);
 
-  const pauseTimer = useCallback(() => setTimerRunning(false), []);
+  const pauseTimer = useCallback(() => {
+    // 一時停止時点の残り秒数を確定させてから止める
+    if (timerEndAtRef.current !== null) {
+      const remaining = Math.max(
+        0,
+        Math.round((timerEndAtRef.current - Date.now()) / 1000)
+      );
+      setTimerRemaining(remaining);
+    }
+    timerEndAtRef.current = null;
+    setTimerRunning(false);
+  }, []);
 
   const resetTimer = useCallback(() => {
+    timerEndAtRef.current = null;
     setTimerRunning(false);
     setTimerRemaining(timerSec);
   }, [timerSec]);
@@ -256,17 +299,30 @@ export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
       clearTimerInterval();
       return;
     }
-    timerIntervalRef.current = window.setInterval(() => {
-      setTimerRemaining((prev) => {
-        if (prev <= 1) {
-          setTimerRunning(false);
-          speak(TIMER_FINISH_MESSAGE);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return clearTimerInterval;
+
+    const tick = () => {
+      const endAt = timerEndAtRef.current;
+      if (endAt === null) return;
+      const remaining = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+      setTimerRemaining(remaining);
+      if (remaining <= 0) {
+        timerEndAtRef.current = null;
+        setTimerRunning(false);
+        speak(TIMER_FINISH_MESSAGE);
+      }
+    };
+
+    // 画面ロック解除やタブ復帰の直後にも即座に正しい残り時間を反映する
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") tick();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    timerIntervalRef.current = window.setInterval(tick, 1000);
+    return () => {
+      clearTimerInterval();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [timerRunning, speak]);
 
   const formatTime = (sec: number) => {
@@ -330,6 +386,7 @@ export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
             onSpeakRaw={speak}
             scriptsForCourt={scriptsForCourt}
             onStepJump={handleStepJump}
+            voiceMode={voiceMode}
             timerRemaining={timerRemaining}
             timerRunning={timerRunning}
             timerSec={timerSec}
@@ -349,7 +406,7 @@ export default function FlowMode({ speak, stopSpeaking, isSpeaking }: Props) {
 
       <FlowPlanPanel conditions={conditions} onChange={handleConditionsChange} />
 
-      <FlowCautionPanel speak={speak} />
+      <FlowCautionPanel speak={speak} voiceMode={voiceMode} />
 
       {/* 現在ステップ ナビ */}
       <div className="flow-nav">

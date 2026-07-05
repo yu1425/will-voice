@@ -53,7 +53,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "開始あいさつ",
     shortLabel: "あいさつ",
     courtMode: "both",
-    audioSrc: "/audio/flow/01-opening.wav",
+    audioSrc: "/audio/flow/01-opening.m4a",
     displayText: `本日はご参加ありがとうございます！🎾
 
 まずは今いらっしゃるかたでペアを作って、
@@ -132,7 +132,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "ロングラリー",
     shortLabel: "ロング",
     courtMode: "both",
-    audioSrc: "/audio/flow/02-long-rally.wav",
+    audioSrc: "/audio/flow/02-long-rally.m4a",
     displayText: `次はロングラリーです！🎾
 
 5人ずつ両サイドに分かれてください。
@@ -173,7 +173,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "クロスラリー (1面)",
     shortLabel: "クロス",
     courtMode: "single",
-    audioSrc: "/audio/flow/03-cross-rally.wav",
+    audioSrc: "/audio/flow/03-cross-rally.m4a",
     displayText: `以上でロングラリー終わりです！
 
 次はクロスラリーに移ります。
@@ -211,7 +211,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "クロスラリー (2面)",
     shortLabel: "クロス",
     courtMode: "double",
-    audioSrc: "/audio/flow/03-cross-rally.wav",
+    audioSrc: "/audio/flow/03-cross-rally.m4a",
     displayText: `以上でロングラリー終わりです！
 
 次はクロスラリーに移ります。
@@ -244,7 +244,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "サーブリターン (1面)",
     shortLabel: "サーブ/リターン",
     courtMode: "single",
-    audioSrc: "/audio/flow/04-serve-return.wav",
+    audioSrc: "/audio/flow/04-serve-return.m4a",
     displayText: `以上でクロスラリー終わりです！
 
 次はサーブリターンに移ります。
@@ -290,7 +290,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "サーブリターン (2面)",
     shortLabel: "サーブ/リターン",
     courtMode: "double",
-    audioSrc: "/audio/flow/04-serve-return.wav",
+    audioSrc: "/audio/flow/04-serve-return.m4a",
     displayText: `以上でクロスラリー終わりです！
 
 次はサーブリターンに移ります。
@@ -332,7 +332,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "ゲーム前の自己紹介",
     shortLabel: "自己紹介",
     courtMode: "both",
-    audioSrc: "/audio/flow/06-self-intro.wav",
+    audioSrc: "/audio/flow/06-self-intro.m4a",
     displayText: `次はゲーム形式に入ります🎾
 その前に、軽く自己紹介をお願いします。
 
@@ -358,7 +358,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "乱数表の使い方 (1面)",
     shortLabel: "乱数表",
     courtMode: "single",
-    audioSrc: "/audio/flow/06-self-intro.wav",
+    audioSrc: "/audio/flow/06-self-intro.m4a",
     displayText: `自己紹介ありがとうございました！🎾
 
 この後は、乱数表を使ってダブルスを回していきます。
@@ -395,7 +395,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "乱数表の使い方 (2面)",
     shortLabel: "乱数表",
     courtMode: "double",
-    audioSrc: "/audio/flow/06-self-intro.wav",
+    audioSrc: "/audio/flow/06-self-intro.m4a",
     displayText: `自己紹介ありがとうございました！🎾
 
 この後は、乱数表を使ってダブルスを回していきます。
@@ -430,7 +430,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "試合ルール・配慮事項",
     shortLabel: "ルール",
     courtMode: "both",
-    audioSrc: "/audio/flow/07-game.wav",
+    audioSrc: "/audio/flow/07-game.m4a",
     displayText: `試合の進め方について少しご案内します🎾
 
 ・試合はダブルスで、4ポイント先取、デュースなしです。
@@ -473,7 +473,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "ミニゲーム（リレーラリー）",
     shortLabel: "ミニゲーム",
     courtMode: "both",
-    audioSrc: "/audio/flow/08-mini-game.wav",
+    audioSrc: "/audio/flow/08-mini-game.m4a",
     displayText: `最後はミニゲームで、リレーラリーをやります🎾
 
 チームに分かれて、それぞれ1列に並んでください。
@@ -516,7 +516,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "終了あいさつ",
     shortLabel: "終了",
     courtMode: "both",
-    audioSrc: "/audio/flow/09-closing.wav",
+    audioSrc: "/audio/flow/09-closing.m4a",
     displayText: `本日はWILL.tennisにご参加いただき、ありがとうございました🎾
 
 今日は初参加のかたも、いつも来てくださっているかたも、

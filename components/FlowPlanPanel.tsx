@@ -51,7 +51,7 @@ export default function FlowPlanPanel({ conditions, onChange }: Props) {
     try {
       await navigator.clipboard.writeText(planToText(plan));
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      window.setTimeout(() => setCopied(false), 2500);
     } catch {
       /* no-op */
     }
@@ -59,14 +59,19 @@ export default function FlowPlanPanel({ conditions, onChange }: Props) {
 
   const handleParticipants = (v: string) => {
     const n = Number(v);
-    if (!Number.isFinite(n)) return patch({ participants: 0 });
-    patch({ participants: Math.max(0, Math.min(40, Math.floor(n))) });
+    const participants = !Number.isFinite(n)
+      ? 0
+      : Math.max(0, Math.min(40, Math.floor(n)));
+    // 参加人数を減らしたときは、初参加者数がそれを超えないように連動して調整する
+    const newcomerCount = Math.min(conditions.newcomerCount, participants);
+    patch({ participants, newcomerCount });
   };
 
   const handleNewcomers = (v: string) => {
     const n = Number(v);
-    if (!Number.isFinite(n)) return patch({ newcomerCount: 0 });
-    patch({ newcomerCount: Math.max(0, Math.min(40, Math.floor(n))) });
+    const raw = !Number.isFinite(n) ? 0 : Math.max(0, Math.floor(n));
+    // 初参加者数は参加人数を超えられない
+    patch({ newcomerCount: Math.min(raw, conditions.participants) });
   };
 
   return (
@@ -102,6 +107,11 @@ export default function FlowPlanPanel({ conditions, onChange }: Props) {
                 inputMode="numeric"
                 placeholder="人"
               />
+              {conditions.participants === 0 && (
+                <span className="plan-form__hint">
+                  参加人数を入力するとプランの精度が上がります
+                </span>
+              )}
             </div>
 
             <div className="plan-form__row">
