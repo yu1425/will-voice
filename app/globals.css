@@ -681,7 +681,7 @@ body {
 .flow-mode--live {
   gap: 14px;
   padding: 10px 10px 18px;
-  height: 100%;
+  min-height: 100%;
 }
 
 /* ---- 表示モード切替 (準備 / 当日) ---- */
@@ -712,16 +712,14 @@ body {
 }
 
 /* ---- 当日モード ----
-   ヒーロー表示(現在ステップ) + プレビュー + 読み上げボタンは常時表示のまま、
-   ステップ一覧/タイマー/クイック注意喚起だけを内側でスクロールさせる。
-   これにより、コート上でスマホを縦に長くスクロールしても読み上げボタンが
-   画面から見えなくなることがない。 */
+   進行画面全体は外側の .flow-scroll だけでスクロールさせる。
+   内側にもスクロール領域を作ると、長い台本でタイマーや注意喚起の高さが
+   なくなるため、主要操作から補助操作まで自然に縦へ並べる。 */
 .flow-live {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  height: 100%;
-  min-height: 0;
+  min-height: 100%;
 }
 
 .flow-live__top {
@@ -732,10 +730,6 @@ body {
 }
 
 .flow-live__scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -803,10 +797,7 @@ body {
   overflow-y: auto;
 }
 
-/* メイン読み上げボタン(大)
-   .flow-live__top(常時表示エリア)に置くため、常にヒーロー表示の
-   すぐ下に見える。ステップ一覧/タイマー/注意喚起は下の
-   .flow-live__scroll 側でスクロールする。 */
+/* メイン読み上げボタン(大): 現在STEPのすぐ下で最優先に表示する。 */
 .flow-live__main {
   display: flex;
 }

@@ -73,7 +73,8 @@ const VOICE_TEST_TEXT =
   "本日はご参加ありがとうございます。ショートラリーとボレーボレーを、それぞれ5分ずつ行います。聞こえ方に問題がなければ、この設定で進行してください。";
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>("chat");
+  // 保存済みタブは復元せず、アクセスのたびに進行モードを入口にする。
+  const [tab, setTab] = useState<Tab>("flow");
   const [messages, setMessages] = useState<ChatMessageData[]>([
     { id: makeId(), role: "will", text: WILL_GREETING },
   ]);
@@ -122,10 +123,6 @@ export default function Page() {
         if (savedVoice === "voicevox" || savedVoice === "standard" || savedVoice === "recorded") {
           setVoiceMode(savedVoice);
         }
-      }
-      const savedTab = window.localStorage.getItem(TAB_STORAGE_KEY);
-      if (savedTab === "chat" || savedTab === "flow") {
-        setTab(savedTab);
       }
       const savedPreset = window.localStorage.getItem(VOICEVOX_PRESET_STORAGE_KEY);
       if (savedPreset && savedPreset in AUDIO_PRESETS) {
@@ -447,20 +444,20 @@ export default function Page() {
         <button
           type="button"
           role="tab"
-          aria-selected={tab === "chat"}
-          className={`tabs__btn ${tab === "chat" ? "tabs__btn--active" : ""}`}
-          onClick={() => handleTabChange("chat")}
-        >
-          通常チャット
-        </button>
-        <button
-          type="button"
-          role="tab"
           aria-selected={tab === "flow"}
           className={`tabs__btn ${tab === "flow" ? "tabs__btn--active" : ""}`}
           onClick={() => handleTabChange("flow")}
         >
           進行モード
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "chat"}
+          className={`tabs__btn ${tab === "chat" ? "tabs__btn--active" : ""}`}
+          onClick={() => handleTabChange("chat")}
+        >
+          通常チャット
         </button>
       </div>
 
