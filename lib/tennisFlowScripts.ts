@@ -8,6 +8,7 @@
  *  - voiceText          : 通常の読み上げ用(自然な長さ)
  *  - voiceTextShort     : 短め(要点だけ / コート上で普通に使う)
  *  - voiceTextVeryShort : かなり短め(最低限の指示のみ)
+ *  - recordedText       : 録音音声で実際に発話されている内容
  *  - beginnerTip        : 「初心者向け補足を読む」で使われる短いやさしい補足
  *
  *  クロスラリー / サーブリターン / 乱数表はコート数で文面が変わるため、
@@ -21,7 +22,7 @@
  * ============================================================
  */
 
-export type FlowScript = {
+type FlowScriptBase = {
   id: string;
   step: number;
   title: string;
@@ -33,9 +34,154 @@ export type FlowScript = {
   beginnerTip?: string;
   /** "single"=1面 / "double"=2面 / "both"=どちらでも */
   courtMode?: "single" | "double" | "both";
-  /** 録音音声モード用の音声ファイルパス (public/ 以下) */
-  audioSrc?: string;
 };
+
+type FlowRecording = {
+  /** 録音音声モード用の音声ファイルパス (public/ 以下) */
+  audioSrc: string;
+  /** audioSrc の録音で実際に発話されている内容 */
+  recordedText: string;
+};
+
+/** 録音パスと発話内容は必ず同時に定義し、片方だけの状態を型で防ぐ。 */
+export type FlowScript = FlowScriptBase &
+  (
+    | FlowRecording
+    | { audioSrc?: undefined; recordedText?: undefined }
+  );
+
+/**
+ * 実音声から確認した録音データ。
+ * 同じ録音を複数のコート条件で使う場合も、この1セットを参照する。
+ */
+export const FLOW_RECORDINGS = {
+  opening: {
+    audioSrc: "/audio/flow/01-opening.m4a",
+    recordedText: `本日はご参加ありがとうございます。
+
+まずは今いらっしゃるかたでペアを作って、ショートラリーとボレーボレーをそれぞれ5分ずつ行います。
+
+遅れてくるかたもいるので、全体の自己紹介は、人数が揃ってきたタイミングか、ゲーム前の組み合わせを決めるタイミングで行います。
+
+初参加のかたもいると思うので、最初は近くのかたと軽く名前だけ共有しながら始めていただければと思います。
+
+まずは軽く体を温めていきましょう。よろしくお願いします。`,
+  },
+  shortVolley: {
+    audioSrc: "/audio/flow/02-short-volley.wav",
+    recordedText: `まずはショートラリーから始めていきます。
+
+サービスライン付近で向かい合って、5分ほど続けていきましょう。
+
+強く打ちすぎず、相手が返しやすいボールでつなぐイメージでお願いします。
+ミスは全然気にしなくて大丈夫です。
+
+ショートラリーのあとは、そのままボレーボレーに入ります。
+ノーバウンドで、肩の力を抜いて、ゆっくり続けるのが目標です。
+
+体が温まってきたら、少しずつ距離を伸ばしていきましょう。`,
+  },
+  longRally: {
+    audioSrc: "/audio/flow/02-long-rally.m4a",
+    recordedText: `次はロングラリーです。
+
+5人ずつ両サイドに分かれてください。
+2人ずつ入ってラリーをして、ある程度打ったら交代でお願いします。
+
+球数は決めないので、長くなりすぎないように、待っている人を見ながら入れ替わってください。
+
+なるべく同じペアや同じ相手が続かないように、交代のたびに少しずつ組み合わせを変えていきましょう。
+
+まずは強く打つより、相手が返しやすいボールでつなぐ意識でお願いします。`,
+  },
+  crossRally: {
+    audioSrc: "/audio/flow/03-cross-rally.m4a",
+    recordedText: `以上でロングラリー終わりです。
+
+次はクロスラリーに移ります。
+その前に、一度メンバーを軽くシャッフルします。
+
+片側のかたを2〜3人くらい入れ替えてください。
+なるべく同じペアや同じ相手が続かないように、いい感じに入れ替わってもらえれば大丈夫です。`,
+  },
+  serveReturn: {
+    audioSrc: "/audio/flow/04-serve-return.m4a",
+    recordedText: `以上でクロスラリー終わりです。
+
+次はサーブリターンに移ります。
+その前に、メンバーが固定されすぎないように軽くシャッフルします。
+
+片側のかたを2〜3人くらい入れ替えてください。
+全員が大きく動かなくても大丈夫なので、さっきと少し違う組み合わせになるように調整をお願いします。`,
+  },
+  serveReturnDetail: {
+    audioSrc: "/audio/flow/05-serve-return-detail.m4a",
+    recordedText: `こちらも厳密じゃなくて大丈夫なので、なるべく同じメンバーだけで固まらないように軽く混ぜていきましょう。
+
+サーブリターンは、片側がサーブ、反対側がリターンで行います。
+サーブ側は3回ほど順番にサーブを打って、リターン側は返すところまでで大丈夫です。
+
+ラリーは続けず、リターンを返したら一度区切って、次のサーブに進みます。
+
+サーブは強さよりも、まずは入れることを意識してお願いします。`,
+  },
+  selfIntro: {
+    audioSrc: "/audio/flow/06-self-intro.m4a",
+    recordedText: `次はゲーム形式に入ります。
+その前に、軽く自己紹介をお願いします。
+
+お名前、テニス歴、初参加かどうかくらいで大丈夫です。
+ひとりずつ簡単にお願いします。
+
+この後は、乱数表を使ってダブルスを回していきます。
+参加者のかたに番号を振るので、自分の番号に合わせて、ペアと対戦相手を確認してください。
+
+そのコートの人数に合った乱数表を使って、上から順番に進めていきます。`,
+  },
+  game: {
+    audioSrc: "/audio/flow/07-game.m4a",
+    recordedText: `試合はダブルスで、4ポイント先取、デュースなしです。
+
+サーブは基本2本ですが、初心者のかたや久しぶりのかたは最大3本までで大丈夫です。
+
+初心者のかたもいる場合があるので、経験者のかたはサーブや強打を少し調整してもらえると助かります。
+
+ミスしても全然大丈夫なので、声をかけ合いながら楽しく進めましょう。
+
+危ないので、人が近いところへの強打や無理なスマッシュは控えめにお願いします。
+ボールが隣のコートに入った時は、必ず声をかけてから取りに行ってください。
+
+勝ち負けよりも、いろいろなかたと楽しく打つことを大事にして進めていきましょう。`,
+  },
+  miniGame: {
+    audioSrc: "/audio/flow/08-mini-game.m4a",
+    recordedText: `最後はミニゲームで、リレーラリーをやります。
+
+1面の場合は、5人対5人に分かれてください。
+それぞれ1列に並んで、先頭の人から1球ずつ打っていきます。
+打った人は、そのまま列の後ろに回ってください。
+
+次の人が前に出て、また1球打つ形です。
+
+最初の球出しはカウントせず、返球も最初の人が打って、そこからカウントします。
+何回ラリーが続くか、みんなで数えていきましょう。`,
+  },
+  closing: {
+    audioSrc: "/audio/flow/09-closing.m4a",
+    recordedText: `本日はウィルテニスにご参加いただき、ありがとうございました。
+
+今日は初参加のかたも、いつも来てくださっているかたも、一緒に楽しんでいただけていたら嬉しいです。
+
+ウィルテニスは今後も、ゆるく、平和に、楽しく、を大切にしながら、無理なくテニスを楽しめる場として活動していきます。
+
+予定が合いましたら、ぜひまた気軽にご参加ください。
+
+入会や今後の参加についてのご質問などがあれば、この後でも大丈夫なので、気軽に声をかけてください。
+
+忘れ物がないか確認して、気をつけてお帰りください。
+本日はありがとうございました。`,
+  },
+} satisfies Record<string, FlowRecording>;
 
 export type VoiceLength = "normal" | "short" | "veryShort";
 
@@ -53,7 +199,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "開始あいさつ",
     shortLabel: "あいさつ",
     courtMode: "both",
-    audioSrc: "/audio/flow/01-opening.m4a",
+    ...FLOW_RECORDINGS.opening,
     displayText: `本日はご参加ありがとうございます！🎾
 
 まずは今いらっしゃるかたでペアを作って、
@@ -95,7 +241,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "ショートラリー・ボレーボレー",
     shortLabel: "ショート/ボレー",
     courtMode: "both",
-    audioSrc: "/audio/flow/02-short-volley.wav",
+    ...FLOW_RECORDINGS.shortVolley,
     displayText: `まずはショートラリーから始めていきます🎾
 
 サービスライン付近で向かい合って、5分ほど続けていきましょう。
@@ -133,7 +279,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "ロングラリー",
     shortLabel: "ロング",
     courtMode: "both",
-    audioSrc: "/audio/flow/02-long-rally.m4a",
+    ...FLOW_RECORDINGS.longRally,
     displayText: `次はロングラリーです！🎾
 
 5人ずつ両サイドに分かれてください。
@@ -174,7 +320,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "クロスラリー (1面)",
     shortLabel: "クロス",
     courtMode: "single",
-    audioSrc: "/audio/flow/03-cross-rally.m4a",
+    ...FLOW_RECORDINGS.crossRally,
     displayText: `以上でロングラリー終わりです！
 
 次はクロスラリーに移ります。
@@ -212,7 +358,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "クロスラリー (2面)",
     shortLabel: "クロス",
     courtMode: "double",
-    audioSrc: "/audio/flow/03-cross-rally.m4a",
+    ...FLOW_RECORDINGS.crossRally,
     displayText: `以上でロングラリー終わりです！
 
 次はクロスラリーに移ります。
@@ -245,7 +391,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "サーブリターン (1面)",
     shortLabel: "サーブ/リターン",
     courtMode: "single",
-    audioSrc: "/audio/flow/04-serve-return.m4a",
+    ...FLOW_RECORDINGS.serveReturn,
     displayText: `以上でクロスラリー終わりです！
 
 次はサーブリターンに移ります。
@@ -291,7 +437,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "サーブリターン (2面)",
     shortLabel: "サーブ/リターン",
     courtMode: "double",
-    audioSrc: "/audio/flow/04-serve-return.m4a",
+    ...FLOW_RECORDINGS.serveReturn,
     displayText: `以上でクロスラリー終わりです！
 
 次はサーブリターンに移ります。
@@ -333,7 +479,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "ゲーム前の自己紹介",
     shortLabel: "自己紹介",
     courtMode: "both",
-    audioSrc: "/audio/flow/06-self-intro.m4a",
+    ...FLOW_RECORDINGS.selfIntro,
     displayText: `次はゲーム形式に入ります🎾
 その前に、軽く自己紹介をお願いします。
 
@@ -359,7 +505,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "乱数表の使い方 (1面)",
     shortLabel: "乱数表",
     courtMode: "single",
-    audioSrc: "/audio/flow/06-self-intro.m4a",
+    ...FLOW_RECORDINGS.selfIntro,
     displayText: `自己紹介ありがとうございました！🎾
 
 この後は、乱数表を使ってダブルスを回していきます。
@@ -396,7 +542,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "乱数表の使い方 (2面)",
     shortLabel: "乱数表",
     courtMode: "double",
-    audioSrc: "/audio/flow/06-self-intro.m4a",
+    ...FLOW_RECORDINGS.selfIntro,
     displayText: `自己紹介ありがとうございました！🎾
 
 この後は、乱数表を使ってダブルスを回していきます。
@@ -431,7 +577,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "試合ルール・配慮事項",
     shortLabel: "ルール",
     courtMode: "both",
-    audioSrc: "/audio/flow/07-game.m4a",
+    ...FLOW_RECORDINGS.game,
     displayText: `試合の進め方について少しご案内します🎾
 
 ・試合はダブルスで、4ポイント先取、デュースなしです。
@@ -474,7 +620,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "ミニゲーム（リレーラリー）",
     shortLabel: "ミニゲーム",
     courtMode: "both",
-    audioSrc: "/audio/flow/08-mini-game.m4a",
+    ...FLOW_RECORDINGS.miniGame,
     displayText: `最後はミニゲームで、リレーラリーをやります🎾
 
 チームに分かれて、それぞれ1列に並んでください。
@@ -517,7 +663,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "終了あいさつ",
     shortLabel: "終了",
     courtMode: "both",
-    audioSrc: "/audio/flow/09-closing.m4a",
+    ...FLOW_RECORDINGS.closing,
     displayText: `本日はWILL.tennisにご参加いただき、ありがとうございました🎾
 
 今日は初参加のかたも、いつも来てくださっているかたも、

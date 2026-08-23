@@ -21,8 +21,12 @@ import { TENNIS_FLOW_SCRIPTS, type FlowScript } from "@/lib/tennisFlowScripts";
 type Props = {
   currentScript: FlowScript;
   nextScript: FlowScript | null;
-  /** 実際に読み上げる予定のテキスト(人数調整プレフィックス込みの可能性あり) */
+  /** 実際に読み上げる予定のテキスト */
   previewText: string;
+  /** 次STEPで実際に読み上げる予定のテキスト */
+  nextPreviewText: string | null;
+  /** 現在STEPで録音音声と recordedText のセットを使うか */
+  usesRecordedAudio: boolean;
   isSpeaking: boolean;
   totalSteps: number;
   onSpeak: () => void;
@@ -49,8 +53,7 @@ function formatTime(sec: number): string {
 }
 
 /** 次ステップの中身を一目で把握できるよう、短い一言だけ抜き出す */
-function nextStepPreview(script: FlowScript): string {
-  const source = script.voiceTextVeryShort ?? script.voiceText;
+function nextStepPreview(source: string): string {
   const firstLine = source.split("\n").find((l) => l.trim().length > 0) ?? "";
   return firstLine.length > 40 ? `${firstLine.slice(0, 40)}…` : firstLine;
 }
@@ -59,6 +62,8 @@ export default function FlowLiveMode({
   currentScript,
   nextScript,
   previewText,
+  nextPreviewText,
+  usesRecordedAudio,
   isSpeaking,
   totalSteps,
   onSpeak,
@@ -94,7 +99,11 @@ export default function FlowLiveMode({
               <p className="flow-live__next-hint">
                 次: <span className="flow-live__next-label">{nextScript.title}</span>
               </p>
-              <p className="flow-live__next-preview">{nextStepPreview(nextScript)}</p>
+              {nextPreviewText && (
+                <p className="flow-live__next-preview">
+                  {nextStepPreview(nextPreviewText)}
+                </p>
+              )}
             </>
           ) : (
             <p className="flow-live__next-hint">これが最後のステップです</p>
@@ -103,6 +112,9 @@ export default function FlowLiveMode({
 
         {/* 読み上げ予定テキスト */}
         <div className="flow-live__preview" aria-label="読み上げ予定">
+          {usesRecordedAudio && (
+            <span className="flow-live__recorded-label">録音音声</span>
+          )}
           {previewText}
         </div>
 

@@ -21,6 +21,8 @@ type Props = {
   isEditing: boolean;
   isSpeaking: boolean;
   voiceLength: VoiceLength;
+  /** 未編集STEPで録音音声と recordedText のセットを使うか */
+  usesRecordedAudio: boolean;
   onVoiceLengthChange: (l: VoiceLength) => void;
   onSpeak: () => void;
   onSpeakBeginnerTip: () => void;
@@ -44,6 +46,7 @@ export default function FlowStepCard({
   isEditing,
   isSpeaking,
   voiceLength,
+  usesRecordedAudio,
   onVoiceLengthChange,
   onSpeak,
   onSpeakBeginnerTip,
@@ -69,7 +72,7 @@ export default function FlowStepCard({
       <div className="flow-card__head">
         <span className="flow-card__step">STEP {script.step}</span>
         <h2 className="flow-card__title">{script.title}</h2>
-        {script.audioSrc && (
+        {script.audioSrc && script.recordedText && (
           <span className="flow-card__audio-tag">録音音声あり</span>
         )}
         {isEdited && <span className="flow-card__edited-tag">編集済み</span>}
@@ -84,10 +87,16 @@ export default function FlowStepCard({
             type="button"
             role="radio"
             aria-checked={voiceLength === o.value}
+            disabled={usesRecordedAudio}
             className={`flow-card__length-btn ${
               voiceLength === o.value ? "flow-card__length-btn--active" : ""
             }`}
             onClick={() => onVoiceLengthChange(o.value)}
+            title={
+              usesRecordedAudio
+                ? "録音音声では録音済みの内容をそのまま再生します"
+                : undefined
+            }
           >
             {o.label}
           </button>
@@ -165,8 +174,14 @@ export default function FlowStepCard({
       </div>
 
       <p className="flow-card__hint">
-        読み上げは{isEdited ? "編集後のテキスト" : `「${LENGTH_OPTIONS.find((o) => o.value === voiceLength)?.label}」`}を使います。
-        参加人数を入力していると、対象のステップでは人数に応じた一言が冒頭に加わります。
+        {usesRecordedAudio ? (
+          <>録音音声では、読み上げ確認に表示した録音内容をそのまま再生します。</>
+        ) : (
+          <>
+            読み上げは{isEdited ? "編集後のテキスト" : `「${LENGTH_OPTIONS.find((o) => o.value === voiceLength)?.label}」`}を使います。
+            参加人数を入力していると、対象のステップでは人数に応じた一言が冒頭に加わります。
+          </>
+        )}
       </p>
 
       {/* 読み上げ確認(デバッグ用・通常は折りたたみ) */}
@@ -181,14 +196,16 @@ export default function FlowStepCard({
             <span className="flow-card__inspect-label">読み上げ用テキスト</span>
             <pre className="flow-card__inspect-text">{speakingText}</pre>
           </div>
-          <div className="flow-card__inspect-block">
-            <span className="flow-card__inspect-label">
-              補正後にVOICEVOXへ送る最終テキスト
-            </span>
-            <pre className="flow-card__inspect-text flow-card__inspect-text--final">
-              {sanitizeForVoicevox(speakingText)}
-            </pre>
-          </div>
+          {!usesRecordedAudio && (
+            <div className="flow-card__inspect-block">
+              <span className="flow-card__inspect-label">
+                補正後にVOICEVOXへ送る最終テキスト
+              </span>
+              <pre className="flow-card__inspect-text flow-card__inspect-text--final">
+                {sanitizeForVoicevox(speakingText)}
+              </pre>
+            </div>
+          )}
         </div>
       </details>
     </div>
