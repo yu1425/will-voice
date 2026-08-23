@@ -797,6 +797,19 @@ body {
   overflow-y: auto;
 }
 
+.flow-live__recorded-label {
+  display: block;
+  width: fit-content;
+  margin-bottom: 7px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--will-green-soft);
+  color: var(--will-green-dark);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 /* メイン読み上げボタン(大): 現在STEPのすぐ下で最優先に表示する。 */
 .flow-live__main {
   display: flex;
@@ -1285,6 +1298,11 @@ body {
 
 .flow-card__length-btn:hover {
   background: var(--will-green-soft);
+}
+
+.flow-card__length-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .flow-card__length-btn--active {

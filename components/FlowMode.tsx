@@ -206,27 +206,54 @@ export default function FlowMode({
   const buildSpeakText = useCallback(
     (script: FlowScript): string => {
       const edited = edits[script.id];
-      const base = edited !== undefined ? edited : pickVoiceText(script, voiceLength);
+      if (edited !== undefined) return edited;
 
-      // 編集テキスト or 人数調整が無効なステップなら、プレフィックスは付けない
-      if (edited !== undefined) return base;
+      // 録音再生時は、実際の発話内容をそのままプレビューに使う。
+      // voiceLength や人数調整は録音内容を変えられないため適用しない。
+      if (
+        voiceMode === "recorded" &&
+        script.audioSrc &&
+        script.recordedText
+      ) {
+        return script.recordedText;
+      }
+
+      const base = pickVoiceText(script, voiceLength);
+
+      // 人数調整が無効なステップなら、プレフィックスは付けない
       if (!isCrowdAdjustedStep(script.step)) return base;
 
       const prefix = getCrowdPrefix(conditions.participants, conditions.courts);
       if (!prefix) return base;
       return `${prefix}\n${base}`;
     },
-    [edits, voiceLength, conditions.participants, conditions.courts]
+    [
+      edits,
+      voiceMode,
+      voiceLength,
+      conditions.participants,
+      conditions.courts,
+    ]
+  );
+
+  const usesRecordedAudio = useCallback(
+    (script: FlowScript): boolean =>
+      voiceMode === "recorded" &&
+      edits[script.id] === undefined &&
+      Boolean(script.audioSrc && script.recordedText),
+    [voiceMode, edits]
   );
 
   const handleSpeak = useCallback(
     (script: FlowScript) => {
-      // テキストを編集している場合、録音音声(元の内容)ではなく
-      // 表示中のテキストが読み上げられるよう、audioSrc は渡さない
-      const isEdited = edits[script.id] !== undefined;
-      speak(buildSpeakText(script), isEdited ? undefined : script.audioSrc);
+      // 録音パスと実発話テキストが揃った未編集STEPだけ録音を使う。
+      // 編集済み・録音テキスト未定義なら、表示中の文章を合成音声で読む。
+      speak(
+        buildSpeakText(script),
+        usesRecordedAudio(script) ? script.audioSrc : undefined
+      );
     },
-    [speak, buildSpeakText, edits]
+    [speak, buildSpeakText, usesRecordedAudio]
   );
 
   const handleSpeakBeginnerTip = useCallback(
@@ -374,6 +401,8 @@ export default function FlowMode({
             currentScript={currentScript}
             nextScript={nextScript}
             previewText={buildSpeakText(currentScript)}
+            nextPreviewText={nextScript ? buildSpeakText(nextScript) : null}
+            usesRecordedAudio={usesRecordedAudio(currentScript)}
             isSpeaking={isSpeaking}
             totalSteps={TOTAL_STEPS}
             onSpeak={() => handleSpeak(currentScript)}
@@ -466,6 +495,7 @@ export default function FlowMode({
           isEditing={editingId === currentScript.id}
           isSpeaking={isSpeaking}
           voiceLength={voiceLength}
+          usesRecordedAudio={usesRecordedAudio(currentScript)}
           onVoiceLengthChange={handleVoiceLengthChange}
           onSpeak={() => handleSpeak(currentScript)}
           onSpeakBeginnerTip={() => handleSpeakBeginnerTip(currentScript)}
