@@ -81,7 +81,7 @@ export default function FlowLiveMode({
 
   return (
     <div className="flow-live">
-      {/* 常時表示エリア: 現在ステップ・読み上げ・次へ/戻るはスクロールしても常に見える */}
+      {/* 優先表示エリア: 現在ステップ・読み上げ・次へ/戻る */}
       <div className="flow-live__top">
         {/* 現在ステップの強調表示 */}
         <div className="flow-live__hero">
@@ -151,7 +151,7 @@ export default function FlowLiveMode({
         </div>
       </div>
 
-      {/* スクロールエリア: ステップ一覧・タイマー・クイック注意喚起 */}
+      {/* 補助操作エリア: ステップ一覧・タイマー・クイック注意喚起 */}
       <div className="flow-live__scroll">
         {/* ステップ一覧チップ */}
         <div className="flow-live__steps" role="tablist" aria-label="ステップ選択">
