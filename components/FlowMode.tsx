@@ -62,7 +62,8 @@ export default function FlowMode({
   isSpeaking,
   voiceMode,
 }: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>("prepare");
+  // 保存済み表示モードは復元せず、アクセスのたびに当日モードを入口にする。
+  const [viewMode, setViewMode] = useState<ViewMode>("live");
   const [conditions, setConditions] = useState<FlowConditions>(DEFAULT_CONDITIONS);
   const [stepNumber, setStepNumber] = useState(1);
   const [edits, setEdits] = useState<Record<string, string>>({});
@@ -107,11 +108,6 @@ export default function FlowMode({
       if (v === "normal" || v === "short" || v === "veryShort") {
         setVoiceLength(v);
       }
-
-      const vm = window.localStorage.getItem(VIEW_MODE_KEY);
-      if (vm === "prepare" || vm === "live") {
-        setViewMode(vm);
-      }
     } catch {
       /* no-op */
     }
@@ -145,10 +141,11 @@ export default function FlowMode({
     [scriptsForCourt, stepNumber]
   );
 
-  // 次のステップの録音音声を先読みしておき、実際に読み上げる際のラグを減らす
+  // 現在と次のステップの録音音声を先読みし、最初の読み上げからラグを減らす
   useEffect(() => {
+    preloadRecordedAudio(currentScript?.audioSrc);
     preloadRecordedAudio(nextScript?.audioSrc);
-  }, [nextScript]);
+  }, [currentScript, nextScript]);
 
   const persist = (key: string, value: string) => {
     try {

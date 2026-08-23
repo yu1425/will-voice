@@ -12,6 +12,7 @@ export function preloadRecordedAudio(src: string | undefined): void {
   const audio = new Audio();
   audio.preload = "auto";
   audio.src = src;
+  audio.load();
   preloadCache.set(src, audio);
 }
 
