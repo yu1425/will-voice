@@ -95,6 +95,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "ショートラリー・ボレーボレー",
     shortLabel: "ショート/ボレー",
     courtMode: "both",
+    audioSrc: "/audio/flow/02-short-volley.wav",
     displayText: `まずはショートラリーから始めていきます🎾
 
 サービスライン付近で向かい合って、5分ほど続けていきましょう。
