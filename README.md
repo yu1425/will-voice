@@ -88,7 +88,8 @@ npm run dev
 | ロングラリー | `public/audio/flow/02-long-rally.m4a` |
 | クロスラリー | `public/audio/flow/03-cross-rally.m4a` |
 | サーブリターン（1面/2面） | `public/audio/flow/04-serve-return.m4a` |
-| 自己紹介 / 乱数表説明 | `public/audio/flow/06-self-intro.m4a` |
+| 自己紹介 | `public/audio/flow/06-self-intro-only.m4a` |
+| 乱数表説明 | `public/audio/flow/06-random-table.m4a` |
 | 試合ルール・配慮事項 | `public/audio/flow/07-game.m4a` |
 | ミニゲーム | `public/audio/flow/08-mini-game.m4a` |
 | 終了あいさつ | `public/audio/flow/09-closing.m4a` |
