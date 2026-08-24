@@ -1384,14 +1384,14 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-.flow-step-chip:hover {
+.flow-step-chip:not(.flow-step-chip--active):hover {
   background: var(--will-green-soft);
 }
 
 .flow-step-chip--active {
-  background: var(--will-green);
+  background: var(--will-green-soft);
   border-color: var(--will-green);
-  color: #fff;
+  color: var(--will-green-dark);
 }
 
 .flow-step-chip__num {
@@ -1409,7 +1409,8 @@ body {
 }
 
 .flow-step-chip--active .flow-step-chip__num {
-  background: rgba(255, 255, 255, 0.32);
+  background: rgba(95, 174, 110, 0.18);
+  color: var(--will-green-dark);
 }
 
 .flow-step-chip__label {
