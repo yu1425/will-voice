@@ -126,14 +126,16 @@ export const FLOW_RECORDINGS = {
 サーブは強さよりも、まずは入れることを意識してお願いします。`,
   },
   selfIntro: {
-    audioSrc: "/audio/flow/06-self-intro.m4a",
+    audioSrc: "/audio/flow/06-self-intro-only.m4a",
     recordedText: `次はゲーム形式に入ります。
 その前に、軽く自己紹介をお願いします。
 
 お名前、テニス歴、初参加かどうかくらいで大丈夫です。
-ひとりずつ簡単にお願いします。
-
-この後は、乱数表を使ってダブルスを回していきます。
+ひとりずつ簡単にお願いします。`,
+  },
+  randomTable: {
+    audioSrc: "/audio/flow/06-random-table.m4a",
+    recordedText: `この後は、乱数表を使ってダブルスを回していきます。
 参加者のかたに番号を振るので、自分の番号に合わせて、ペアと対戦相手を確認してください。
 
 そのコートの人数に合った乱数表を使って、上から順番に進めていきます。`,
@@ -505,7 +507,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "乱数表の使い方 (1面)",
     shortLabel: "乱数表",
     courtMode: "single",
-    ...FLOW_RECORDINGS.selfIntro,
+    ...FLOW_RECORDINGS.randomTable,
     displayText: `自己紹介ありがとうございました！🎾
 
 この後は、乱数表を使ってダブルスを回していきます。
@@ -542,7 +544,7 @@ export const TENNIS_FLOW_SCRIPTS: FlowScript[] = [
     title: "乱数表の使い方 (2面)",
     shortLabel: "乱数表",
     courtMode: "double",
-    ...FLOW_RECORDINGS.selfIntro,
+    ...FLOW_RECORDINGS.randomTable,
     displayText: `自己紹介ありがとうございました！🎾
 
 この後は、乱数表を使ってダブルスを回していきます。
