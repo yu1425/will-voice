@@ -40,6 +40,10 @@ function isLocalhost(): boolean {
 type VoiceMode = "standard" | "voicevox" | "recorded";
 type VoicevoxStatus = "unknown" | "connected" | "disconnected" | "fallback";
 type Tab = "chat" | "flow";
+type OptionalVoiceModes = {
+  standard: boolean;
+  voicevox: boolean;
+};
 
 const VOICE_MODE_STORAGE_KEY = "will-voice-mode";
 const VOICEVOX_STYLE_STORAGE_KEY = "will-voicevox-style-id";
@@ -48,6 +52,7 @@ const VOICEVOX_PRESET_STORAGE_KEY = "will-voicevox-preset";
 const VOICEVOX_PARAMS_STORAGE_KEY = "will-voicevox-params";
 const STANDARD_VOICE_STORAGE_KEY = "will-standard-voice-uri";
 const RECORDED_VOLUME_STORAGE_KEY = "will-recorded-volume";
+const OPTIONAL_VOICE_MODES_STORAGE_KEY = "will-optional-voice-modes";
 
 type VoicevoxPresetName = "標準" | "明るめ" | "聞き取りやすさ重視" | "ゆっくり";
 
@@ -96,6 +101,12 @@ export default function Page() {
   const [japaneseVoices, setJapaneseVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [standardVoiceURI, setStandardVoiceURI] = useState<string | null>(null);
   const [recordedVolume, setRecordedVolume] = useState(1);
+  // 録音音声だけを標準表示にし、追加の音声は設定で任意に表示する。
+  const [optionalVoiceModes, setOptionalVoiceModes] = useState<OptionalVoiceModes>({
+    standard: false,
+    voicevox: false,
+  });
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const listeningRef = useRef<ListeningHandle | null>(null);
   const voicevoxHandleRef = useRef<VoicevoxHandle | null>(null);
@@ -117,10 +128,27 @@ export default function Page() {
     setIsLocal(local);
 
     try {
+      let savedOptionalVoiceModes: OptionalVoiceModes = {
+        standard: false,
+        voicevox: false,
+      };
+      const savedOptionalModes = window.localStorage.getItem(OPTIONAL_VOICE_MODES_STORAGE_KEY);
+      if (savedOptionalModes) {
+        const parsed = JSON.parse(savedOptionalModes) as Partial<OptionalVoiceModes>;
+        savedOptionalVoiceModes = {
+          standard: parsed.standard === true,
+          voicevox: parsed.voicevox === true,
+        };
+        setOptionalVoiceModes(savedOptionalVoiceModes);
+      }
+
       // 公開環境では VOICEVOX モードを復元しない（localhost のみ有効）
       if (local) {
         const savedVoice = window.localStorage.getItem(VOICE_MODE_STORAGE_KEY);
-        if (savedVoice === "voicevox" || savedVoice === "standard" || savedVoice === "recorded") {
+        const isVisibleOptionalMode =
+          (savedVoice === "standard" && savedOptionalVoiceModes.standard) ||
+          (savedVoice === "voicevox" && savedOptionalVoiceModes.voicevox);
+        if (savedVoice === "recorded" || isVisibleOptionalMode) {
           setVoiceMode(savedVoice);
         }
       }
@@ -238,6 +266,26 @@ export default function Page() {
     setNotice(null);
     if (mode === "standard" || mode === "recorded") setVoicevoxStatus("unknown");
   }, []);
+
+  const handleOptionalVoiceModeChange = useCallback(
+    (mode: keyof OptionalVoiceModes, visible: boolean) => {
+      setOptionalVoiceModes((previous) => {
+        const next = { ...previous, [mode]: visible };
+        try {
+          window.localStorage.setItem(OPTIONAL_VOICE_MODES_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          /* no-op */
+        }
+        return next;
+      });
+
+      // 選択中の音声を非表示にした場合は、常に使える録音音声へ戻す。
+      if (!visible && voiceMode === mode) {
+        handleVoiceModeChange("recorded");
+      }
+    },
+    [handleVoiceModeChange, voiceMode]
+  );
 
   const handleStyleChange = useCallback((id: number) => {
     setStyleId(id);
@@ -437,7 +485,43 @@ export default function Page() {
           <span className="header__title">うぃる AIボイス</span>
           <span className="header__subtitle">WILL.tennis マスコット</span>
         </div>
+        <button
+          type="button"
+          className="settings-toggle"
+          onClick={() => setSettingsOpen((open) => !open)}
+          aria-expanded={settingsOpen}
+          aria-controls="voice-display-settings"
+        >
+          設定
+        </button>
       </header>
+
+      {settingsOpen && (
+        <section id="voice-display-settings" className="settings-panel" aria-label="表示設定">
+          <div>
+            <p className="settings-panel__title">表示する読み上げ音声</p>
+            <p className="settings-panel__hint">
+              録音音声は常に表示されます。必要な音声だけ追加してください。
+            </p>
+          </div>
+          <label className="settings-panel__option">
+            <input
+              type="checkbox"
+              checked={optionalVoiceModes.standard}
+              onChange={(e) => handleOptionalVoiceModeChange("standard", e.target.checked)}
+            />
+            標準音声を表示
+          </label>
+          <label className="settings-panel__option">
+            <input
+              type="checkbox"
+              checked={optionalVoiceModes.voicevox}
+              onChange={(e) => handleOptionalVoiceModeChange("voicevox", e.target.checked)}
+            />
+            VOICEVOXを表示
+          </label>
+        </section>
+      )}
 
       {/* タブ切替 */}
       <div className="tabs" role="tablist" aria-label="モード">
@@ -467,18 +551,6 @@ export default function Page() {
         <button
           type="button"
           role="radio"
-          aria-checked={voiceMode === "standard"}
-          className={`voice-mode__btn ${
-            voiceMode === "standard" ? "voice-mode__btn--active" : ""
-          }`}
-          onClick={() => handleVoiceModeChange("standard")}
-          title="ブラウザ標準の音声合成で読み上げます"
-        >
-          標準音声
-        </button>
-        <button
-          type="button"
-          role="radio"
           aria-checked={voiceMode === "recorded"}
           className={`voice-mode__btn ${
             voiceMode === "recorded" ? "voice-mode__btn--active" : ""
@@ -488,18 +560,34 @@ export default function Page() {
         >
           録音音声
         </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={voiceMode === "voicevox"}
-          className={`voice-mode__btn ${
-            voiceMode === "voicevox" ? "voice-mode__btn--active" : ""
-          }`}
-          onClick={() => handleVoiceModeChange("voicevox")}
-          title="VOICEVOX:ずんだもん で読み上げます"
-        >
-          VOICEVOX
-        </button>
+        {optionalVoiceModes.standard && (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={voiceMode === "standard"}
+            className={`voice-mode__btn ${
+              voiceMode === "standard" ? "voice-mode__btn--active" : ""
+            }`}
+            onClick={() => handleVoiceModeChange("standard")}
+            title="ブラウザ標準の音声合成で読み上げます"
+          >
+            標準音声
+          </button>
+        )}
+        {optionalVoiceModes.voicevox && (
+          <button
+            type="button"
+            role="radio"
+            aria-checked={voiceMode === "voicevox"}
+            className={`voice-mode__btn ${
+              voiceMode === "voicevox" ? "voice-mode__btn--active" : ""
+            }`}
+            onClick={() => handleVoiceModeChange("voicevox")}
+            title="VOICEVOX:ずんだもん で読み上げます"
+          >
+            VOICEVOX
+          </button>
+        )}
       </div>
 
       {/* 標準音声 詳細パネル */}
