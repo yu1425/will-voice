@@ -13,17 +13,26 @@ import {
   speakText,
   startListening,
   stopSpeaking,
+  pauseSpeaking,
+  resumeSpeaking,
   type ListeningHandle,
 } from "@/lib/speech";
 import {
   speakWithVoicevox,
   stopVoicevox,
+  pauseVoicevox,
+  resumeVoicevox,
   fetchVoicevoxSpeakers,
   pickZundamonStyles,
   type VoicevoxHandle,
   type ZundamonStyle,
 } from "@/lib/voicevox";
-import { playRecordedAudio, stopRecordedAudio } from "@/lib/recordedAudio";
+import {
+  pauseRecordedAudio,
+  playRecordedAudio,
+  resumeRecordedAudio,
+  stopRecordedAudio,
+} from "@/lib/recordedAudio";
 
 /** 簡易ID生成 */
 function makeId() {
@@ -85,6 +94,7 @@ export default function Page() {
   ]);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isSpeakingPaused, setIsSpeakingPaused] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [textInput, setTextInput] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -110,6 +120,7 @@ export default function Page() {
 
   const listeningRef = useRef<ListeningHandle | null>(null);
   const voicevoxHandleRef = useRef<VoicevoxHandle | null>(null);
+  const pauseRequestedRef = useRef(false);
   const logRef = useRef<HTMLDivElement | null>(null);
 
   // 初期化(クライアントのみ)
@@ -328,12 +339,35 @@ export default function Page() {
 
   /** 全方式の読み上げ停止 */
   const stopAllSpeaking = useCallback(() => {
+    pauseRequestedRef.current = false;
     stopSpeaking();
     stopVoicevox();
     stopRecordedAudio();
     voicevoxHandleRef.current = null;
+    setIsSpeakingPaused(false);
     setIsSpeaking(false);
   }, []);
+
+  /** 全方式の読み上げを現在位置で一時停止 */
+  const pauseAllSpeaking = useCallback(() => {
+    if (!isSpeaking) return;
+    // VOICEVOXの音声生成中でも、生成完了後に一時停止できるよう記録する。
+    pauseRequestedRef.current = true;
+    pauseSpeaking();
+    pauseVoicevox();
+    pauseRecordedAudio();
+    setIsSpeakingPaused(true);
+  }, [isSpeaking]);
+
+  /** 一時停止中の読み上げを現在位置から再開 */
+  const resumeAllSpeaking = useCallback(() => {
+    if (!isSpeaking) return;
+    pauseRequestedRef.current = false;
+    resumeSpeaking();
+    resumeVoicevox();
+    resumeRecordedAudio();
+    setIsSpeakingPaused(false);
+  }, [isSpeaking]);
 
   /**
    * 任意のテキストを現在の音声モードで読み上げる(進行モードからも利用)。
@@ -349,11 +383,17 @@ export default function Page() {
       if (voiceMode === "recorded" && audioSrc) {
         playRecordedAudio(audioSrc, {
           volume: recordedVolume,
-          onEnd: () => setIsSpeaking(false),
+          onEnd: () => {
+            setIsSpeakingPaused(false);
+            setIsSpeaking(false);
+          },
           onError: () => {
             // 録音音声の再生失敗時は標準音声にフォールバック
             speakText(text, {
-              onEnd: () => setIsSpeaking(false),
+              onEnd: () => {
+                setIsSpeakingPaused(false);
+                setIsSpeaking(false);
+              },
               voiceURI: standardVoiceURI ?? undefined,
             });
           },
@@ -365,7 +405,10 @@ export default function Page() {
         if (!isLocalhost()) {
           // 公開環境では VOICEVOX ENGINE に接続できないため標準音声で再生
           speakText(text, {
-            onEnd: () => setIsSpeaking(false),
+            onEnd: () => {
+              setIsSpeakingPaused(false);
+              setIsSpeaking(false);
+            },
             voiceURI: standardVoiceURI ?? undefined,
           });
           return;
@@ -373,9 +416,19 @@ export default function Page() {
         const result = await speakWithVoicevox(text, {
           speakerId: styleId ?? undefined,
           params: audioParams,
-          onEnd: () => setIsSpeaking(false),
+          onEnd: () => {
+            setIsSpeakingPaused(false);
+            setIsSpeaking(false);
+          },
         });
         voicevoxHandleRef.current = result.handle ?? null;
+        if (pauseRequestedRef.current) {
+          if (result.usedFallback) {
+            pauseSpeaking();
+          } else {
+            pauseVoicevox();
+          }
+        }
         if (result.usedFallback) {
           setVoicevoxStatus("fallback");
           if (result.fallbackReason) setNotice(result.fallbackReason);
@@ -384,7 +437,10 @@ export default function Page() {
         }
       } else {
         speakText(text, {
-          onEnd: () => setIsSpeaking(false),
+          onEnd: () => {
+            setIsSpeakingPaused(false);
+            setIsSpeaking(false);
+          },
           voiceURI: standardVoiceURI ?? undefined,
         });
       }
@@ -825,6 +881,9 @@ export default function Page() {
               speak={speak}
               stopSpeaking={stopAllSpeaking}
               isSpeaking={isSpeaking}
+              isSpeakingPaused={isSpeakingPaused}
+              onPauseSpeaking={pauseAllSpeaking}
+              onResumeSpeaking={resumeAllSpeaking}
               voiceMode={voiceMode}
             />
           </div>

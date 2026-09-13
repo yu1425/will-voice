@@ -28,8 +28,11 @@ type Props = {
   /** 現在STEPで録音音声と recordedText のセットを使うか */
   usesRecordedAudio: boolean;
   isSpeaking: boolean;
+  isSpeakingPaused: boolean;
   totalSteps: number;
   onSpeak: () => void;
+  onPauseSpeaking: () => void;
+  onResumeSpeaking: () => void;
   onStop: () => void;
   onPrev: () => void;
   onNext: () => void;
@@ -65,8 +68,11 @@ export default function FlowLiveMode({
   nextPreviewText,
   usesRecordedAudio,
   isSpeaking,
+  isSpeakingPaused,
   totalSteps,
   onSpeak,
+  onPauseSpeaking,
+  onResumeSpeaking,
   onStop,
   onPrev,
   onNext,
@@ -121,13 +127,22 @@ export default function FlowLiveMode({
         {/* メインの読み上げ/停止 */}
         <div className="flow-live__main">
           {isSpeaking ? (
-            <button
-              type="button"
-              className="flow-live__big flow-live__big--stop"
-              onClick={onStop}
-            >
-              ■ 停止
-            </button>
+            <div className="flow-live__speaking-actions">
+              <button
+                type="button"
+                className="flow-live__big flow-live__big--pause"
+                onClick={isSpeakingPaused ? onResumeSpeaking : onPauseSpeaking}
+              >
+                {isSpeakingPaused ? "▶ 再開" : "Ⅱ 一時停止"}
+              </button>
+              <button
+                type="button"
+                className="flow-live__stop-btn"
+                onClick={onStop}
+              >
+                ■ 停止
+              </button>
+            </div>
           ) : (
             <button
               type="button"

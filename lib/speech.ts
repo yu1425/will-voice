@@ -210,6 +210,20 @@ export function stopSpeaking(): void {
   }
 }
 
+/** 読み上げを一時停止する(現在位置は保持する) */
+export function pauseSpeaking(): void {
+  if (isSpeechSynthesisSupported()) {
+    window.speechSynthesis.pause();
+  }
+}
+
+/** 一時停止中の読み上げを現在位置から再開する */
+export function resumeSpeaking(): void {
+  if (isSpeechSynthesisSupported()) {
+    window.speechSynthesis.resume();
+  }
+}
+
 /**
  * 読み上げ用にテキストを整える。
  * 絵文字や装飾記号は読み上げると不自然なので取り除く。

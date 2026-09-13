@@ -56,3 +56,15 @@ export function stopRecordedAudio(): void {
     currentAudio = null;
   }
 }
+
+/** 録音音声を一時停止する(再生位置は保持する) */
+export function pauseRecordedAudio(): void {
+  currentAudio?.pause();
+}
+
+/** 一時停止中の録音音声を現在位置から再開する */
+export function resumeRecordedAudio(): void {
+  currentAudio?.play().catch(() => {
+    // 再生再開に失敗した場合は、次の読み上げ操作で再試行する。
+  });
+}

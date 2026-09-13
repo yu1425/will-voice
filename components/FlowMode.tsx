@@ -52,6 +52,12 @@ type Props = {
   stopSpeaking: () => void;
   /** 現在読み上げ中か */
   isSpeaking: boolean;
+  /** 読み上げを一時停止中か */
+  isSpeakingPaused: boolean;
+  /** 読み上げを現在位置で一時停止 */
+  onPauseSpeaking: () => void;
+  /** 一時停止中の読み上げを現在位置から再開 */
+  onResumeSpeaking: () => void;
   /** 現在の読み上げ音声モード(注意喚起は録音音声非対応なので案内表示に使う) */
   voiceMode: "standard" | "voicevox" | "recorded";
 };
@@ -60,6 +66,9 @@ export default function FlowMode({
   speak,
   stopSpeaking,
   isSpeaking,
+  isSpeakingPaused,
+  onPauseSpeaking,
+  onResumeSpeaking,
   voiceMode,
 }: Props) {
   // 保存済み表示モードは復元せず、アクセスのたびに当日モードを入口にする。
@@ -407,6 +416,9 @@ export default function FlowMode({
             totalSteps={TOTAL_STEPS}
             onSpeak={() => handleSpeak(currentScript)}
             onStop={stopSpeaking}
+            isSpeakingPaused={isSpeakingPaused}
+            onPauseSpeaking={onPauseSpeaking}
+            onResumeSpeaking={onResumeSpeaking}
             onPrev={handlePrev}
             onNext={handleNext}
             onSpeakRaw={speak}
@@ -500,6 +512,9 @@ export default function FlowMode({
           onSpeak={() => handleSpeak(currentScript)}
           onSpeakBeginnerTip={() => handleSpeakBeginnerTip(currentScript)}
           onStop={stopSpeaking}
+          isSpeakingPaused={isSpeakingPaused}
+          onPauseSpeaking={onPauseSpeaking}
+          onResumeSpeaking={onResumeSpeaking}
           onCopy={() => handleCopy(currentScript)}
           onEditToggle={() =>
             setEditingId(editingId === currentScript.id ? null : currentScript.id)
