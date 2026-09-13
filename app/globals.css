@@ -874,6 +874,12 @@ body {
   display: flex;
 }
 
+.flow-live__speaking-actions {
+  display: flex;
+  width: 100%;
+  gap: 8px;
+}
+
 .flow-live__big {
   flex: 1 1 100%;
   padding: 18px 16px;
@@ -899,6 +905,30 @@ body {
 .flow-live__big--stop {
   background: #e74c3c;
   color: #ffffff;
+}
+
+.flow-live__big--pause {
+  flex: 1 1 auto;
+  background: #f2b84b;
+  color: #4b3811;
+}
+
+.flow-live__big--pause:active,
+.flow-live__stop-btn:active {
+  transform: scale(0.98);
+}
+
+.flow-live__stop-btn {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 12px;
+  background: #e74c3c;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* 次へ(大) / 戻る(小) */
@@ -1597,6 +1627,16 @@ body {
 
 .flow-card__btn--stop:hover {
   background: #c0392b;
+}
+
+.flow-card__btn--pause {
+  background: #f2b84b;
+  border-color: #f2b84b;
+  color: #4b3811;
+}
+
+.flow-card__btn--pause:hover {
+  background: #e8aa38;
 }
 
 .flow-card__btn--ghost {

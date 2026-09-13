@@ -20,11 +20,14 @@ type Props = {
   speakingText: string;
   isEditing: boolean;
   isSpeaking: boolean;
+  isSpeakingPaused: boolean;
   voiceLength: VoiceLength;
   /** 未編集STEPで録音音声と recordedText のセットを使うか */
   usesRecordedAudio: boolean;
   onVoiceLengthChange: (l: VoiceLength) => void;
   onSpeak: () => void;
+  onPauseSpeaking: () => void;
+  onResumeSpeaking: () => void;
   onSpeakBeginnerTip: () => void;
   onStop: () => void;
   onCopy: () => Promise<void> | void;
@@ -45,10 +48,13 @@ export default function FlowStepCard({
   speakingText,
   isEditing,
   isSpeaking,
+  isSpeakingPaused,
   voiceLength,
   usesRecordedAudio,
   onVoiceLengthChange,
   onSpeak,
+  onPauseSpeaking,
+  onResumeSpeaking,
   onSpeakBeginnerTip,
   onStop,
   onCopy,
@@ -117,13 +123,22 @@ export default function FlowStepCard({
 
       <div className="flow-card__actions">
         {isSpeaking ? (
-          <button
-            type="button"
-            className="flow-card__btn flow-card__btn--stop"
-            onClick={onStop}
-          >
-            ■ 停止
-          </button>
+          <>
+            <button
+              type="button"
+              className="flow-card__btn flow-card__btn--pause"
+              onClick={isSpeakingPaused ? onResumeSpeaking : onPauseSpeaking}
+            >
+              {isSpeakingPaused ? "▶ 再開" : "Ⅱ 一時停止"}
+            </button>
+            <button
+              type="button"
+              className="flow-card__btn flow-card__btn--stop"
+              onClick={onStop}
+            >
+              ■ 停止
+            </button>
+          </>
         ) : (
           <button
             type="button"

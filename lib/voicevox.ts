@@ -156,6 +156,18 @@ export function stopVoicevox(): void {
   }
 }
 
+/** VOICEVOX 音声を一時停止する(再生位置は保持する) */
+export function pauseVoicevox(): void {
+  currentAudio?.pause();
+}
+
+/** 一時停止中のVOICEVOX音声を現在位置から再開する */
+export function resumeVoicevox(): void {
+  currentAudio?.play().catch(() => {
+    // 再生再開に失敗した場合は、次の読み上げ操作で再試行する。
+  });
+}
+
 /** VOICEVOX ENGINE が利用可能か確認(speakers が取れるか) */
 export async function checkVoicevoxAvailable(): Promise<boolean> {
   try {
