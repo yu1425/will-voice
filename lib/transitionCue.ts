@@ -42,9 +42,9 @@ export async function playTransitionCue(): Promise<void> {
 
     const startedAt = audioContext.currentTime + 0.015;
     const strikes = [
-      { frequency: 659.25, at: 0, tail: 1.7 },
-      { frequency: 830.61, at: 0.48, tail: 1.8 },
-      { frequency: 987.77, at: 0.96, tail: 1.9 },
+      { frequency: 698.46, at: 0, tail: 1.7 },
+      { frequency: 880.0, at: 0.48, tail: 1.8 },
+      { frequency: 1046.5, at: 0.96, tail: 1.9 },
     ];
     const partials = [
       { ratio: 1, gain: 0.13, tailScale: 1 },
