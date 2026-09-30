@@ -13,8 +13,13 @@ import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 const engine = process.env.VOICEVOX_ENGINE_URL ?? "http://127.0.0.1:50021";
 const reportPath = "reports/flow-audio-v2-audit.json";
+const only = process.argv.find((arg) => arg.startsWith("--only="))?.slice(7);
+const previous = existsSync(reportPath)
+  ? JSON.parse(readFileSync(reportPath, "utf8"))
+  : null;
 if (existsSync(reportPath) && !process.argv.includes("--replace"))
   throw Error("Audit exists; review before using --replace");
+if (only && !previous) throw Error("Partial regeneration requires an existing audit");
 const temp = mkdtempSync(join(tmpdir(), "will-flow-normalizer-"));
 try {
   execFileSync("node", [
@@ -49,8 +54,12 @@ try {
     displayText: "音声テストです。聞こえ方をご確認ください。",
     audioSrc: "/audio/flow/v2/voice-test.wav",
   });
+  const selected = only ? sources.filter((source) => source.id === only) : sources;
+  if (!selected.length) throw Error("Unknown source: " + only);
+  if (only && (previous.styleId !== style.id || previous.engine !== engine))
+    throw Error("Partial regeneration must use the original speaker and engine");
   const audited = [];
-  for (const source of sources) {
+  for (const source of selected) {
     const voiceText = sanitizeForVoicevox(source.displayText);
     if (
       /WILL|乱数表|4ポイント先取|[123]球|[123]本|2人|1列|(?<!聞こえ)方/.test(
@@ -77,6 +86,10 @@ try {
       ["いちれつ", "イチレツ"],
       ["にほん", "ニホン"],
       ["さんぼん", "サンボン"],
+      ["ちかくのかた", "チカクノカタ"],
+      ["はじめて参加されるかた", "ハジメテサンカサレルカタ"],
+      ["ペアになったかた", "ペアニナッタカタ"],
+      ["ごふん", "ゴフン"],
     ];
     const readingChecks = expected
       .filter(([text]) => voiceText.includes(text))
@@ -131,6 +144,7 @@ try {
       kana: query.kana,
       accentPhrases: query.accent_phrases,
       readingChecks,
+      generatedAt: new Date().toISOString(),
     });
     console.log(`${source.id} ${source.courtMode}: ${durationSec.toFixed(2)}s`);
   }
@@ -139,7 +153,9 @@ try {
     reportPath,
     JSON.stringify(
       {
-        generatedAt: new Date().toISOString(),
+        ...(only ? previous : {}),
+        generatedAt: only ? previous.generatedAt : new Date().toISOString(),
+        ...(only ? { updatedAt: new Date().toISOString(), regeneratedIds: [only] } : {}),
         engine,
         engineVersion: await fetch(engine + "/version").then((r) => r.json()),
         speaker: speaker.name,
@@ -147,7 +163,11 @@ try {
         styleId: style.id,
         source: "lib/flowScripts.json",
         normalizer: "lib/voicevoxText.ts",
-        files: audited,
+        files: only
+          ? previous.files.map((file) =>
+              audited.find((entry) => entry.audioSrc === file.audioSrc) ?? file,
+            )
+          : audited,
       },
       null,
       2,
