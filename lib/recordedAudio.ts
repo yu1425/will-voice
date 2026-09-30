@@ -1,3 +1,5 @@
+import { clampAudioVolume, getAudioVolume } from "./audioVolume";
+
 let currentAudio: HTMLAudioElement | null = null;
 
 /** 事前読み込み済みの <audio> をキャッシュ(次に流しそうな音声を先読みしておく) */
@@ -22,12 +24,12 @@ export function preloadRecordedAudio(src: string | undefined): void {
  */
 export function playRecordedAudio(
   src: string,
-  options?: { onEnd?: () => void; onError?: () => void; volume?: number }
+  options?: { onEnd?: () => void; onError?: () => void; volume?: number },
 ): void {
   stopRecordedAudio();
 
   const audio = new Audio(src);
-  audio.volume = options?.volume ?? 1;
+  audio.volume = clampAudioVolume(options?.volume ?? getAudioVolume());
   currentAudio = audio;
 
   // play() の reject と error イベントは同時に発火しうるため、
@@ -67,4 +69,9 @@ export function resumeRecordedAudio(): void {
   currentAudio?.play().catch(() => {
     // 再生再開に失敗した場合は、次の読み上げ操作で再試行する。
   });
+}
+
+/** 再生位置を変えず、現在の録音へ即座に反映する。 */
+export function setRecordedAudioVolume(volume: number): void {
+  if (currentAudio) currentAudio.volume = clampAudioVolume(volume);
 }

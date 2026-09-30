@@ -1,0 +1,544 @@
+{
+  "auditedAt": "2026-09-30T14:14:13.632Z",
+  "base": "http://127.0.0.1:3001",
+  "checks": [
+    {
+      "name": "390x844 idle layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "voice test actual volume 100/50/20",
+      "pass": true,
+      "evidence": [
+        {
+          "slider": 100,
+          "actualAudioVolume": 1
+        },
+        {
+          "slider": 50,
+          "actualAudioVolume": 0.5
+        },
+        {
+          "slider": 20,
+          "actualAudioVolume": 0.2
+        }
+      ]
+    },
+    {
+      "name": "voice test and stop",
+      "pass": true,
+      "evidence": "real play() succeeded"
+    },
+    {
+      "name": "existing chime preview and cancel",
+      "pass": true
+    },
+    {
+      "name": "start and opening audio",
+      "pass": true
+    },
+    {
+      "name": "active recording volume 100 to 30 without interruption",
+      "pass": true,
+      "evidence": {
+        "volume": 0.3,
+        "paused": false,
+        "position": 0.077192
+      }
+    },
+    {
+      "name": "replay starts current recording from beginning at 30 percent",
+      "pass": true,
+      "evidence": {
+        "volume": 0.3,
+        "position": 0,
+        "src": "http://127.0.0.1:3001/audio/flow/v2/00-opening.wav"
+      }
+    },
+    {
+      "name": "reload preserves 30 percent for next recording",
+      "pass": true
+    },
+    {
+      "name": "audio stop keeps the session clock running",
+      "pass": true
+    },
+    {
+      "name": "current next next-after and primary controls fit above navigation",
+      "pass": true,
+      "evidence": [
+        {
+          "text": "開始・ショートラリー",
+          "bottom": 241.796875,
+          "navTop": 775
+        },
+        {
+          "text": "次00:05 ボレーボレーあと04:59",
+          "bottom": 393.765625,
+          "navTop": 775
+        },
+        {
+          "text": "その次00:10 ロングラリー",
+          "bottom": 426.5625,
+          "navTop": 775
+        },
+        {
+          "text": "進行を一時停止もう一度聞く音声を止める",
+          "bottom": 596.75,
+          "navTop": 775
+        }
+      ]
+    },
+    {
+      "name": "390x844 running layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "pause freezes progress and stops voice",
+      "pass": true
+    },
+    {
+      "name": "resume restarts clock",
+      "pass": true
+    },
+    {
+      "name": "seek synchronizes progress and court variant",
+      "pass": true
+    },
+    {
+      "name": "auto to manual stops voice, keeps clock",
+      "pass": true
+    },
+    {
+      "name": "manual recording shares 30 percent volume",
+      "pass": true
+    },
+    {
+      "name": "manual playback, pause, resume and STEP change stop",
+      "pass": true
+    },
+    {
+      "name": "390x844 manual layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "manual to auto stops voice",
+      "pass": true
+    },
+    {
+      "name": "flow to guide stops voice",
+      "pass": true
+    },
+    {
+      "name": "390x844 guide layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "guide to flow restores clock without voice",
+      "pass": true
+    },
+    {
+      "name": "flow to chat stops voice",
+      "pass": true
+    },
+    {
+      "name": "390x844 chat layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "paused reload restores state and courts",
+      "pass": true
+    },
+    {
+      "name": "35m reload consumes missed events without burst",
+      "pass": true
+    },
+    {
+      "name": "30m progress 25% and remaining",
+      "pass": true
+    },
+    {
+      "name": "60m progress 50% and remaining",
+      "pass": true
+    },
+    {
+      "name": "90m progress 75% and remaining",
+      "pass": true
+    },
+    {
+      "name": "120m progress 100% and remaining",
+      "pass": true
+    },
+    {
+      "name": "120m completes silently, controls remain disabled",
+      "pass": true
+    },
+    {
+      "name": "end clears session",
+      "pass": true
+    },
+    {
+      "name": "natural event volley",
+      "pass": true,
+      "evidence": 300
+    },
+    {
+      "name": "natural event long-rally",
+      "pass": true,
+      "evidence": 600
+    },
+    {
+      "name": "natural event cross-rally",
+      "pass": true,
+      "evidence": 1200
+    },
+    {
+      "name": "natural event serve-return",
+      "pass": true,
+      "evidence": 1800
+    },
+    {
+      "name": "natural event serve-return-switch",
+      "pass": true,
+      "evidence": 2100
+    },
+    {
+      "name": "natural event random-table",
+      "pass": true,
+      "evidence": 2400
+    },
+    {
+      "name": "natural event game-rules",
+      "pass": true,
+      "evidence": 2580
+    },
+    {
+      "name": "natural event self-intro",
+      "pass": true,
+      "evidence": 2760
+    },
+    {
+      "name": "natural event game-start",
+      "pass": true,
+      "evidence": 3000
+    },
+    {
+      "name": "natural event mini-game",
+      "pass": true,
+      "evidence": 6300
+    },
+    {
+      "name": "natural event closing",
+      "pass": true,
+      "evidence": 7020
+    },
+    {
+      "name": "natural event order, including game preparation",
+      "pass": true
+    },
+    {
+      "name": "mode switch cancels chime and delayed announcement",
+      "pass": true
+    },
+    {
+      "name": "recording error has zero SpeechSynthesis fallback",
+      "pass": true
+    },
+    {
+      "name": "all 16 WAVs decode and play",
+      "pass": true,
+      "evidence": [
+        {
+          "file": "/audio/flow/v2/00-opening.wav",
+          "status": 200,
+          "duration": 28.501333333333335,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/05-volley.wav",
+          "status": 200,
+          "duration": 14.570666666666666,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/10-long-rally.wav",
+          "status": 200,
+          "duration": 20.544,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/20-cross-rally-single.wav",
+          "status": 200,
+          "duration": 15.285333333333334,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/20-cross-rally-double.wav",
+          "status": 200,
+          "duration": 17.226666666666667,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/30-serve-return-single.wav",
+          "status": 200,
+          "duration": 23.669333333333334,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/30-serve-return-double.wav",
+          "status": 200,
+          "duration": 25.696,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/35-serve-return-switch.wav",
+          "status": 200,
+          "duration": 7.8933333333333335,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/40-random-table-single.wav",
+          "status": 200,
+          "duration": 23.029333333333334,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/40-random-table-double.wav",
+          "status": 200,
+          "duration": 24.330666666666666,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/43-game-rules.wav",
+          "status": 200,
+          "duration": 27.370666666666665,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/46-self-intro.wav",
+          "status": 200,
+          "duration": 13.386666666666667,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/50-game-start.wav",
+          "status": 200,
+          "duration": 8.629333333333333,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/105-mini-game.wav",
+          "status": 200,
+          "duration": 28.266666666666666,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/117-closing.wav",
+          "status": 200,
+          "duration": 20.405333333333335,
+          "play": true
+        },
+        {
+          "file": "/audio/flow/v2/voice-test.wav",
+          "status": 200,
+          "duration": 4.1066666666666665,
+          "play": true
+        }
+      ]
+    },
+    {
+      "name": "480x920 idle layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "480x920 running layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "480x920 manual layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "480x920 guide layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "480x920 chat layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "smallTargets": []
+      }
+    },
+    {
+      "name": "no browser runtime errors",
+      "pass": true
+    }
+  ],
+  "mediaChecks": [
+    {
+      "file": "/audio/flow/v2/00-opening.wav",
+      "status": 200,
+      "duration": 28.501333333333335,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/05-volley.wav",
+      "status": 200,
+      "duration": 14.570666666666666,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/10-long-rally.wav",
+      "status": 200,
+      "duration": 20.544,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/20-cross-rally-single.wav",
+      "status": 200,
+      "duration": 15.285333333333334,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/20-cross-rally-double.wav",
+      "status": 200,
+      "duration": 17.226666666666667,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/30-serve-return-single.wav",
+      "status": 200,
+      "duration": 23.669333333333334,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/30-serve-return-double.wav",
+      "status": 200,
+      "duration": 25.696,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/35-serve-return-switch.wav",
+      "status": 200,
+      "duration": 7.8933333333333335,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/40-random-table-single.wav",
+      "status": 200,
+      "duration": 23.029333333333334,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/40-random-table-double.wav",
+      "status": 200,
+      "duration": 24.330666666666666,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/43-game-rules.wav",
+      "status": 200,
+      "duration": 27.370666666666665,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/46-self-intro.wav",
+      "status": 200,
+      "duration": 13.386666666666667,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/50-game-start.wav",
+      "status": 200,
+      "duration": 8.629333333333333,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/105-mini-game.wav",
+      "status": 200,
+      "duration": 28.266666666666666,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/117-closing.wav",
+      "status": 200,
+      "duration": 20.405333333333335,
+      "play": true
+    },
+    {
+      "file": "/audio/flow/v2/voice-test.wav",
+      "status": 200,
+      "duration": 4.1066666666666665,
+      "play": true
+    }
+  ],
+  "errors": [],
+  "method": "Real Chromium, real WAV play/decode; Date.now offsets used only to cross long event boundaries"
+}

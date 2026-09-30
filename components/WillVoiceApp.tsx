@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import PageNavigation from "./PageNavigation";
-import { stopTransitionCue } from "@/lib/transitionCue";
+import { getAudioVolume, setAudioVolume } from "@/lib/audioVolume";
+import { setTransitionCueVolume, stopTransitionCue } from "@/lib/transitionCue";
 import ChatMessage, { ChatMessageData } from "@/components/ChatMessage";
 import FlowMode from "@/components/FlowMode";
 import { generateWillReply } from "@/lib/generateWillReply";
@@ -22,6 +23,7 @@ import {
 import {
   speakWithVoicevox,
   stopVoicevox,
+  setVoicevoxVolume,
   pauseVoicevox,
   resumeVoicevox,
   fetchVoicevoxSpeakers,
@@ -34,6 +36,7 @@ import {
   playRecordedAudio,
   resumeRecordedAudio,
   stopRecordedAudio,
+  setRecordedAudioVolume,
 } from "@/lib/recordedAudio";
 
 /** 簡易ID生成 */
@@ -234,7 +237,10 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       );
       if (savedVolume) {
         const v = Number(savedVolume);
-        if (Number.isFinite(v) && v >= 0 && v <= 1) setRecordedVolume(v);
+        if (Number.isFinite(v) && v >= 0 && v <= 1) {
+          setAudioVolume(v);
+          setRecordedVolume(v);
+        }
       }
     } catch {
       /* no-op */
@@ -383,6 +389,10 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   }, []);
 
   const handleRecordedVolumeChange = useCallback((v: number) => {
+    setAudioVolume(v);
+    setRecordedAudioVolume(v);
+    setVoicevoxVolume(v);
+    setTransitionCueVolume(v);
     setRecordedVolume(v);
     try {
       window.localStorage.setItem(RECORDED_VOLUME_STORAGE_KEY, String(v));
@@ -466,14 +476,14 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
 
       if ((requireRecording || voiceMode === "recorded") && audioSrc) {
         playRecordedAudio(audioSrc, {
-          volume: recordedVolume,
+          volume: getAudioVolume(),
           onEnd: finishIfCurrent,
           onError: requireRecording
             ? () => {
                 if (!isCurrent()) return;
                 finishIfCurrent();
                 setNotice(
-                  "案内音声を再生できませんでした。音量と接続を確認して、もう一度「案内を再生」を押してください。",
+                  "案内音声を再生できませんでした。音量と接続を確認して、「もう一度聞く」を押してください。",
                 );
               }
             : fallbackToStandard,
@@ -531,14 +541,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
         voiceURI: standardVoiceURI ?? undefined,
       });
     },
-    [
-      audioParams,
-      recordedVolume,
-      standardVoiceURI,
-      stopAllSpeaking,
-      styleId,
-      voiceMode,
-    ],
+    [audioParams, standardVoiceURI, stopAllSpeaking, styleId, voiceMode],
   );
 
   const speakRecorded = useCallback(
@@ -666,29 +669,35 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
             className="settings-toggle"
             onClick={() => setSettingsOpen((open) => !open)}
             aria-expanded={settingsOpen}
-            aria-controls="voice-display-settings"
+            aria-controls="audio-volume-settings"
           >
             設定
           </button>
         </div>
       </header>
 
-      {mode === "flow" && settingsOpen && (
-        <section className="settings-panel">
-          <label htmlFor="flow-recorded-volume">
-            案内の音量 {Math.round(recordedVolume * 100)}%
+      {settingsOpen && (
+        <section
+          id="audio-volume-settings"
+          className="settings-panel"
+          aria-label="音量設定"
+        >
+          <label htmlFor="audio-volume">
+            音声音量 <output>{Math.round(recordedVolume * 100)}%</output>
           </label>
           <input
-            id="flow-recorded-volume"
+            id="audio-volume"
             type="range"
             min={0}
-            max={1}
-            step={0.05}
-            value={recordedVolume}
-            onChange={(e) => handleRecordedVolumeChange(Number(e.target.value))}
+            max={100}
+            step={1}
+            value={Math.round(recordedVolume * 100)}
+            onChange={(e) =>
+              handleRecordedVolumeChange(Number(e.target.value) / 100)
+            }
           />
           <p className="flow-muted">
-            進行の案内は、ずんだもんの音声で再生します。
+            録音・VOICEVOX・チャイムは再生中にも反映します。標準音声は次の再生から反映します。
           </p>
         </section>
       )}
@@ -802,31 +811,6 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
                   </option>
                 ))}
               </select>
-            </div>
-          </div>
-        )}
-
-        {/* 録音音声 詳細パネル */}
-        {voiceMode === "recorded" && (
-          <div className="voicevox-panel">
-            <div className="voicevox-panel__row">
-              <label
-                htmlFor="recorded-volume"
-                className="voicevox-panel__label"
-              >
-                音量: {Math.round(recordedVolume * 100)}%
-              </label>
-              <input
-                id="recorded-volume"
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={recordedVolume}
-                onChange={(e) =>
-                  handleRecordedVolumeChange(Number(e.target.value))
-                }
-              />
             </div>
           </div>
         )}

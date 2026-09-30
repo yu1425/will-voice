@@ -67,13 +67,13 @@ try {
   await page
     .getByRole("button", { name: "02 ボレーボレー", exact: true })
     .click();
-  await b("案内を再生").click();
+  await b("もう一度聞く").click();
   await page.waitForFunction(() =>
     window.__audios.some((a) => !a.paused && a.src.endsWith("05-volley.wav")),
   );
   release();
   await page.waitForTimeout(600);
-  assert.ok(await b("音声を停止").isEnabled());
+  assert.ok(await b("音声を止める").isEnabled());
   assert.ok(
     await page.evaluate(() =>
       window.__audios.some((a) => !a.paused && a.src.endsWith("05-volley.wav")),
@@ -81,7 +81,7 @@ try {
   );
   assert.equal(await page.evaluate(() => window.__speakCalls), 0);
   pass("late recorded callback cannot stop new playback or fallback");
-  await b("音声を停止").click();
+  await b("音声を止める").click();
   await page.unroute("**/audio/flow/v2/00-opening.wav");
   // Enable live ENGINE voice for edited manual text, leaving canonical recordings untouched.
   await page.evaluate(() => {
@@ -110,7 +110,7 @@ try {
     await ttsGate;
     await r.fulfill({ response }).catch(() => {});
   });
-  await b("案内を再生").click();
+  await b("もう一度聞く").click();
   for (let n = 0; n < 50 && !ttsBlocked; n++) await page.waitForTimeout(100);
   assert.ok(ttsBlocked);
   await b("自動進行").click();
@@ -131,7 +131,7 @@ try {
   await page
     .getByLabel("このSTEPの案内文")
     .fill("これはボイスボックス音声です。画面を切り替えると案内を停止します。");
-  await b("案内を再生").click();
+  await b("もう一度聞く").click();
   await page.waitForFunction(() =>
     window.__audios.some((a) => !a.paused && a.src.startsWith("blob:")),
   );
@@ -157,8 +157,8 @@ try {
   await b("案内文を編集").click();
   await page
     .getByLabel("このSTEPの案内文")
-    .fill("ブラウザの音声を停止します。".repeat(20));
-  await b("案内を再生").click();
+    .fill("ブラウザの音声を止めるします。".repeat(20));
+  await b("もう一度聞く").click();
   assert.ok(await page.evaluate(() => window.__speakCalls > 0));
   const before = await page.evaluate(() => window.__cancelCalls);
   await b("自動進行").click();
@@ -180,19 +180,20 @@ try {
       await b("自動進行を終了").click();
     await b("自動進行を開始").click();
     await b("進行を一時停止").click();
+    await page.locator(".auto-flow .flow-overview > summary").click();
     await page
       .getByRole("button", { name: "00:40 乱数表の説明", exact: true })
       .click();
-    await b("音声を停止").click();
+    await b("音声を止める").click();
     await page
       .locator(".flow-timeline")
       .evaluate((el) => el.scrollIntoView({ block: "start" }));
-    await page.screenshot({ path: `reports/flow-v2-timeline-${width}.png` });
+    await page.screenshot({ path: `reports/flow-v3-timeline-${width}.png` });
     await b("個別進行").click();
     await page
       .locator(".flow-step-list")
       .evaluate((el) => el.scrollIntoView({ block: "start" }));
-    await page.screenshot({ path: `reports/flow-v2-steps-${width}.png` });
+    await page.screenshot({ path: `reports/flow-v3-steps-${width}.png` });
     await b("自動進行").click();
     await b("自動進行を終了").click();
   }
@@ -201,9 +202,9 @@ try {
   assert.equal(rect.width, 480);
   assert.equal(rect.x, 480);
   pass("desktop preserves centered 480px app");
-  await page.screenshot({ path: "reports/flow-v2-desktop.png" });
+  await page.screenshot({ path: "reports/flow-v3-desktop.png" });
   writeFileSync(
-    "reports/flow-v2-cancellation-audit.json",
+    "reports/flow-v3-cancellation-audit.json",
     JSON.stringify(
       { auditedAt: new Date().toISOString(), base, checks },
       null,

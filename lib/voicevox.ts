@@ -17,6 +17,7 @@
  * ============================================================
  */
 
+import { clampAudioVolume, getAudioVolume } from "./audioVolume";
 import { speakText, type SpeakOptions } from "./speech";
 import { sanitizeForVoicevox } from "./voicevoxText";
 
@@ -63,7 +64,7 @@ let currentAudio: HTMLAudioElement | null = null;
  */
 export async function speakWithVoicevox(
   text: string,
-  options: SpeakWithVoicevoxOptions = {}
+  options: SpeakWithVoicevoxOptions = {},
 ): Promise<SpeakWithVoicevoxResult> {
   // クライアント側でも読み補正をかけておく。
   // こうしておくと、サーバー(route handler)が古いコードのままでも、
@@ -102,6 +103,7 @@ export async function speakWithVoicevox(
     if (options.signal?.aborted) return { usedFallback: false };
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
+    audio.volume = getAudioVolume();
     currentAudio = audio;
 
     audio.addEventListener("play", () => options.onStart?.());
@@ -123,7 +125,11 @@ export async function speakWithVoicevox(
     } catch {
       // autoplay 拒否などの再生失敗 → 標準音声に逃がす
       cleanup();
-      return fallback(text, options, "音声を再生できなかったため、標準音声で読み上げます");
+      return fallback(
+        text,
+        options,
+        "音声を再生できなかったため、標準音声で読み上げます",
+      );
     }
 
     return {
@@ -143,7 +149,7 @@ export async function speakWithVoicevox(
     return fallback(
       text,
       options,
-      "VOICEVOXに接続できなかったため、標準音声で読み上げます"
+      "VOICEVOXに接続できなかったため、標準音声で読み上げます",
     );
   }
 }
@@ -225,7 +231,7 @@ export type ZundamonStyle = {
 };
 
 export function pickZundamonStyles(
-  speakers: VoicevoxSpeaker[] | undefined
+  speakers: VoicevoxSpeaker[] | undefined,
 ): ZundamonStyle[] {
   if (!speakers) return [];
   const zundamon = speakers.find((s) => s.name.includes("ずんだもん"));
@@ -240,7 +246,7 @@ export function pickZundamonStyles(
 function fallback(
   text: string,
   options: SpeakWithVoicevoxOptions,
-  reason: string
+  reason: string,
 ): SpeakWithVoicevoxResult {
   speakText(text, {
     onStart: options.onStart,
@@ -248,4 +254,9 @@ function fallback(
     lang: options.lang,
   });
   return { usedFallback: true, fallbackReason: reason };
+}
+
+/** 生成済みの再生へ即座に反映。生成待ちの場合は再生開始時に最新値を使う。 */
+export function setVoicevoxVolume(volume: number): void {
+  if (currentAudio) currentAudio.volume = clampAudioVolume(volume);
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useState } from "react";
 import type { FlowScript } from "@/lib/tennisFlowScripts";
 type Props = {
   currentScript: FlowScript;
@@ -26,6 +27,8 @@ export default function FlowLiveMode({
   onStop,
   onStepJump,
 }: Props) {
+  const [scriptExpanded, setScriptExpanded] = useState(false);
+  useEffect(() => setScriptExpanded(false), [s.id, previewText]);
   return (
     <div className="flow-manual">
       <section className="flow-surface">
@@ -36,14 +39,28 @@ export default function FlowLiveMode({
           </span>
         </header>
         <h1>{s.title}</h1>
-        <p className="flow-manual__excerpt">{previewText}</p>
+        <div className="flow-manual__script">
+          <p
+            className={`flow-script-text${scriptExpanded ? "" : " flow-script-text--preview"}`}
+          >
+            {previewText}
+          </p>
+          <button
+            type="button"
+            className="flow-text-button"
+            aria-expanded={scriptExpanded}
+            onClick={() => setScriptExpanded(!scriptExpanded)}
+          >
+            {scriptExpanded ? "案内内容を閉じる" : "案内内容をすべて読む"}
+          </button>
+        </div>
         <div className="flow-actions">
           <button
             type="button"
             className="flow-btn flow-btn--primary flow-btn--full"
             onClick={onSpeak}
           >
-            案内を再生
+            もう一度聞く
           </button>
           <button
             type="button"
@@ -59,7 +76,7 @@ export default function FlowLiveMode({
             onClick={onStop}
             disabled={!isSpeaking}
           >
-            音声を停止
+            音声を止める
           </button>
         </div>
         <p className="flow-audio-state" role="status">
@@ -67,7 +84,7 @@ export default function FlowLiveMode({
             ? "音声を一時停止中"
             : isSpeaking
               ? "音声案内を再生中"
-              : "音声案内は停止中"}
+              : "音声は再生していません"}
         </p>
         <div className="flow-manual__nav">
           <button
@@ -87,8 +104,6 @@ export default function FlowLiveMode({
             次へ →
           </button>
         </div>
-        <h2 className="flow-list-title">このSTEPの案内</h2>
-        <p className="flow-script-text">{previewText}</p>
       </section>
       <section className="flow-surface">
         <h2 className="flow-list-title">STEP一覧</h2>

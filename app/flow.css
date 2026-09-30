@@ -98,7 +98,7 @@ a {
 .flow-surface {
   padding: 20px;
   background: #fff;
-  border: 1px solid var(--flow-border);
+  border: 0;
   border-radius: 14px;
   min-width: 0;
 }
@@ -273,14 +273,17 @@ a {
   display: grid;
   gap: 14px;
 }
+.auto-flow.flow-surface {
+  gap: 0;
+}
 .flow-progress__clock {
   font-variant-numeric: tabular-nums;
   font-size: 14px;
   color: var(--text-soft);
-  margin-top: 18px;
+  margin-top: 12px;
 }
 .flow-progress__clock strong {
-  font-size: 30px;
+  font-size: 16px;
   letter-spacing: -0.03em;
   color: var(--text);
   font-weight: 600;
@@ -318,9 +321,8 @@ a {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 20px;
-  border-top: 1px solid var(--flow-border);
-  padding-top: 16px;
+  margin-top: 16px;
+  padding-top: 8px;
 }
 .flow-progress__next div {
   display: flex;
@@ -351,6 +353,7 @@ a {
   border-top: 1px solid var(--flow-border);
   font-size: 14px;
 }
+.flow-overview summary,
 .flow-script summary,
 .flow-manual-settings summary,
 .flow-extras summary {
@@ -535,15 +538,15 @@ a {
   color: var(--text-soft);
 }
 .flow-background-status {
-  border: 1px solid var(--flow-border);
+  border: 0;
   background: var(--flow-soft);
   border-radius: 10px;
-  padding: 14px;
+  padding: 8px 12px;
   margin-bottom: 14px;
   font-size: 13px;
 }
 .flow-background-status p {
-  margin: 6px 0 12px;
+  margin: 0 0 8px;
 }
 .footer--slim {
   padding: 8px 16px;
@@ -631,18 +634,55 @@ a {
   .flow-timeline li > div {
     gap: 8px;
   }
-  .flow-progress__clock strong {
-    font-size: 28px;
-  }
 }
-.flow-manual__excerpt {
-  margin: 12px 0 18px;
-  font-size: 14px;
-  line-height: 1.8;
-  color: #60666d;
+/* The main controls share the progress surface; no second card or bottom overlay. */
+.flow-controls {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--flow-border);
+}
+.flow-progress__later {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 12px;
+}
+.flow-progress__later span {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.flow-progress__later strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.flow-overview {
+  padding: 0 4px;
+}
+.flow-manual__script {
+  margin: 14px 0 16px;
+}
+.flow-script-text--preview {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  white-space: pre-line;
+}
+.flow-text-button {
+  min-height: 44px;
+  border: 0;
+  padding: 8px 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--flow-accent);
+  cursor: pointer;
+}
+.settings-panel output {
+  font-variant-numeric: tabular-nums;
+}
+.settings-panel input[type="range"] {
+  width: 100%;
+  min-height: 32px;
+  accent-color: var(--flow-accent);
 }

@@ -67,6 +67,7 @@ export default function FlowMode({
   const jump = (n: number) => {
     stopSpeaking();
     syncStep(n);
+    document.querySelector(".flow-scroll")?.scrollTo({ top: 0 });
     setEditing(false);
     setEditedText(null);
   };
@@ -114,17 +115,20 @@ export default function FlowMode({
       <div hidden={mode !== "manual"}>
         {autoOngoing && (
           <div className="flow-background-status" role="status">
-            <strong>
-              自動進行は{autoStatus === "paused" ? "一時停止中" : "継続中"}です
-            </strong>
-            <p>音声案内はこの画面では停止しています。</p>
-            <button
-              type="button"
-              className="flow-btn"
-              onClick={() => changeMode("auto")}
-            >
-              自動進行に戻る
-            </button>
+            <div className="flow-header">
+              <strong>
+                自動進行は{autoStatus === "paused" ? "一時停止中" : "継続中"}
+                です
+              </strong>
+              <button
+                type="button"
+                className="flow-text-button"
+                onClick={() => changeMode("auto")}
+              >
+                自動進行に戻る
+              </button>
+            </div>
+            <p>この画面では自動の音声案内は鳴りません。</p>
           </div>
         )}
         <FlowLiveMode

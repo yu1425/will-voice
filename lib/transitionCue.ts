@@ -1,18 +1,23 @@
+import { clampAudioVolume, getAudioVolume } from "./audioVolume";
+
 /**
  * 自動進行の節目に鳴らす告知チャイム。
  * 屋外やBluetoothスピーカーでも切替に気づきやすいよう、
  * 3打のベル音を重ねて約3秒の余韻を作る。
  */
 let context: AudioContext | null = null;
+let masterGain: GainNode | null = null;
 let activeNodes: OscillatorNode[] = [];
 
 function getContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
   const AudioContextCtor =
     window.AudioContext ??
-    (window as typeof window & {
-      webkitAudioContext?: typeof AudioContext;
-    }).webkitAudioContext;
+    (
+      window as typeof window & {
+        webkitAudioContext?: typeof AudioContext;
+      }
+    ).webkitAudioContext;
   if (!AudioContextCtor) return null;
   context ??= new AudioContextCtor();
   return context;
@@ -40,20 +45,16 @@ export async function playTransitionCue(): Promise<void> {
 
     stopTransitionCue();
 
+    masterGain ??= audioContext.createGain();
+    masterGain.gain.setValueAtTime(getAudioVolume(), audioContext.currentTime);
+    masterGain.disconnect();
+    masterGain.connect(audioContext.destination);
     const startedAt = audioContext.currentTime + 0.015;
-    // 音の厚さ・間隔・余韻は元の3打ベルのまま。
-    // 前半2音は元のEメジャー感へ戻し、最後はB5からC#6へ短く持ち上げて
-    // 「ターン」と上に抜ける着地にする。大きく飛ばさず、自然な上昇感を優先。
+    // 音程調整前（4c7a9b5）の3打ベルを復元。最後の音のグライドも行わない。
     const strikes = [
       { frequency: 659.25, at: 0, tail: 1.7 },
       { frequency: 830.61, at: 0.48, tail: 1.8 },
-      {
-        frequency: 987.77,
-        endFrequency: 1108.73,
-        glideSec: 0.24,
-        at: 0.96,
-        tail: 1.9,
-      },
+      { frequency: 987.77, at: 0.96, tail: 1.9 },
     ];
     const partials = [
       { ratio: 1, gain: 0.13, tailScale: 1 },
@@ -73,26 +74,13 @@ export async function playTransitionCue(): Promise<void> {
         oscillator.type = "sine";
         oscillator.frequency.setValueAtTime(
           strike.frequency * partial.ratio,
-          begin
+          begin,
         );
-        if ("endFrequency" in strike && strike.endFrequency) {
-          oscillator.frequency.exponentialRampToValueAtTime(
-            strike.endFrequency * partial.ratio,
-            begin + strike.glideSec
-          );
-        }
-
         gain.gain.setValueAtTime(0.0001, begin);
-        gain.gain.exponentialRampToValueAtTime(
-          partial.gain,
-          begin + 0.018
-        );
-        gain.gain.exponentialRampToValueAtTime(
-          0.0001,
-          begin + duration
-        );
+        gain.gain.exponentialRampToValueAtTime(partial.gain, begin + 0.018);
+        gain.gain.exponentialRampToValueAtTime(0.0001, begin + duration);
 
-        oscillator.connect(gain).connect(audioContext.destination);
+        oscillator.connect(gain).connect(masterGain);
         oscillator.start(begin);
         oscillator.stop(begin + duration + 0.04);
         oscillator.addEventListener("ended", () => {
@@ -118,4 +106,12 @@ export function stopTransitionCue(): void {
     }
   }
   activeNodes = [];
+}
+
+export function setTransitionCueVolume(volume: number): void {
+  if (context && masterGain)
+    masterGain.gain.setValueAtTime(
+      clampAudioVolume(volume),
+      context.currentTime,
+    );
 }

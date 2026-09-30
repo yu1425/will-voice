@@ -354,6 +354,9 @@ export default function AutoFlowPanel({
     await playTransitionCue();
     if (ticket === sequence.current && mounted.current) setCuePlaying(false);
   };
+  const afterNext = next
+    ? events.find((event) => event.offsetSec > next.offsetSec)
+    : null;
   const progress = getAutoFlowProgress(elapsedSec);
 
   if (status === "idle")
@@ -427,7 +430,7 @@ export default function AutoFlowPanel({
             onClick={stopAudio}
             disabled={!isSpeaking && !cuePlaying}
           >
-            音声を停止
+            音声を止める
           </button>
           <button
             type="button"
@@ -449,10 +452,11 @@ export default function AutoFlowPanel({
           </Link>
           <span>全体の自己紹介は、ゲーム前に行います。</span>
         </p>
-        <h2 className="flow-list-title">
-          流れを見る <span>開始からの経過時間</span>
-        </h2>
-        <Timeline events={events} currentId={null} elapsedSec={0} />
+        <details className="flow-overview">
+          <summary>全体の流れを見る</summary>
+          <p className="flow-muted">開始からの経過時間 · 標準2時間</p>
+          <Timeline events={events} currentId={null} elapsedSec={0} />
+        </details>
       </section>
     );
   return (
@@ -489,22 +493,10 @@ export default function AutoFlowPanel({
         >
           <span style={{ width: `${(elapsedSec / 7200) * 100}%` }} />
         </div>
-        <div className="flow-progress__times">
-          <span>開始 {timeOfDay(session!.startedAt)}</span>
-          <span>
-            {status === "paused" ? "終了予定（一時停止中）" : "終了予定"}{" "}
-            {timeOfDay(
-              session!.startedAt +
-                session!.accumulatedPausedMs +
-                (session!.pausedAt ? Date.now() - session!.pausedAt : 0) +
-                7200000,
-            )}
-          </span>
-        </div>
         {next && (
           <div className="flow-progress__next">
             <div>
-              <span>次のメニュー</span>
+              <span>次</span>
               <strong>
                 {formatOffset(next.offsetSec)} {next.title}
               </strong>
@@ -517,50 +509,69 @@ export default function AutoFlowPanel({
             </div>
           </div>
         )}
-      </div>
-      <div className="flow-surface flow-controls">
-        <div className="flow-actions">
-          <button
-            type="button"
-            className="flow-btn flow-btn--primary flow-btn--full"
-            disabled={status === "completed"}
-            onClick={pauseResume}
-          >
-            {status === "paused" ? "進行を再開" : "進行を一時停止"}
-          </button>
-          <button
-            type="button"
-            className="flow-btn"
-            onClick={() => void announce(current, false)}
-            disabled={!current.audioSrc}
-          >
-            案内を再生
-          </button>
-          <button
-            type="button"
-            className="flow-btn"
-            onClick={stopAudio}
-            disabled={!isSpeaking && !cuePlaying}
-          >
-            音声を停止
-          </button>
+        {afterNext && (
+          <div className="flow-progress__later">
+            <span>その次</span>
+            <strong>
+              {formatOffset(afterNext.offsetSec)} {afterNext.title}
+            </strong>
+          </div>
+        )}
+        <div className="flow-progress__times">
+          <span>開始 {timeOfDay(session!.startedAt)}</span>
+          <span>
+            {status === "paused" ? "終了予定（一時停止中）" : "終了予定"}{" "}
+            {timeOfDay(
+              session!.startedAt +
+                session!.accumulatedPausedMs +
+                (session!.pausedAt ? Date.now() - session!.pausedAt : 0) +
+                7200000,
+            )}
+          </span>
         </div>
-        <p className="flow-audio-state" role="status">
-          {cuePlaying
-            ? "チャイムを再生中"
-            : isSpeaking
-              ? "音声案内を再生中"
-              : "音声案内は停止中"}
-        </p>
-        <details className="flow-script">
-          <summary>案内内容を見る</summary>
-          <p>{current.displayText}</p>
-        </details>
+        <div className="flow-controls">
+          <div className="flow-actions">
+            <button
+              type="button"
+              className="flow-btn flow-btn--primary flow-btn--full"
+              disabled={status === "completed"}
+              onClick={pauseResume}
+            >
+              {status === "paused" ? "進行を再開" : "進行を一時停止"}
+            </button>
+            <button
+              type="button"
+              className="flow-btn"
+              onClick={() => void announce(current, false)}
+              disabled={!current.audioSrc}
+            >
+              もう一度聞く
+            </button>
+            <button
+              type="button"
+              className="flow-btn"
+              onClick={stopAudio}
+              disabled={!isSpeaking && !cuePlaying}
+            >
+              音声を止める
+            </button>
+          </div>
+          <p className="flow-audio-state" role="status">
+            {cuePlaying
+              ? "チャイムを再生中"
+              : isSpeaking
+                ? "音声案内を再生中"
+                : "音声は再生していません"}
+          </p>
+          <details className="flow-script">
+            <summary>案内内容を見る</summary>
+            <p>{current.displayText}</p>
+          </details>
+        </div>
       </div>
-      <div className="flow-surface">
-        <h2 className="flow-list-title">
-          進行タイムライン <span>タップして移動</span>
-        </h2>
+      <details className="flow-overview">
+        <summary>全体の流れを見る</summary>
+        <p className="flow-muted">開始からの経過時間 · タップして移動</p>
         {pendingSeek && (
           <div className="flow-seek-confirm" role="alert">
             <p>
@@ -591,7 +602,7 @@ export default function AutoFlowPanel({
           elapsedSec={elapsedSec}
           onSeek={(e) => (status === "running" ? setPendingSeek(e) : seek(e))}
         />
-      </div>
+      </details>
       <button
         type="button"
         className="flow-btn flow-btn--danger flow-btn--full"
