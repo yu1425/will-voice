@@ -7,6 +7,7 @@ import { clampAudioVolume, getAudioVolume } from "./audioVolume";
  */
 let context: AudioContext | null = null;
 let masterGain: GainNode | null = null;
+let playbackGeneration = 0;
 let activeNodes: OscillatorNode[] = [];
 
 function getContext(): AudioContext | null {
@@ -38,12 +39,14 @@ export async function unlockTransitionCue(): Promise<boolean> {
 /** 約3秒。3打目まで明確に聞かせ、ベルらしい長い余韻を残す。 */
 export async function playTransitionCue(): Promise<void> {
   try {
+    stopTransitionCue();
+    const ticket = playbackGeneration;
     const audioContext = getContext();
     if (!audioContext) return;
     if (audioContext.state === "suspended") await audioContext.resume();
-    if (audioContext.state !== "running") return;
-
-    stopTransitionCue();
+    // A manual stop during resume must not let this old call start or stop a newer cue.
+    if (ticket !== playbackGeneration || audioContext.state !== "running")
+      return;
 
     masterGain ??= audioContext.createGain();
     masterGain.gain.setValueAtTime(getAudioVolume(), audioContext.currentTime);
@@ -98,6 +101,7 @@ export async function playTransitionCue(): Promise<void> {
 }
 
 export function stopTransitionCue(): void {
+  playbackGeneration++;
   for (const oscillator of activeNodes) {
     try {
       oscillator.stop();

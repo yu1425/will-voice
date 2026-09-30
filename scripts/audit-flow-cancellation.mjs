@@ -73,7 +73,7 @@ try {
   );
   release();
   await page.waitForTimeout(600);
-  assert.ok(await b("音声を止める").isEnabled());
+  assert.ok(await b("今の音声を止める").isEnabled());
   assert.ok(
     await page.evaluate(() =>
       window.__audios.some((a) => !a.paused && a.src.endsWith("05-volley.wav")),
@@ -81,7 +81,7 @@ try {
   );
   assert.equal(await page.evaluate(() => window.__speakCalls), 0);
   pass("late recorded callback cannot stop new playback or fallback");
-  await b("音声を止める").click();
+  await b("今の音声を止める").click();
   await page.unroute("**/audio/flow/v2/00-opening.wav");
   // Enable live ENGINE voice for edited manual text, leaving canonical recordings untouched.
   await page.evaluate(() => {
@@ -157,7 +157,7 @@ try {
   await b("案内文を編集").click();
   await page
     .getByLabel("このSTEPの案内文")
-    .fill("ブラウザの音声を止めるします。".repeat(20));
+    .fill("ブラウザの音声停止を確認します。".repeat(20));
   await b("もう一度聞く").click();
   assert.ok(await page.evaluate(() => window.__speakCalls > 0));
   const before = await page.evaluate(() => window.__cancelCalls);
@@ -184,16 +184,16 @@ try {
     await page
       .getByRole("button", { name: "00:40 乱数表の説明", exact: true })
       .click();
-    await b("音声を止める").click();
+    await b("今の音声を止める").click();
     await page
       .locator(".flow-timeline")
       .evaluate((el) => el.scrollIntoView({ block: "start" }));
-    await page.screenshot({ path: `reports/flow-v3-timeline-${width}.png` });
+    await page.screenshot({ path: `reports/flow-v4-timeline-${width}.png` });
     await b("個別進行").click();
     await page
       .locator(".flow-step-list")
       .evaluate((el) => el.scrollIntoView({ block: "start" }));
-    await page.screenshot({ path: `reports/flow-v3-steps-${width}.png` });
+    await page.screenshot({ path: `reports/flow-v4-steps-${width}.png` });
     await b("自動進行").click();
     await b("自動進行を終了").click();
   }
@@ -202,9 +202,9 @@ try {
   assert.equal(rect.width, 480);
   assert.equal(rect.x, 480);
   pass("desktop preserves centered 480px app");
-  await page.screenshot({ path: "reports/flow-v3-desktop.png" });
+  await page.screenshot({ path: "reports/flow-v4-desktop.png" });
   writeFileSync(
-    "reports/flow-v3-cancellation-audit.json",
+    "reports/flow-v4-cancellation-audit.json",
     JSON.stringify(
       { auditedAt: new Date().toISOString(), base, checks },
       null,

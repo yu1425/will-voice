@@ -1,4 +1,5 @@
 "use client";
+import FlowTransportIcon from "./FlowTransportIcon";
 import { useEffect, useState } from "react";
 import type { FlowScript } from "@/lib/tennisFlowScripts";
 type Props = {
@@ -60,6 +61,7 @@ export default function FlowLiveMode({
             className="flow-btn flow-btn--primary flow-btn--full"
             onClick={onSpeak}
           >
+            <FlowTransportIcon kind="replay" />
             もう一度聞く
           </button>
           <button
@@ -68,6 +70,7 @@ export default function FlowLiveMode({
             onClick={isSpeakingPaused ? onResumeSpeaking : onPauseSpeaking}
             disabled={!isSpeaking}
           >
+            <FlowTransportIcon kind={isSpeakingPaused ? "play" : "pause"} />
             {isSpeakingPaused ? "音声を再開" : "音声を一時停止"}
           </button>
           <button
@@ -76,7 +79,8 @@ export default function FlowLiveMode({
             onClick={onStop}
             disabled={!isSpeaking}
           >
-            音声を止める
+            <FlowTransportIcon kind="stop" />
+            今の音声を止める
           </button>
         </div>
         <p className="flow-audio-state" role="status">

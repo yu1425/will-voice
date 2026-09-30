@@ -122,7 +122,7 @@ try {
   await page.goto(base + "/flow");
   await button("自動進行を開始").waitFor();
   await assertLayout("390x844 idle layout");
-  await screenshot("flow-v3-idle-390");
+  await screenshot("flow-v4-idle-390");
   await button("設定").click();
   const setVolume = async (percentage) => {
     const slider = page.locator("#audio-volume");
@@ -140,7 +140,7 @@ try {
     );
     assert.equal(actual, percentage / 100);
     volumeEvidence.push({ slider: percentage, actualAudioVolume: actual });
-    await button("音声を止める").click();
+    await button("今の音声を止める").click();
   }
   pass("voice test actual volume 100/50/20", volumeEvidence);
   await setVolume(100);
@@ -150,7 +150,7 @@ try {
   await page.waitForFunction(() =>
     window.__plays.some((s) => s.endsWith("voice-test.wav")),
   );
-  await button("音声を止める").click();
+  await button("今の音声を止める").click();
   await noAudio();
   pass("voice test and stop", "real play() succeeded");
   await button("試聴").click();
@@ -158,7 +158,7 @@ try {
   assert.ok(
     await page.evaluate(() => window.__oscillators.some((o) => o.active)),
   );
-  await button("音声を止める").click();
+  await button("今の音声を止める").click();
   await noAudio();
   pass("existing chime preview and cancel");
   await page.getByRole("checkbox").uncheck();
@@ -211,7 +211,7 @@ try {
     0.3,
   );
   pass("reload preserves 30 percent for next recording");
-  await button("音声を止める").click();
+  await button("今の音声を止める").click();
   const stoppedClock = await page.locator(".flow-progress__clock").innerText();
   await page.waitForTimeout(1200);
   assert.notEqual(
@@ -226,7 +226,7 @@ try {
       .getBoundingClientRect().top;
     return [
       ...document.querySelectorAll(
-        ".flow-progress h1,.flow-progress__next,.flow-progress__later,.flow-controls .flow-actions",
+        ".flow-progress h1,.flow-progress__next,.flow-progress__later,.flow-controls > button,.flow-controls .flow-actions",
       ),
     ].map((el) => ({
       text: el.textContent,
@@ -244,7 +244,7 @@ try {
     aboveFold,
   );
 
-  await screenshot("flow-v3-running-390");
+  await screenshot("flow-v4-running-390");
   await assertLayout("390x844 running layout");
   await button("進行を一時停止").click();
   const pausedClock = await page.locator(".flow-progress__clock").innerText();
@@ -262,7 +262,7 @@ try {
       .allInnerTexts(),
     pausedDetails,
   );
-  await screenshot("flow-v3-paused-390");
+  await screenshot("flow-v4-paused-390");
   await noAudio();
   pass("pause freezes progress and stops voice");
   await button("進行を再開").click();
@@ -300,7 +300,7 @@ try {
   await button("次へ →").click();
   await noAudio();
   pass("manual playback, pause, resume and STEP change stop");
-  await screenshot("flow-v3-manual-390");
+  await screenshot("flow-v4-manual-390");
   await assertLayout("390x844 manual layout");
   await button("もう一度聞く").click();
   await button("自動進行").click();
@@ -314,7 +314,7 @@ try {
   await page.getByRole("heading", { name: "うぃる進行の使い方" }).waitFor();
   await noAudio();
   pass("flow to guide stops voice");
-  await screenshot("flow-v3-guide-390");
+  await screenshot("flow-v4-guide-390");
   await assertLayout("390x844 guide layout");
   await page
     .getByRole("navigation")
@@ -332,7 +332,7 @@ try {
   await page.getByRole("button", { name: "送信", exact: true }).waitFor();
   await noAudio();
   pass("flow to chat stops voice");
-  await screenshot("flow-v3-chat-390");
+  await screenshot("flow-v4-chat-390");
   await assertLayout("390x844 chat layout");
   await page
     .getByRole("navigation")
@@ -420,7 +420,7 @@ try {
   assert.ok(await button("もう一度聞く").isDisabled());
   assert.ok(await button("進行を一時停止").isDisabled());
   pass("120m completes silently, controls remain disabled");
-  await screenshot("flow-v3-completed-390");
+  await screenshot("flow-v4-completed-390");
   await button("開始前の画面に戻る").click();
   assert.equal(
     await page.evaluate(() =>
@@ -431,7 +431,7 @@ try {
   pass("end clears session");
   // Natural boundaries, rather than seeking: jump near boundary, then wait real seconds.
   await button("自動進行を開始").click();
-  await button("音声を止める").click();
+  await button("今の音声を止める").click();
   const definitions = JSON.parse(readFileSync("lib/flowScripts.json", "utf8"));
   for (const e of definitions.slice(1)) {
     await page.evaluate((sec) => {
@@ -458,7 +458,7 @@ try {
       path,
     );
     pass("natural event " + e.id, e.offsetSec);
-    await button("音声を止める").click();
+    await button("今の音声を止める").click();
   }
   const fired = await page.evaluate(
     () =>
@@ -474,7 +474,7 @@ try {
   // Chime -> delayed voice: cancel during bell and ensure no later start.
   await page.getByRole("checkbox").check();
   await button("自動進行を開始").click();
-  await button("音声を止める").click();
+  await button("今の音声を止める").click();
   await page.locator(".auto-flow .flow-overview > summary").click();
   await page
     .getByRole("button", { name: "00:20 クロスラリー", exact: true })
@@ -533,32 +533,32 @@ try {
   pass("all 16 WAVs decode and play", mediaChecks);
   await page.setViewportSize({ width: 480, height: 920 });
   await assertLayout("480x920 idle layout");
-  await screenshot("flow-v3-idle-480");
+  await screenshot("flow-v4-idle-480");
   await button("自動進行を開始").click();
   await assertLayout("480x920 running layout");
-  await screenshot("flow-v3-running-480");
+  await screenshot("flow-v4-running-480");
   await button("個別進行").click();
   await assertLayout("480x920 manual layout");
-  await screenshot("flow-v3-manual-480");
+  await screenshot("flow-v4-manual-480");
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "使い方", exact: true })
     .click();
   await page.getByRole("heading", { name: "うぃる進行の使い方" }).waitFor();
   await assertLayout("480x920 guide layout");
-  await screenshot("flow-v3-guide-480");
+  await screenshot("flow-v4-guide-480");
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "うぃるに聞く", exact: true })
     .click();
   await page.getByRole("button", { name: "送信", exact: true }).waitFor();
   await assertLayout("480x920 chat layout");
-  await screenshot("flow-v3-chat-480");
+  await screenshot("flow-v4-chat-480");
   assert.deepEqual(errors, []);
   pass("no browser runtime errors");
   mkdirSync("reports", { recursive: true });
   writeFileSync(
-    "reports/flow-v3-browser-audit.json",
+    "reports/flow-v4-browser-audit.json",
     JSON.stringify(
       {
         auditedAt: new Date().toISOString(),

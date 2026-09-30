@@ -104,7 +104,7 @@ const shot = async (state, width) => {
   assert.equal(layout.width, layout.documentWidth);
   assert.ok(layout.appWidth <= 480);
   assert.ok(layout.contentBottom <= layout.navTop);
-  const path = `reports/flow-v3-ux-${state}-${width}.png`;
+  const path = `reports/flow-v4-ux-${state}-${width}.png`;
   await page.screenshot({ path });
   pass(`${width} ${state} layout`, { ...layout, screenshot: path });
 };
@@ -120,7 +120,7 @@ try {
     await b("自動進行を開始").click();
     await playing();
     await shot("playing", width);
-    await b("音声を止める").click();
+    await b("今の音声を止める").click();
     await stopped();
     await shot("stopped", width);
     await b("進行を一時停止").click();
@@ -147,7 +147,7 @@ try {
     );
     await shot("volume", width);
     await b("設定").click();
-    await b("音声を止める").click();
+    await b("今の音声を止める").click();
     await b("個別進行").click();
     await shot("manual", width);
     await page
@@ -223,7 +223,7 @@ try {
     () => Math.abs(window.__gain[0].gain.value - 0.2) < 0.00001,
   );
   await b("設定").click();
-  await b("音声を止める").click();
+  await b("今の音声を止める").click();
   pass("restored original three bell pitches and live common chime gain", {
     frequencies,
     masterBefore: 0.5,
@@ -278,7 +278,7 @@ try {
     { liveStart, liveChange },
   );
   await b("設定").click();
-  await b("音声を止める").click();
+  await b("今の音声を止める").click();
   await page.unroute("**/api/voicevox/tts");
   await page.evaluate(() =>
     localStorage.setItem("will-voice-mode", "standard"),
@@ -301,7 +301,7 @@ try {
   await b("もう一度聞く").click();
   const standard = await page.evaluate(() => window.__utterances.at(-1));
   assert.ok(Math.abs(standard.volume - 0.2) < 0.00001);
-  await b("音声を止める").click();
+  await b("今の音声を止める").click();
   pass(
     "standard speech receives shared volume with explicit next-playback guidance",
     standard,
@@ -309,7 +309,7 @@ try {
   assert.deepEqual(errors, []);
   pass("no runtime errors");
   writeFileSync(
-    "reports/flow-v3-ux-audit.json",
+    "reports/flow-v4-ux-audit.json",
     JSON.stringify(
       {
         auditedAt: new Date().toISOString(),

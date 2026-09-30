@@ -1,0 +1,102 @@
+{
+  "auditedAt": "2026-09-30T23:07:40.530970+00:00",
+  "branch": "codex/standard-two-hour-auto-flow",
+  "startingHead": "c5a0b157290ed64e426db2f44d3903a44b3e7624",
+  "startingPreview": {
+    "url": "https://will-voice-n5gv8aeha-yu1425dx-5422s-projects.vercel.app/flow",
+    "state": "READY",
+    "commit": "c5a0b157290ed64e426db2f44d3903a44b3e7624"
+  },
+  "sourceSha256": {
+    "README.md": "809c9fd8eec237164de212e0e621cc6bddb1bfd174ea13bcc215450eaddb894b",
+    "app/flow.css": "2776f05babd622c150c99a20659175afe42d233b84481bf64f5da9e133c9e58c",
+    "app/guide/page.tsx": "8f2917c06556488712d7bc9e733381ad4e7d75eabacdd8ce27362c52065e355b",
+    "components/AutoFlowPanel.tsx": "444d918a7579b6fc3b7af4311466cca08795e823c8b8cb72a381e71f83bb6dd5",
+    "components/FlowLiveMode.tsx": "560ee1abb2777f47dab8586d682607de3b7db99264db5c186e499ddbeccba94f",
+    "components/FlowTransportIcon.tsx": "15dde151711cfdadf9089d3c8a90d570b0ecb554d217e01960d9e86924fd9498",
+    "lib/transitionCue.ts": "2e719afce8373c6a0afbe5b36117114f8726109d8e55c4a56c256d8ea1889c31",
+    "scripts/audit-flow-browser.mjs": "a61ee0e8ab56ab8f1d2e57703455face4d0e189cd4b4cb5328fd337328d22a96",
+    "scripts/audit-flow-cancellation.mjs": "b86f46ed8a1e7b798bee08661a163fd20bc8cdca9104632473e293f24ddb636f",
+    "scripts/audit-flow-ux.mjs": "187ee3f51489564f9146993d4f5a5478f019905fafe623ee6664bc56868a283f",
+    "scripts/audit-flow-playback.mjs": "80691bacbe4427fa2b0fec9c4603082ac50540b4447ff045e6300d6b5cf81d1b",
+    "scripts/fixtures/auto-flow-browser.tsx": "60367fbecb0c7a758de8ed903bd25991dbd3824d249e58475874cb76e6d6ede4"
+  },
+  "checks": {
+    "browser": 53,
+    "cancellation": 5,
+    "ux": 27,
+    "playback": 8
+  },
+  "totalBrowserChecks": 93,
+  "requiredChecks": {
+    "node scripts/test-flow.mjs": "PASS",
+    "npx tsc --noEmit": "PASS",
+    "npm run build": "PASS",
+    "git diff --check": "PASS"
+  },
+  "browserTarget": "Optimized next build served with next start at 127.0.0.1:3001",
+  "rootCause": [
+    "announce depended on mutable playback/chime callbacks, advance depended on announce, and the activation effect depended on advance",
+    "A callback change at an event boundary reran advance(false), marked the due event fired, and deliberately did not announce it",
+    "Reproduced with the actual React panel and native media; the ordinary unchanged-callback stop path already allowed future playback",
+    "Current-playback generation was not permanently invalid, activeRef did not become false on manual stop, recorded global state was cleared, and VOICEVOX AbortController cancelled only the current request"
+  ],
+  "fix": [
+    "Stable clock and activation subscriptions read latest callbacks, event list and chime preference through refs",
+    "Current playback cancellation invalidates only in-flight chime and delayed WAV tickets; it never mutates clock, active or fired-event state",
+    "AudioContext resume checks its own cancellation ticket so an old cue cannot start after stop or stop a newer cue",
+    "Primary pause/resume is separate from the secondary Audio group, with lightweight monochrome SVGs and explicit current-audio stop label"
+  ],
+  "stopNextEventEvidence": "reports/flow-v4-playback-audit.json, CASE 1: opening stopped, clock advances, next foreground 05-volley.wav follows 9 native oscillator starts at volume 0.3; no speech fallback",
+  "beforeCallbackRaceEvidence": "reports/flow-v4-before-callback-race.json",
+  "visualAudit": {
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        480,
+        920
+      ]
+    ],
+    "before": "reports/flow-v4-before-390.png",
+    "after390": "reports/flow-v4-ux-playing-390.png",
+    "after480": "reports/flow-v4-ux-playing-480.png",
+    "aboveFold390": [
+      "mode switch",
+      "current menu",
+      "clock",
+      "progress bar",
+      "percentage/remaining",
+      "next event/countdown",
+      "next-after event",
+      "primary pause/resume",
+      "replay",
+      "current audio stop"
+    ],
+    "comparison": "Current menu remains the strongest heading. Bar precedes progress labels. Primary clock control moves above a visibly smaller Audio group. Start/end metadata moves to a tiny bottom line. Next-after is subdued. Details stay collapsed and end sits outside progress. Main controls fit even with the manual-stop notice. Fewer divider lines and no extra status card.",
+    "result": "PASS after visual comparison of before/after, playing/stopped/paused and 480 screenshots; no horizontal overflow or bottom-nav overlap; desktop centered at max-width 480"
+  },
+  "volumeRegression": "PASS: 30% on stop/replay, future native event, pause/resume and seek; live WAV 100→50→20→30; real VOICEVOX latest gain; shared chime gain",
+  "chime": {
+    "restoredFrom": "4c7a9b5",
+    "fundamentalsHz": [
+      659.25,
+      830.61,
+      987.77
+    ],
+    "glide": false,
+    "originalTimingAndPartials": true,
+    "gapBeforeVoiceMs": 600
+  },
+  "canonicalZundamonWav": {
+    "count": 16,
+    "speakerStyleId": 3,
+    "changedInThisRevision": false
+  },
+  "mainHead": "7658997d3cd35323107ebfbc6b5f77017f48dddd",
+  "mainMerges": 0,
+  "productionChanges": 0,
+  "protectedUntrackedAudio": "Not modified, moved, deleted or staged"
+}

@@ -1,0 +1,20 @@
+{
+  "startingCommit": "c5a0b157290ed64e426db2f44d3903a44b3e7624",
+  "method": "Real AutoFlowPanel component in real Chromium, callback replacement at the event boundary after stopping current playback; native Audio and chime unchanged",
+  "plays": [
+    "http://127.0.0.1:3001/audio/flow/v2/00-opening.wav"
+  ],
+  "session": {
+    "version": 3,
+    "status": "running",
+    "startedAt": 1790781371818,
+    "pausedAt": null,
+    "accumulatedPausedMs": 0,
+    "firedEventIds": [
+      "opening",
+      "volley"
+    ],
+    "courts": 1
+  },
+  "status": "音声は再生していません"
+}
