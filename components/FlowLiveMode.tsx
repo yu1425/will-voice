@@ -17,8 +17,11 @@
 
 import { FLOW_QUICK_CAUTIONS, VOICE_TEST_TEXT } from "@/lib/flowCautions";
 import { TENNIS_FLOW_SCRIPTS, type FlowScript } from "@/lib/tennisFlowScripts";
+import type { ReactNode } from "react";
 
 type Props = {
+  autoFlow: ReactNode;
+  manualControlsDisabled: boolean;
   currentScript: FlowScript;
   nextScript: FlowScript | null;
   /** 実際に読み上げる予定のテキスト */
@@ -62,6 +65,8 @@ function nextStepPreview(source: string): string {
 }
 
 export default function FlowLiveMode({
+  autoFlow,
+  manualControlsDisabled,
   currentScript,
   nextScript,
   previewText,
@@ -92,6 +97,7 @@ export default function FlowLiveMode({
 
   return (
     <div className="flow-live">
+      {autoFlow}
       {/* 優先表示エリア: 現在ステップ・読み上げ・次へ/戻る */}
       <div className="flow-live__top">
         {/* 現在ステップの強調表示 */}
@@ -160,7 +166,7 @@ export default function FlowLiveMode({
             type="button"
             className="flow-live__next-btn"
             onClick={onNext}
-            disabled={isLast}
+            disabled={isLast || manualControlsDisabled}
           >
             次へ →
             {nextScript && (
@@ -171,7 +177,7 @@ export default function FlowLiveMode({
             type="button"
             className="flow-live__back-btn"
             onClick={onPrev}
-            disabled={isFirst}
+            disabled={isFirst || manualControlsDisabled}
           >
             ← 戻る
           </button>
@@ -180,6 +186,11 @@ export default function FlowLiveMode({
 
       {/* 補助操作エリア: ステップ一覧・タイマー・クイック注意喚起 */}
       <div className="flow-live__scroll">
+        {manualControlsDisabled && (
+          <p className="flow-live__manual-note">
+            自動進行中はタイムラインに合わせて手動ステップ移動を止めています。
+          </p>
+        )}
         {/* ステップ一覧チップ */}
         <div className="flow-live__steps" role="tablist" aria-label="ステップ選択">
           {Array.from({ length: totalSteps }, (_, i) => i + 1).map((n) => {
@@ -197,6 +208,7 @@ export default function FlowLiveMode({
                   isActive ? "flow-step-chip--active" : ""
                 }`}
                 onClick={() => onStepJump(n)}
+                disabled={manualControlsDisabled}
                 title={matched?.title}
               >
                 <span className="flow-step-chip__num">{n}</span>

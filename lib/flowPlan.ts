@@ -1,3 +1,5 @@
+import { buildStandardTwoHourPlan } from "./standardTwoHourFlow";
+
 /**
  * 今日の進行プラン生成
  * ============================================================
@@ -9,6 +11,7 @@
 
 export type FlowVibe = "casual" | "standard" | "serious";
 export type FlowDurationHours = 1 | 1.5 | 2 | 3;
+export type IntroTiming = "start" | "afterServe";
 
 export type FlowConditions = {
   /** 参加人数 */
@@ -23,6 +26,8 @@ export type FlowConditions = {
   manyBeginners: boolean;
   /** 雰囲気 */
   vibe: FlowVibe;
+  /** 自己紹介を開始時に行うか、サーブ練習後に回すか */
+  introTiming: IntroTiming;
 };
 
 export const DEFAULT_CONDITIONS: FlowConditions = {
@@ -32,6 +37,7 @@ export const DEFAULT_CONDITIONS: FlowConditions = {
   newcomerCount: 0,
   manyBeginners: false,
   vibe: "standard",
+  introTiming: "start",
 };
 
 export type PlanItem = {
@@ -161,6 +167,10 @@ function adjustSegments(
 
 /** 条件から進行プランを生成 */
 export function buildFlowPlan(c: FlowConditions): PlanItem[] {
+  // 2時間だけは条件で時刻境界を変えない標準メニューとする。
+  if (c.durationHours === 2) {
+    return buildStandardTwoHourPlan(c.introTiming);
+  }
   const total = Math.round(c.durationHours * 60);
   const adjusted = adjustSegments(baseSegments(c.durationHours), c);
 

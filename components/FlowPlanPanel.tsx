@@ -152,6 +152,32 @@ export default function FlowPlanPanel({ conditions, onChange }: Props) {
               </div>
             </div>
 
+            {conditions.durationHours === 2 && (
+              <div className="plan-form__row">
+                <span className="plan-form__label">自己紹介タイミング</span>
+                <div className="plan-form__choices">
+                  <button
+                    type="button"
+                    className={`plan-form__chip ${
+                      conditions.introTiming === "start" ? "plan-form__chip--active" : ""
+                    }`}
+                    onClick={() => patch({ introTiming: "start" })}
+                  >
+                    開始時
+                  </button>
+                  <button
+                    type="button"
+                    className={`plan-form__chip ${
+                      conditions.introTiming === "afterServe" ? "plan-form__chip--active" : ""
+                    }`}
+                    onClick={() => patch({ introTiming: "afterServe" })}
+                  >
+                    サーブ練習後
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="plan-form__row">
               <label className="plan-form__label" htmlFor="cond-newcomers">
                 初参加者の人数
@@ -226,7 +252,9 @@ export default function FlowPlanPanel({ conditions, onChange }: Props) {
               ))}
             </ol>
             <p className="plan-result__hint">
-              ※ 当日の状況に応じて、ステップの長さは前後しても大丈夫です。
+              {conditions.durationHours === 2
+                ? "※ 標準2時間メニューは、表示どおりの固定タイムラインです。"
+                : "※ 当日の状況に応じて、ステップの長さは前後しても大丈夫です。"}
             </p>
           </div>
         </div>

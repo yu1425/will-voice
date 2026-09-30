@@ -18,6 +18,7 @@ import FlowStepCard from "./FlowStepCard";
 import FlowPlanPanel from "./FlowPlanPanel";
 import FlowCautionPanel from "./FlowCautionPanel";
 import FlowLiveMode from "./FlowLiveMode";
+import AutoFlowPanel from "./AutoFlowPanel";
 import {
   TENNIS_FLOW_SCRIPTS,
   TIMER_FINISH_MESSAGE,
@@ -78,6 +79,7 @@ export default function FlowMode({
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [voiceLength, setVoiceLength] = useState<VoiceLength>("normal");
+  const [isAutoFlowActive, setIsAutoFlowActive] = useState(false);
 
   // タイマー
   const [timerSec, setTimerSec] = useState(5 * 60);
@@ -185,6 +187,11 @@ export default function FlowMode({
     persist(STEP_KEY, String(n));
     setEditingId(null);
   }, []);
+
+  const handleAutoFlowStepSync = useCallback(
+    (n: number) => handleStepJump(n),
+    [handleStepJump]
+  );
 
   const handlePrev = useCallback(() => {
     if (stepNumber > 1) handleStepJump(stepNumber - 1);
@@ -407,6 +414,17 @@ export default function FlowMode({
         {viewToggle}
         {currentScript && (
           <FlowLiveMode
+            autoFlow={
+              conditions.durationHours === 2 ? (
+                <AutoFlowPanel
+                  introTiming={conditions.introTiming}
+                  onSpeak={speak}
+                  onSyncStep={handleAutoFlowStepSync}
+                  onActiveChange={setIsAutoFlowActive}
+                />
+              ) : null
+            }
+            manualControlsDisabled={isAutoFlowActive}
             currentScript={currentScript}
             nextScript={nextScript}
             previewText={buildSpeakText(currentScript)}
@@ -630,6 +648,9 @@ function sanitizeConditions(
   }
   if (raw.vibe === "casual" || raw.vibe === "standard" || raw.vibe === "serious") {
     out.vibe = raw.vibe as FlowVibe;
+  }
+  if (raw.introTiming === "start" || raw.introTiming === "afterServe") {
+    out.introTiming = raw.introTiming;
   }
   return out;
 }
