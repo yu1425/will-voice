@@ -41,15 +41,19 @@ export async function playTransitionCue(): Promise<void> {
     stopTransitionCue();
 
     const startedAt = audioContext.currentTime + 0.015;
+    // 「ドゥーン、トゥーン、トゥーン」の3打。
+    // 音階は D5 → E5 → F5（ドレミを一音上げた「レミファ」の感覚）。
+    // 1打目を少し太く長く、2・3打目を軽くして切替合図として聞き取りやすくする。
     const strikes = [
-      { frequency: 698.46, at: 0, tail: 1.7 },
-      { frequency: 880.0, at: 0.48, tail: 1.8 },
-      { frequency: 1046.5, at: 0.96, tail: 1.9 },
+      { frequency: 587.33, at: 0, tail: 1.8, gainScale: 1 },
+      { frequency: 659.25, at: 0.72, tail: 1.55, gainScale: 0.86 },
+      { frequency: 698.46, at: 1.42, tail: 1.45, gainScale: 0.82 },
     ];
     const partials = [
-      { ratio: 1, gain: 0.13, tailScale: 1 },
-      { ratio: 2.01, gain: 0.04, tailScale: 0.72 },
-      { ratio: 2.98, gain: 0.016, tailScale: 0.52 },
+      { ratio: 0.5, gain: 0.042, tailScale: 1.05 },
+      { ratio: 1, gain: 0.11, tailScale: 1 },
+      { ratio: 2.01, gain: 0.028, tailScale: 0.7 },
+      { ratio: 2.98, gain: 0.009, tailScale: 0.48 },
     ];
 
     const nodes: OscillatorNode[] = [];
@@ -69,7 +73,7 @@ export async function playTransitionCue(): Promise<void> {
 
         gain.gain.setValueAtTime(0.0001, begin);
         gain.gain.exponentialRampToValueAtTime(
-          partial.gain,
+          partial.gain * strike.gainScale,
           begin + 0.018
         );
         gain.gain.exponentialRampToValueAtTime(
