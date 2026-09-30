@@ -41,12 +41,12 @@ export async function playTransitionCue(): Promise<void> {
     stopTransitionCue();
 
     const startedAt = audioContext.currentTime + 0.015;
-    // 音の厚さ・間隔・余韻は元の3打ベルへ戻す。
-    // 1音目と2音目はそのまま、最後だけ高く抜ける着地点にする。
+    // 音の厚さ・間隔・余韻は元の3打ベルのまま。
+    // 周波数だけを、より自然な上昇感のあるGメジャー三和音（G5→B5→D6）へ調整する。
     const strikes = [
-      { frequency: 659.25, at: 0, tail: 1.7 },
-      { frequency: 830.61, at: 0.48, tail: 1.8 },
-      { frequency: 1318.51, at: 0.96, tail: 1.9 },
+      { frequency: 783.99, at: 0, tail: 1.7 },
+      { frequency: 987.77, at: 0.48, tail: 1.8 },
+      { frequency: 1174.66, at: 0.96, tail: 1.9 },
     ];
     const partials = [
       { ratio: 1, gain: 0.13, tailScale: 1 },
