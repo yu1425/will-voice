@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import PageNavigation from "./PageNavigation";
+import { stopTransitionCue } from "@/lib/transitionCue";
 import ChatMessage, { ChatMessageData } from "@/components/ChatMessage";
 import FlowMode from "@/components/FlowMode";
 import { generateWillReply } from "@/lib/generateWillReply";
@@ -74,12 +75,45 @@ type AudioPresetParams = {
 };
 
 const AUDIO_PRESETS: Record<VoicevoxPresetName, AudioPresetParams> = {
-  "標準":              { speedScale: 1.0,  pitchScale: 0.0, intonationScale: 1.0,  volumeScale: 1.0, prePhonemeLength: 0.1, postPhonemeLength: 0.2  },
-  "明るめ":            { speedScale: 1.05, pitchScale: 0.0, intonationScale: 1.15, volumeScale: 1.0, prePhonemeLength: 0.1, postPhonemeLength: 0.2  },
-  "聞き取りやすさ重視": { speedScale: 0.95, pitchScale: 0.0, intonationScale: 1.05, volumeScale: 1.0, prePhonemeLength: 0.1, postPhonemeLength: 0.25 },
-  "ゆっくり":          { speedScale: 0.88, pitchScale: 0.0, intonationScale: 1.0,  volumeScale: 1.0, prePhonemeLength: 0.1, postPhonemeLength: 0.3  },
+  標準: {
+    speedScale: 1.0,
+    pitchScale: 0.0,
+    intonationScale: 1.0,
+    volumeScale: 1.0,
+    prePhonemeLength: 0.1,
+    postPhonemeLength: 0.2,
+  },
+  明るめ: {
+    speedScale: 1.05,
+    pitchScale: 0.0,
+    intonationScale: 1.15,
+    volumeScale: 1.0,
+    prePhonemeLength: 0.1,
+    postPhonemeLength: 0.2,
+  },
+  聞き取りやすさ重視: {
+    speedScale: 0.95,
+    pitchScale: 0.0,
+    intonationScale: 1.05,
+    volumeScale: 1.0,
+    prePhonemeLength: 0.1,
+    postPhonemeLength: 0.25,
+  },
+  ゆっくり: {
+    speedScale: 0.88,
+    pitchScale: 0.0,
+    intonationScale: 1.0,
+    volumeScale: 1.0,
+    prePhonemeLength: 0.1,
+    postPhonemeLength: 0.3,
+  },
 };
-const PRESET_NAMES: VoicevoxPresetName[] = ["標準", "明るめ", "聞き取りやすさ重視", "ゆっくり"];
+const PRESET_NAMES: VoicevoxPresetName[] = [
+  "標準",
+  "明るめ",
+  "聞き取りやすさ重視",
+  "ゆっくり",
+];
 const DEFAULT_PRESET: VoicevoxPresetName = "明るめ";
 
 const VOICE_TEST_TEXT =
@@ -98,21 +132,28 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   const [recognitionOk, setRecognitionOk] = useState(true);
 
   const [voiceMode, setVoiceMode] = useState<VoiceMode>("recorded");
-  const [voicevoxStatus, setVoicevoxStatus] = useState<VoicevoxStatus>("unknown");
+  const [voicevoxStatus, setVoicevoxStatus] =
+    useState<VoicevoxStatus>("unknown");
   const [zundamonStyles, setZundamonStyles] = useState<ZundamonStyle[]>([]);
   const [styleId, setStyleId] = useState<number | null>(null);
   const [speakersError, setSpeakersError] = useState<string | null>(null);
-  const [audioPreset, setAudioPreset] = useState<VoicevoxPresetName>(DEFAULT_PRESET);
-  const [audioParams, setAudioParams] = useState<AudioPresetParams>(AUDIO_PRESETS[DEFAULT_PRESET]);
+  const [audioPreset, setAudioPreset] =
+    useState<VoicevoxPresetName>(DEFAULT_PRESET);
+  const [audioParams, setAudioParams] = useState<AudioPresetParams>(
+    AUDIO_PRESETS[DEFAULT_PRESET],
+  );
   const [isLocal, setIsLocal] = useState(true);
-  const [japaneseVoices, setJapaneseVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [japaneseVoices, setJapaneseVoices] = useState<SpeechSynthesisVoice[]>(
+    [],
+  );
   const [standardVoiceURI, setStandardVoiceURI] = useState<string | null>(null);
   const [recordedVolume, setRecordedVolume] = useState(1);
   // 録音音声だけを標準表示にし、追加の音声は設定で任意に表示する。
-  const [optionalVoiceModes, setOptionalVoiceModes] = useState<OptionalVoiceModes>({
-    standard: false,
-    voicevox: false,
-  });
+  const [optionalVoiceModes, setOptionalVoiceModes] =
+    useState<OptionalVoiceModes>({
+      standard: false,
+      voicevox: false,
+    });
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const listeningRef = useRef<ListeningHandle | null>(null);
@@ -120,14 +161,15 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   const voicevoxAbortRef = useRef<AbortController | null>(null);
   const speechGenerationRef = useRef(0);
   const pauseRequestedRef = useRef(false);
+  const appMountedRef = useRef(true);
   const logRef = useRef<HTMLDivElement | null>(null);
 
   // 初期化(クライアントのみ)
   useEffect(() => {
     setRecognitionOk(isSpeechRecognitionSupported());
-    if (!isSpeechRecognitionSupported()) {
+    if (mode === "chat" && !isSpeechRecognitionSupported()) {
       setNotice(
-        "このブラウザは音声認識に対応していません。スマホ/PCの Chrome でお試しください😊"
+        "このブラウザは音声認識に対応していません。スマホ/PCの Chrome でお試しください😊",
       );
     }
     if (isSpeechSynthesisSupported()) {
@@ -142,9 +184,13 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
         standard: false,
         voicevox: false,
       };
-      const savedOptionalModes = window.localStorage.getItem(OPTIONAL_VOICE_MODES_STORAGE_KEY);
+      const savedOptionalModes = window.localStorage.getItem(
+        OPTIONAL_VOICE_MODES_STORAGE_KEY,
+      );
       if (savedOptionalModes) {
-        const parsed = JSON.parse(savedOptionalModes) as Partial<OptionalVoiceModes>;
+        const parsed = JSON.parse(
+          savedOptionalModes,
+        ) as Partial<OptionalVoiceModes>;
         savedOptionalVoiceModes = {
           standard: parsed.standard === true,
           voicevox: parsed.voicevox === true,
@@ -162,11 +208,15 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           setVoiceMode(savedVoice);
         }
       }
-      const savedPreset = window.localStorage.getItem(VOICEVOX_PRESET_STORAGE_KEY);
+      const savedPreset = window.localStorage.getItem(
+        VOICEVOX_PRESET_STORAGE_KEY,
+      );
       if (savedPreset && savedPreset in AUDIO_PRESETS) {
         const p = savedPreset as VoicevoxPresetName;
         setAudioPreset(p);
-        const rawParams = window.localStorage.getItem(VOICEVOX_PARAMS_STORAGE_KEY);
+        const rawParams = window.localStorage.getItem(
+          VOICEVOX_PARAMS_STORAGE_KEY,
+        );
         if (rawParams) {
           const parsed = JSON.parse(rawParams) as Partial<AudioPresetParams>;
           setAudioParams({ ...AUDIO_PRESETS[p], ...parsed });
@@ -174,10 +224,14 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           setAudioParams(AUDIO_PRESETS[p]);
         }
       }
-      const savedVoiceURI = window.localStorage.getItem(STANDARD_VOICE_STORAGE_KEY);
+      const savedVoiceURI = window.localStorage.getItem(
+        STANDARD_VOICE_STORAGE_KEY,
+      );
       if (savedVoiceURI) setStandardVoiceURI(savedVoiceURI);
 
-      const savedVolume = window.localStorage.getItem(RECORDED_VOLUME_STORAGE_KEY);
+      const savedVolume = window.localStorage.getItem(
+        RECORDED_VOLUME_STORAGE_KEY,
+      );
       if (savedVolume) {
         const v = Number(savedVolume);
         if (Number.isFinite(v) && v >= 0 && v <= 1) setRecordedVolume(v);
@@ -193,7 +247,8 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     const load = () => setJapaneseVoices(getJapaneseVoices());
     load();
     window.speechSynthesis.addEventListener("voiceschanged", load);
-    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
+    return () =>
+      window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
   /** VOICEVOX 話者一覧を取得し、状態を更新 */
@@ -217,7 +272,10 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       const saved = window.localStorage.getItem(VOICEVOX_STYLE_STORAGE_KEY);
       if (saved !== null) {
         const parsed = Number(saved);
-        if (Number.isFinite(parsed) && styles.some((s) => s.styleId === parsed)) {
+        if (
+          Number.isFinite(parsed) &&
+          styles.some((s) => s.styleId === parsed)
+        ) {
           initialId = parsed;
         }
       }
@@ -252,7 +310,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     (role: ChatMessageData["role"], text: string) => {
       setMessages((prev) => [...prev, { id: makeId(), role, text }]);
     },
-    []
+    [],
   );
 
   /** 音声モード切替 */
@@ -264,7 +322,8 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       /* no-op */
     }
     setNotice(null);
-    if (mode === "standard" || mode === "recorded") setVoicevoxStatus("unknown");
+    if (mode === "standard" || mode === "recorded")
+      setVoicevoxStatus("unknown");
   }, []);
 
   const handleOptionalVoiceModeChange = useCallback(
@@ -272,7 +331,10 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       setOptionalVoiceModes((previous) => {
         const next = { ...previous, [mode]: visible };
         try {
-          window.localStorage.setItem(OPTIONAL_VOICE_MODES_STORAGE_KEY, JSON.stringify(next));
+          window.localStorage.setItem(
+            OPTIONAL_VOICE_MODES_STORAGE_KEY,
+            JSON.stringify(next),
+          );
         } catch {
           /* no-op */
         }
@@ -284,7 +346,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
         handleVoiceModeChange("recorded");
       }
     },
-    [handleVoiceModeChange, voiceMode]
+    [handleVoiceModeChange, voiceMode],
   );
 
   const handleStyleChange = useCallback((id: number) => {
@@ -302,7 +364,10 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     setAudioParams(params);
     try {
       window.localStorage.setItem(VOICEVOX_PRESET_STORAGE_KEY, name);
-      window.localStorage.setItem(VOICEVOX_PARAMS_STORAGE_KEY, JSON.stringify(params));
+      window.localStorage.setItem(
+        VOICEVOX_PARAMS_STORAGE_KEY,
+        JSON.stringify(params),
+      );
     } catch {
       /* no-op */
     }
@@ -328,6 +393,8 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
 
   /** 全方式の読み上げ停止 */
   const stopAllSpeaking = useCallback(() => {
+    setNotice(null);
+    stopTransitionCue();
     speechGenerationRef.current += 1;
     voicevoxAbortRef.current?.abort();
     voicevoxAbortRef.current = null;
@@ -341,7 +408,9 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   }, []);
 
   useEffect(() => {
+    appMountedRef.current = true;
     return () => {
+      appMountedRef.current = false;
       stopAllSpeaking();
       listeningRef.current?.stop();
     };
@@ -374,7 +443,8 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
    * VOICEVOX 失敗時は内部で SpeechSynthesis にフォールバックする。
    */
   const speak = useCallback(
-    async (text: string, audioSrc?: string) => {
+    async (text: string, audioSrc?: string, requireRecording = false) => {
+      if (requireRecording) setNotice(null);
       // 旧セッションを完全停止してから、新しい再生だけを現行セッションにする。
       stopAllSpeaking();
       const generation = ++speechGenerationRef.current;
@@ -394,12 +464,26 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
 
       setIsSpeaking(true);
 
-      if (voiceMode === "recorded" && audioSrc) {
+      if ((requireRecording || voiceMode === "recorded") && audioSrc) {
         playRecordedAudio(audioSrc, {
           volume: recordedVolume,
           onEnd: finishIfCurrent,
-          onError: fallbackToStandard,
+          onError: requireRecording
+            ? () => {
+                if (!isCurrent()) return;
+                finishIfCurrent();
+                setNotice(
+                  "案内音声を再生できませんでした。音量と接続を確認して、もう一度「案内を再生」を押してください。",
+                );
+              }
+            : fallbackToStandard,
         });
+        return;
+      }
+
+      if (requireRecording) {
+        finishIfCurrent();
+        setNotice("案内音声が見つかりません。ページを読み込み直してください。");
         return;
       }
 
@@ -454,12 +538,25 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       stopAllSpeaking,
       styleId,
       voiceMode,
-    ]
+    ],
   );
+
+  const speakRecorded = useCallback(
+    (text: string, audioSrc?: string) => {
+      void speak(text, audioSrc, true);
+    },
+    [speak],
+  );
+  const leavePage = useCallback(() => {
+    listeningRef.current?.stop();
+    window.dispatchEvent(new Event("will-flow-leave"));
+    stopAllSpeaking();
+  }, [stopAllSpeaking]);
 
   /** ユーザー発話受領 → うぃる返答生成 → 読み上げ */
   const handleUserMessage = useCallback(
     async (text: string) => {
+      const replyGeneration = speechGenerationRef.current;
       addMessage("user", text);
       setIsThinking(true);
 
@@ -471,11 +568,16 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           "お疲れ様です！うまくお返事できませんでした🙇‍♂️ もう一度お試しください。";
       }
 
+      if (
+        !appMountedRef.current ||
+        replyGeneration !== speechGenerationRef.current
+      )
+        return;
       setIsThinking(false);
       addMessage("will", reply);
       await speak(reply);
     },
-    [addMessage, speak]
+    [addMessage, speak],
   );
 
   /** テキスト送信 */
@@ -540,246 +642,301 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   }, [voiceMode, voicevoxStatus]);
 
   return (
-    <div className={`app app--${mode}${settingsOpen ? " app--settings-open" : ""}`}>
+    <div
+      className={`app app--${mode}${settingsOpen ? " app--settings-open" : ""}`}
+    >
       {/* ヘッダー */}
       <header className="header">
         <div className="header__avatar">
           <Image src="/will.png" alt="うぃる" width={40} height={40} priority />
         </div>
         <div className="header__titles">
-          <span className="header__title">{mode === "flow" ? "うぃる進行" : "うぃる AIボイス"}</span>
-          <span className="header__subtitle">{mode === "flow" ? "WILL.tennis 進行アシスタント" : "WILL.tennis マスコット"}</span>
+          <span className="header__title">
+            {mode === "flow" ? "うぃる進行" : "うぃる AIボイス"}
+          </span>
+          <span className="header__subtitle">
+            {mode === "flow"
+              ? "WILL.tennis 進行アシスタント"
+              : "WILL.tennis マスコット"}
+          </span>
         </div>
         <div className="header__actions">
-          <Link
-            className="header__page-link"
-            href={mode === "flow" ? "/chat" : "/flow"}
-            onClick={stopAllSpeaking}
+          <button
+            type="button"
+            className="settings-toggle"
+            onClick={() => setSettingsOpen((open) => !open)}
+            aria-expanded={settingsOpen}
+            aria-controls="voice-display-settings"
           >
-            {mode === "flow" ? "うぃるに聞く" : "進行へ"}
-          </Link>
-        <button
-          type="button"
-          className="settings-toggle"
-          onClick={() => setSettingsOpen((open) => !open)}
-          aria-expanded={settingsOpen}
-          aria-controls="voice-display-settings"
-        >
-          設定
-        </button>
+            設定
+          </button>
         </div>
       </header>
 
-      {settingsOpen && (
-        <section id="voice-display-settings" className="settings-panel" aria-label="表示設定">
-          <div>
-            <p className="settings-panel__title">表示する読み上げ音声</p>
-            <p className="settings-panel__hint">
-              録音音声は常に表示されます。必要な音声だけ追加してください。
-            </p>
-          </div>
-          <label className="settings-panel__option">
-            <input
-              type="checkbox"
-              checked={optionalVoiceModes.standard}
-              onChange={(e) => handleOptionalVoiceModeChange("standard", e.target.checked)}
-            />
-            標準音声を表示
+      {mode === "flow" && settingsOpen && (
+        <section className="settings-panel">
+          <label htmlFor="flow-recorded-volume">
+            案内の音量 {Math.round(recordedVolume * 100)}%
           </label>
-          <label className="settings-panel__option">
-            <input
-              type="checkbox"
-              checked={optionalVoiceModes.voicevox}
-              onChange={(e) => handleOptionalVoiceModeChange("voicevox", e.target.checked)}
-            />
-            VOICEVOXを表示
-          </label>
+          <input
+            id="flow-recorded-volume"
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={recordedVolume}
+            onChange={(e) => handleRecordedVolumeChange(Number(e.target.value))}
+          />
+          <p className="flow-muted">
+            進行の案内は、ずんだもんの音声で再生します。
+          </p>
         </section>
       )}
-
-      {/* 音声モード切替 */}
-      <div className="voice-mode" role="radiogroup" aria-label="読み上げ音声">
-        <span className="voice-mode__label">読み上げ:</span>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={voiceMode === "recorded"}
-          className={`voice-mode__btn ${
-            voiceMode === "recorded" ? "voice-mode__btn--active" : ""
-          }`}
-          onClick={() => { stopAllSpeaking(); handleVoiceModeChange("recorded"); }}
-          title="録音済みのうぃる音声で再生します（進行モードのみ）"
-        >
-          録音音声
-        </button>
-        {optionalVoiceModes.standard && (
-          <button
-            type="button"
-            role="radio"
-            aria-checked={voiceMode === "standard"}
-            className={`voice-mode__btn ${
-              voiceMode === "standard" ? "voice-mode__btn--active" : ""
-            }`}
-            onClick={() => { stopAllSpeaking(); handleVoiceModeChange("standard"); }}
-            title="ブラウザ標準の音声合成で読み上げます"
+      <div hidden={mode === "flow"}>
+        {settingsOpen && (
+          <section
+            id="voice-display-settings"
+            className="settings-panel"
+            aria-label="表示設定"
           >
-            標準音声
-          </button>
-        )}
-        {optionalVoiceModes.voicevox && (
-          <button
-            type="button"
-            role="radio"
-            aria-checked={voiceMode === "voicevox"}
-            className={`voice-mode__btn ${
-              voiceMode === "voicevox" ? "voice-mode__btn--active" : ""
-            }`}
-            onClick={() => { stopAllSpeaking(); handleVoiceModeChange("voicevox"); }}
-            title="VOICEVOX:ずんだもん で読み上げます"
-          >
-            VOICEVOX
-          </button>
-        )}
-      </div>
-
-      {/* 標準音声 詳細パネル */}
-      {voiceMode === "standard" && japaneseVoices.length > 0 && (
-        <div className="voicevox-panel">
-          <div className="voicevox-panel__row">
-            <label htmlFor="standard-voice" className="voicevox-panel__label">
-              ボイス:
-            </label>
-            <select
-              id="standard-voice"
-              className="voicevox-panel__select"
-              value={standardVoiceURI ?? ""}
-              onChange={(e) => handleStandardVoiceChange(e.target.value)}
-            >
-              <option value="">自動選択</option>
-              {japaneseVoices.map((v) => (
-                <option key={v.voiceURI} value={v.voiceURI}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
-
-      {/* 録音音声 詳細パネル */}
-      {voiceMode === "recorded" && (
-        <div className="voicevox-panel">
-          <div className="voicevox-panel__row">
-            <label htmlFor="recorded-volume" className="voicevox-panel__label">
-              音量: {Math.round(recordedVolume * 100)}%
-            </label>
-            <input
-              id="recorded-volume"
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={recordedVolume}
-              onChange={(e) => handleRecordedVolumeChange(Number(e.target.value))}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* VOICEVOX 詳細パネル */}
-      {voiceMode === "voicevox" && (
-        <div className="voicevox-panel">
-          <div className="voicevox-panel__row">
-            <span className="voicevox-panel__credit">音声: VOICEVOX:ずんだもん</span>
-            {isLocal && statusLabel && (
-              <span className={`voicevox-status__pill ${statusLabel.cls}`}>
-                {statusLabel.text}
-              </span>
-            )}
-          </div>
-
-          {!isLocal ? (
-            <div className="voicevox-panel__hint voicevox-panel__hint--public">
-              公開版ではVOICEVOXに接続できないため、標準音声で読み上げます。
-              ローカル環境でVOICEVOXを起動している場合のみ、VOICEVOX音声を利用できます。
+            <div>
+              <p className="settings-panel__title">表示する読み上げ音声</p>
+              <p className="settings-panel__hint">
+                録音音声は常に表示されます。必要な音声だけ追加してください。
+              </p>
             </div>
-          ) : zundamonStyles.length > 0 ? (
+            <label className="settings-panel__option">
+              <input
+                type="checkbox"
+                checked={optionalVoiceModes.standard}
+                onChange={(e) =>
+                  handleOptionalVoiceModeChange("standard", e.target.checked)
+                }
+              />
+              標準音声を表示
+            </label>
+            <label className="settings-panel__option">
+              <input
+                type="checkbox"
+                checked={optionalVoiceModes.voicevox}
+                onChange={(e) =>
+                  handleOptionalVoiceModeChange("voicevox", e.target.checked)
+                }
+              />
+              VOICEVOXを表示
+            </label>
+          </section>
+        )}
+
+        {/* 音声モード切替 */}
+        <div className="voice-mode" role="radiogroup" aria-label="読み上げ音声">
+          <span className="voice-mode__label">読み上げ:</span>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={voiceMode === "recorded"}
+            className={`voice-mode__btn ${
+              voiceMode === "recorded" ? "voice-mode__btn--active" : ""
+            }`}
+            onClick={() => {
+              stopAllSpeaking();
+              handleVoiceModeChange("recorded");
+            }}
+            title="録音済みのうぃる音声で再生します（進行モードのみ）"
+          >
+            録音音声
+          </button>
+          {optionalVoiceModes.standard && (
+            <button
+              type="button"
+              role="radio"
+              aria-checked={voiceMode === "standard"}
+              className={`voice-mode__btn ${
+                voiceMode === "standard" ? "voice-mode__btn--active" : ""
+              }`}
+              onClick={() => {
+                stopAllSpeaking();
+                handleVoiceModeChange("standard");
+              }}
+              title="ブラウザ標準の音声合成で読み上げます"
+            >
+              標準音声
+            </button>
+          )}
+          {optionalVoiceModes.voicevox && (
+            <button
+              type="button"
+              role="radio"
+              aria-checked={voiceMode === "voicevox"}
+              className={`voice-mode__btn ${
+                voiceMode === "voicevox" ? "voice-mode__btn--active" : ""
+              }`}
+              onClick={() => {
+                stopAllSpeaking();
+                handleVoiceModeChange("voicevox");
+              }}
+              title="VOICEVOX:ずんだもん で読み上げます"
+            >
+              VOICEVOX
+            </button>
+          )}
+        </div>
+
+        {/* 標準音声 詳細パネル */}
+        {voiceMode === "standard" && japaneseVoices.length > 0 && (
+          <div className="voicevox-panel">
             <div className="voicevox-panel__row">
-              <label htmlFor="zundamon-style" className="voicevox-panel__label">
-                話者スタイル:
+              <label htmlFor="standard-voice" className="voicevox-panel__label">
+                ボイス:
               </label>
               <select
-                id="zundamon-style"
+                id="standard-voice"
                 className="voicevox-panel__select"
-                value={styleId ?? ""}
-                onChange={(e) => handleStyleChange(Number(e.target.value))}
+                value={standardVoiceURI ?? ""}
+                onChange={(e) => handleStandardVoiceChange(e.target.value)}
               >
-                {zundamonStyles.map((s) => (
-                  <option key={s.styleId} value={s.styleId}>
-                    ずんだもん {s.styleName} (id: {s.styleId})
+                <option value="">自動選択</option>
+                {japaneseVoices.map((v) => (
+                  <option key={v.voiceURI} value={v.voiceURI}>
+                    {v.name}
                   </option>
                 ))}
               </select>
-              <button
-                type="button"
-                className="voicevox-panel__refresh"
-                onClick={() => refreshSpeakers()}
-                title="話者一覧を再取得"
-              >
-                ↻
-              </button>
             </div>
-          ) : (
-            <div className="voicevox-panel__hint">
-              {voicevoxStatus === "disconnected"
-                ? "VOICEVOXに接続できませんでした。VOICEVOXアプリを起動してから「↻」で再確認してください。標準音声で読み上げます。"
-                : voicevoxStatus === "unknown"
-                ? "VOICEVOX の話者一覧を確認しています…"
-                : "ずんだもんの話者が見つかりませんでした。VOICEVOXのバージョンをご確認ください。"}
-              {speakersError && (
-                <span className="voicevox-panel__error"> ({speakersError})</span>
-              )}
-              <button
-                type="button"
-                className="voicevox-panel__refresh"
-                onClick={() => refreshSpeakers()}
-                title="再確認"
-              >
-                ↻
-              </button>
-            </div>
-          )}
+          </div>
+        )}
 
-          {/* 音声チューニング (localhost のみ) */}
-          {isLocal && (
-            <div className="voicevox-tuning">
-              <div className="voicevox-tuning__label">音声チューニング:</div>
-              <div className="voicevox-tuning__presets">
-                {PRESET_NAMES.map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    className={`voicevox-tuning__preset-btn${audioPreset === name ? " voicevox-tuning__preset-btn--active" : ""}`}
-                    onClick={() => handlePresetChange(name)}
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="voicevox-tuning__test-btn"
-                onClick={handleVoiceTest}
-                disabled={isSpeaking}
+        {/* 録音音声 詳細パネル */}
+        {voiceMode === "recorded" && (
+          <div className="voicevox-panel">
+            <div className="voicevox-panel__row">
+              <label
+                htmlFor="recorded-volume"
+                className="voicevox-panel__label"
               >
-                この設定で音声テスト
-              </button>
+                音量: {Math.round(recordedVolume * 100)}%
+              </label>
+              <input
+                id="recorded-volume"
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={recordedVolume}
+                onChange={(e) =>
+                  handleRecordedVolumeChange(Number(e.target.value))
+                }
+              />
             </div>
-          )}
+          </div>
+        )}
+
+        {/* VOICEVOX 詳細パネル */}
+        {voiceMode === "voicevox" && (
+          <div className="voicevox-panel">
+            <div className="voicevox-panel__row">
+              <span className="voicevox-panel__credit">
+                音声: VOICEVOX:ずんだもん
+              </span>
+              {isLocal && statusLabel && (
+                <span className={`voicevox-status__pill ${statusLabel.cls}`}>
+                  {statusLabel.text}
+                </span>
+              )}
+            </div>
+
+            {!isLocal ? (
+              <div className="voicevox-panel__hint voicevox-panel__hint--public">
+                公開版ではVOICEVOXに接続できないため、標準音声で読み上げます。
+                ローカル環境でVOICEVOXを起動している場合のみ、VOICEVOX音声を利用できます。
+              </div>
+            ) : zundamonStyles.length > 0 ? (
+              <div className="voicevox-panel__row">
+                <label
+                  htmlFor="zundamon-style"
+                  className="voicevox-panel__label"
+                >
+                  話者スタイル:
+                </label>
+                <select
+                  id="zundamon-style"
+                  className="voicevox-panel__select"
+                  value={styleId ?? ""}
+                  onChange={(e) => handleStyleChange(Number(e.target.value))}
+                >
+                  {zundamonStyles.map((s) => (
+                    <option key={s.styleId} value={s.styleId}>
+                      ずんだもん {s.styleName} (id: {s.styleId})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="voicevox-panel__refresh"
+                  onClick={() => refreshSpeakers()}
+                  title="話者一覧を再取得"
+                >
+                  ↻
+                </button>
+              </div>
+            ) : (
+              <div className="voicevox-panel__hint">
+                {voicevoxStatus === "disconnected"
+                  ? "VOICEVOXに接続できませんでした。VOICEVOXアプリを起動してから「↻」で再確認してください。標準音声で読み上げます。"
+                  : voicevoxStatus === "unknown"
+                    ? "VOICEVOX の話者一覧を確認しています…"
+                    : "ずんだもんの話者が見つかりませんでした。VOICEVOXのバージョンをご確認ください。"}
+                {speakersError && (
+                  <span className="voicevox-panel__error">
+                    {" "}
+                    ({speakersError})
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="voicevox-panel__refresh"
+                  onClick={() => refreshSpeakers()}
+                  title="再確認"
+                >
+                  ↻
+                </button>
+              </div>
+            )}
+
+            {/* 音声チューニング (localhost のみ) */}
+            {isLocal && (
+              <div className="voicevox-tuning">
+                <div className="voicevox-tuning__label">音声チューニング:</div>
+                <div className="voicevox-tuning__presets">
+                  {PRESET_NAMES.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      className={`voicevox-tuning__preset-btn${audioPreset === name ? " voicevox-tuning__preset-btn--active" : ""}`}
+                      onClick={() => handlePresetChange(name)}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="voicevox-tuning__test-btn"
+                  onClick={handleVoiceTest}
+                  disabled={isSpeaking}
+                >
+                  この設定で音声テスト
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      {notice && (
+        <div className="notice" role="alert">
+          {notice}
         </div>
       )}
-
-      {notice && <div className="notice">{notice}</div>}
 
       {/* タブ別本体 */}
       {mode === "chat" ? (
@@ -875,6 +1032,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           <div className="flow-scroll">
             <FlowMode
               speak={speak}
+              speakRecorded={speakRecorded}
               stopSpeaking={stopAllSpeaking}
               isSpeaking={isSpeaking}
               isSpeakingPaused={isSpeakingPaused}
@@ -897,12 +1055,11 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           </div>
 
           <footer className="footer footer--slim">
-            <p className="footer__credit">
-              音声: 録音音声(うぃる) / VOICEVOX:ずんだもん / ブラウザ標準音声
-            </p>
+            <p className="footer__credit">音声: VOICEVOX:ずんだもん</p>
           </footer>
         </>
       )}
+      <PageNavigation current={mode} onNavigate={leavePage} />
     </div>
   );
 }

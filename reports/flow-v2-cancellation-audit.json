@@ -1,0 +1,26 @@
+{
+  "auditedAt": "2026-09-30T13:13:41.118Z",
+  "base": "http://127.0.0.1:3001",
+  "checks": [
+    {
+      "name": "late recorded callback cannot stop new playback or fallback",
+      "pass": true
+    },
+    {
+      "name": "mode switch aborts delayed real VOICEVOX response",
+      "pass": true
+    },
+    {
+      "name": "real VOICEVOX blob playback stops on flow to guide",
+      "pass": true
+    },
+    {
+      "name": "SpeechSynthesis cancel on manual to auto",
+      "pass": true
+    },
+    {
+      "name": "desktop preserves centered 480px app",
+      "pass": true
+    }
+  ]
+}

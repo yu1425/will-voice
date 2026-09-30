@@ -1,0 +1,261 @@
+{
+  "startingBranch": "codex/standard-two-hour-auto-flow",
+  "startingSha": "992eee14f3205ddf8de3ac512a5e3cd6390513a4",
+  "pr": "https://github.com/yu1425/will-voice/pull/6",
+  "checks": {
+    "typecheck": "PASS (npx tsc --noEmit)",
+    "build": "PASS (npm run build)",
+    "diffCheck": "PASS (git diff --check)",
+    "logic": "PASS (node scripts/test-flow.mjs)",
+    "browserChecks": 46,
+    "cancellationChecks": 5,
+    "browserRuntimeErrors": []
+  },
+  "viewports": {
+    "390x844": "PASS: visual inspection, no horizontal overflow or clipped controls; timeline/progress/STEP list/guide/chat/navigation readable",
+    "480x920": "PASS: same checks",
+    "1440x1000": "PASS: centered 480px app"
+  },
+  "timeline": [
+    {
+      "time": "00:00",
+      "event": "opening",
+      "title": "開始・ショートラリー"
+    },
+    {
+      "time": "00:05",
+      "event": "volley",
+      "title": "ボレーボレー"
+    },
+    {
+      "time": "00:10",
+      "event": "long-rally",
+      "title": "ロングラリー"
+    },
+    {
+      "time": "00:20",
+      "event": "cross-rally",
+      "title": "クロスラリー"
+    },
+    {
+      "time": "00:30",
+      "event": "serve-return",
+      "title": "サーブ・リターン"
+    },
+    {
+      "time": "00:35",
+      "event": "serve-return-switch",
+      "title": "サーブ・リターン交代"
+    },
+    {
+      "time": "00:40",
+      "event": "random-table",
+      "title": "乱数表の説明"
+    },
+    {
+      "time": "00:43",
+      "event": "game-rules",
+      "title": "試合ルール"
+    },
+    {
+      "time": "00:46",
+      "event": "self-intro",
+      "title": "自己紹介"
+    },
+    {
+      "time": "00:50",
+      "event": "game-start",
+      "title": "ゲーム開始"
+    },
+    {
+      "time": "01:45",
+      "event": "mini-game",
+      "title": "ミニゲーム（リレーラリー）"
+    },
+    {
+      "time": "01:57",
+      "event": "closing",
+      "title": "終了あいさつ・片付け"
+    },
+    {
+      "time": "02:00",
+      "event": "completed",
+      "title": "進行完了（無音）"
+    }
+  ],
+  "audio": {
+    "speaker": "ずんだもん",
+    "style": "ノーマル",
+    "styleId": 3,
+    "engineVersion": "0.25.2",
+    "files": [
+      {
+        "file": "public/audio/flow/v2/00-opening.wav",
+        "seconds": 28.5
+      },
+      {
+        "file": "public/audio/flow/v2/05-volley.wav",
+        "seconds": 14.57
+      },
+      {
+        "file": "public/audio/flow/v2/10-long-rally.wav",
+        "seconds": 20.54
+      },
+      {
+        "file": "public/audio/flow/v2/20-cross-rally-single.wav",
+        "seconds": 15.29
+      },
+      {
+        "file": "public/audio/flow/v2/20-cross-rally-double.wav",
+        "seconds": 17.23
+      },
+      {
+        "file": "public/audio/flow/v2/30-serve-return-single.wav",
+        "seconds": 23.67
+      },
+      {
+        "file": "public/audio/flow/v2/30-serve-return-double.wav",
+        "seconds": 25.7
+      },
+      {
+        "file": "public/audio/flow/v2/35-serve-return-switch.wav",
+        "seconds": 7.89
+      },
+      {
+        "file": "public/audio/flow/v2/40-random-table-single.wav",
+        "seconds": 23.03
+      },
+      {
+        "file": "public/audio/flow/v2/40-random-table-double.wav",
+        "seconds": 24.33
+      },
+      {
+        "file": "public/audio/flow/v2/43-game-rules.wav",
+        "seconds": 27.37
+      },
+      {
+        "file": "public/audio/flow/v2/46-self-intro.wav",
+        "seconds": 13.39
+      },
+      {
+        "file": "public/audio/flow/v2/50-game-start.wav",
+        "seconds": 8.63
+      },
+      {
+        "file": "public/audio/flow/v2/105-mini-game.wav",
+        "seconds": 28.27
+      },
+      {
+        "file": "public/audio/flow/v2/117-closing.wav",
+        "seconds": 20.41
+      },
+      {
+        "file": "public/audio/flow/v2/voice-test.wav",
+        "seconds": 4.11
+      }
+    ],
+    "readings": [
+      "WILL.tennis → ウィルテニス",
+      "乱数表 → らんすうひょう",
+      "4ポイント先取 → よんポイントせんしゅ",
+      "2人 → ふたり",
+      "3球 → さんきゅう",
+      "1列 → いちれつ",
+      "2本 → にほん",
+      "3本 → さんぼん",
+      "人を指す方 → かた",
+      "初参加 → はじめて参加"
+    ],
+    "proof": "all source/normalized text, kana/accent phrases and duration in flow-audio-v2-audit.json; all 16 files decoded and play() succeeded in real Chromium; automatic speech fallback = 0"
+  },
+  "autoUi": [
+    "slate/navy surfaces; max-width 480px",
+    "elapsed/remaining/percentage/start/end/next/countdown",
+    "vertical completed/current/upcoming timeline with inline seek confirmation",
+    "fixed controls; court settings and first-time guide link",
+    "pause/resume and v1/v2/v3 restoration with no burst"
+  ],
+  "manualUi": [
+    "12 selectable canonical STEP scripts, current preview, numbered list",
+    "fixed play/pause/resume/stop and previous/next",
+    "ongoing auto clock status and return action",
+    "optional timer/cautions/temporary edits"
+  ],
+  "guideSections": [
+    "自動進行",
+    "個別進行",
+    "開催当日のおすすめ",
+    "音声操作",
+    "画面切替・復元",
+    "困ったとき"
+  ],
+  "changedFiles": [
+    "README.md",
+    "app/flow.css",
+    "app/globals.css",
+    "app/guide/page.tsx",
+    "app/layout.tsx",
+    "components/AutoFlowPanel.tsx",
+    "components/FlowExtras.tsx",
+    "components/FlowLiveMode.tsx",
+    "components/FlowMode.tsx",
+    "components/PageNavigation.tsx",
+    "components/WillVoiceApp.tsx",
+    "lib/flowScripts.json",
+    "lib/flowScripts.ts",
+    "lib/standardTwoHourFlow.ts",
+    "lib/tennisFlowScripts.ts",
+    "lib/voicevoxText.ts",
+    "public/audio/flow/v2/00-opening.wav",
+    "public/audio/flow/v2/05-volley.wav",
+    "public/audio/flow/v2/10-long-rally.wav",
+    "public/audio/flow/v2/105-mini-game.wav",
+    "public/audio/flow/v2/117-closing.wav",
+    "public/audio/flow/v2/20-cross-rally-double.wav",
+    "public/audio/flow/v2/20-cross-rally-single.wav",
+    "public/audio/flow/v2/30-serve-return-double.wav",
+    "public/audio/flow/v2/30-serve-return-single.wav",
+    "public/audio/flow/v2/35-serve-return-switch.wav",
+    "public/audio/flow/v2/40-random-table-double.wav",
+    "public/audio/flow/v2/40-random-table-single.wav",
+    "public/audio/flow/v2/43-game-rules.wav",
+    "public/audio/flow/v2/46-self-intro.wav",
+    "public/audio/flow/v2/50-game-start.wav",
+    "public/audio/flow/v2/voice-test.wav",
+    "reports/flow-audio-v2-audit.json",
+    "reports/flow-v2-browser-audit.json",
+    "reports/flow-v2-cancellation-audit.json",
+    "reports/flow-v2-chat-390.png",
+    "reports/flow-v2-chat-480.png",
+    "reports/flow-v2-completed-390.png",
+    "reports/flow-v2-desktop.png",
+    "reports/flow-v2-guide-390.png",
+    "reports/flow-v2-guide-480.png",
+    "reports/flow-v2-idle-390.png",
+    "reports/flow-v2-idle-480.png",
+    "reports/flow-v2-manual-390.png",
+    "reports/flow-v2-manual-480.png",
+    "reports/flow-v2-running-390.png",
+    "reports/flow-v2-running-480.png",
+    "reports/flow-v2-steps-390.png",
+    "reports/flow-v2-steps-480.png",
+    "reports/flow-v2-timeline-390.png",
+    "reports/flow-v2-timeline-480.png",
+    "reports/flow-v2-validation.json",
+    "scripts/audit-flow-browser.mjs",
+    "scripts/audit-flow-cancellation.mjs",
+    "scripts/generate-flow-audio.mjs",
+    "scripts/test-flow.mjs"
+  ],
+  "preservedUntracked": [
+    "public/audio/うぃる音声-20260617T130029Z-3-001.zip",
+    "public/audio/うぃる音声/"
+  ],
+  "transitionCueChanges": 0,
+  "productionChanges": 0,
+  "mainMerges": 0,
+  "remaining": [
+    "User Preview review",
+    "iPhone Safari/Bluetooth speaker/physical screen-lock checks have not been performed; background audio is not guaranteed by browsers"
+  ]
+}

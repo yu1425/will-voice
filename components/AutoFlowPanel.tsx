@@ -1,20 +1,15 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import type { FlowConditions, IntroTiming } from "@/lib/flowPlan";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { FlowConditions } from "@/lib/flowPlan";
+import { FLOW_VOICE_TEST } from "@/lib/flowScripts";
 import { preloadRecordedAudio } from "@/lib/recordedAudio";
 import {
-  STANDARD_TWO_HOUR_DURATION_SEC,
   buildStandardTwoHourEvents,
   eventAtElapsed,
   getAutoFlowElapsedSec,
+  getAutoFlowProgress,
   nextEventAtElapsed,
   type AutoFlowEvent,
 } from "@/lib/standardTwoHourFlow";
@@ -26,70 +21,60 @@ import {
 
 const STATE_KEY = "will-standard-two-hour-auto-flow";
 const SETTINGS_KEY = "will-standard-two-hour-auto-flow-settings";
-const VERSION = 2;
-
-type Status = "idle" | "running" | "paused" | "completed";
-
-type SavedState = {
-  version: number;
-  status: Exclude<Status, "idle">;
+export type AutoStatus = "idle" | "running" | "paused" | "completed";
+type Session = {
+  version: 3;
+  status: Exclude<AutoStatus, "idle">;
   startedAt: number;
   pausedAt: number | null;
   accumulatedPausedMs: number;
   firedEventIds: string[];
-  introTiming: IntroTiming;
+  courts: 1 | 2;
 };
-
 type Props = {
   active: boolean;
   conditions: FlowConditions;
-  onConditionsChange: (conditions: FlowConditions) => void;
+  onConditionsChange: (c: FlowConditions) => void;
   onSpeak: (text: string, audioSrc?: string) => void;
   onStopSpeaking: () => void;
   isSpeaking: boolean;
   onSyncStep: (step: number) => void;
+  onStatusChange: (status: AutoStatus) => void;
 };
-
-function formatClock(seconds: number) {
-  const safe = Math.max(0, seconds);
-  return `${String(Math.floor(safe / 3600)).padStart(2, "0")}:${String(
-    Math.floor((safe % 3600) / 60)
-  ).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
+export function formatClock(seconds: number) {
+  const safe = Math.max(0, Math.floor(seconds));
+  return [Math.floor(safe / 3600), Math.floor((safe % 3600) / 60), safe % 60]
+    .map((n) => String(n).padStart(2, "0"))
+    .join(":");
 }
-
 function formatOffset(seconds: number) {
   return formatClock(seconds).slice(0, 5);
 }
-
-function loadSavedState(): SavedState | null {
+function timeOfDay(time: number) {
+  return new Date(time).toLocaleTimeString("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+function showProgress() {
+  document.querySelector(".flow-scroll")?.scrollTo({ top: 0 });
+}
+function restore(): Session | null {
   try {
-    const value = JSON.parse(
-      window.localStorage.getItem(STATE_KEY) ?? "null"
-    ) as Partial<SavedState> | null;
+    const s = JSON.parse(localStorage.getItem(STATE_KEY) ?? "null");
     if (
-      !value ||
-      (value.version !== 1 && value.version !== VERSION) ||
-      (value.status !== "running" &&
-        value.status !== "paused" &&
-        value.status !== "completed") ||
-      !Number.isFinite(value.startedAt) ||
-      !Number.isFinite(value.accumulatedPausedMs) ||
-      !Array.isArray(value.firedEventIds) ||
-      (value.introTiming !== "start" && value.introTiming !== "afterServe")
-    ) {
+      !s ||
+      ![1, 2, 3].includes(s.version) ||
+      !["running", "paused", "completed"].includes(s.status) ||
+      !Number.isFinite(s.startedAt) ||
+      !Number.isFinite(s.accumulatedPausedMs) ||
+      s.accumulatedPausedMs < 0 ||
+      !Array.isArray(s.firedEventIds) ||
+      (s.status === "paused" &&
+        (!Number.isFinite(s.pausedAt) || s.pausedAt < s.startedAt))
+    )
       return null;
-    }
-    return {
-      version: VERSION,
-      status: value.status,
-      startedAt: value.startedAt as number,
-      pausedAt: typeof value.pausedAt === "number" ? value.pausedAt : null,
-      accumulatedPausedMs: Math.max(0, value.accumulatedPausedMs as number),
-      firedEventIds: value.firedEventIds.filter(
-        (id): id is string => typeof id === "string"
-      ),
-      introTiming: value.introTiming,
-    };
+    return { ...s, version: 3, courts: s.courts === 2 ? 2 : 1 };
   } catch {
     return null;
   }
@@ -103,605 +88,571 @@ export default function AutoFlowPanel({
   onStopSpeaking,
   isSpeaking,
   onSyncStep,
+  onStatusChange,
 }: Props) {
-  const [status, setStatus] = useState<Status>("idle");
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [pausedAt, setPausedAt] = useState<number | null>(null);
-  const [accumulatedPausedMs, setAccumulatedPausedMs] = useState(0);
-  const [firedEventIds, setFiredEventIds] = useState<string[]>([]);
-  const [savedIntroTiming, setSavedIntroTiming] =
-    useState<IntroTiming>("afterServe");
+  const [session, setSession] = useState<Session | null>(null);
+  const sessionRef = useRef<Session | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [chimeEnabled, setChimeEnabled] = useState(true);
-  const [isCuePlaying, setIsCuePlaying] = useState(false);
-
-  const restoredRef = useRef(false);
-  const lastObservedRef = useRef<number | null>(null);
-  const sequenceRef = useRef(0);
-
-  const events = useMemo(() => buildStandardTwoHourEvents(), []);
+  const [cuePlaying, setCuePlaying] = useState(false);
+  const [pendingSeek, setPendingSeek] = useState<AutoFlowEvent | null>(null);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const sequence = useRef(0);
+  const mounted = useRef(true);
+  const observed = useRef(Date.now());
+  const events = useMemo(
+    () => buildStandardTwoHourEvents(session?.courts ?? conditions.courts),
+    [session?.courts, conditions.courts],
+  );
   const current = eventAtElapsed(events, elapsedSec);
   const next = nextEventAtElapsed(events, elapsedSec);
-
-  const persist = useCallback(
-    (
-      nextStatus: Status,
-      values: Omit<SavedState, "version" | "status">
-    ) => {
-      try {
-        if (nextStatus === "idle") {
-          window.localStorage.removeItem(STATE_KEY);
-        } else {
-          window.localStorage.setItem(
-            STATE_KEY,
-            JSON.stringify({ version: VERSION, status: nextStatus, ...values })
-          );
-        }
-      } catch {
-        /* no-op */
-      }
-    },
-    []
-  );
-
-  const sync = useCallback(
-    (event: AutoFlowEvent) => {
-      if (event.refStep) onSyncStep(event.refStep);
-    },
-    [onSyncStep]
-  );
-
-  const cancelSequence = useCallback(() => {
-    sequenceRef.current += 1;
-    setIsCuePlaying(false);
-    stopTransitionCue();
+  const status = session?.status ?? "idle";
+  const save = useCallback((s: Session | null) => {
+    sessionRef.current = s;
+    setSession(s);
+    try {
+      if (s) localStorage.setItem(STATE_KEY, JSON.stringify(s));
+      else localStorage.removeItem(STATE_KEY);
+    } catch {
+      /* storage may be unavailable */
+    }
   }, []);
-
+  const cancel = useCallback(() => {
+    sequence.current++;
+    stopTransitionCue();
+    setCuePlaying(false);
+  }, []);
+  const stopAudio = useCallback(() => {
+    cancel();
+    onStopSpeaking();
+  }, [cancel, onStopSpeaking]);
   const announce = useCallback(
-    async (event: AutoFlowEvent, cue: boolean) => {
-      const sequence = ++sequenceRef.current;
+    async (e: AutoFlowEvent, cue: boolean) => {
+      cancel();
       onStopSpeaking();
-
+      if (!e.audioSrc || !activeRef.current) return;
+      const ticket = sequence.current;
       if (cue && chimeEnabled) {
-        setIsCuePlaying(true);
+        setCuePlaying(true);
         await playTransitionCue();
-        if (sequence !== sequenceRef.current) {
-          setIsCuePlaying(false);
-          return;
-        }
-        await new Promise<void>((resolve) => window.setTimeout(resolve, 600));
+        if (ticket !== sequence.current || !mounted.current) return;
+        await new Promise<void>((resolve) => setTimeout(resolve, 600));
       }
-
-      setIsCuePlaying(false);
-      if (sequence !== sequenceRef.current || !active) return;
-      onSpeak(event.speakText, event.audioSrc);
+      if (ticket !== sequence.current || !mounted.current || !activeRef.current)
+        return;
+      setCuePlaying(false);
+      onSpeak(e.voiceText, e.audioSrc);
     },
-    [active, chimeEnabled, onSpeak, onStopSpeaking]
+    [cancel, onSpeak, onStopSpeaking, chimeEnabled],
+  );
+  const advance = useCallback(
+    (allowAudio: boolean) => {
+      const s = sessionRef.current;
+      if (!s || s.status !== "running") return;
+      const elapsed = Math.min(
+        7200,
+        getAutoFlowElapsedSec(s.startedAt, s.accumulatedPausedMs, Date.now()),
+      );
+      const due = events.filter(
+        (e) => e.offsetSec <= elapsed && !s.firedEventIds.includes(e.id),
+      );
+      setElapsedSec(elapsed);
+      if (activeRef.current) {
+        const e = eventAtElapsed(events, elapsed);
+        if (e.refStep) onSyncStep(e.refStep);
+      }
+      if (due.length || elapsed === 7200)
+        save({
+          ...s,
+          status: elapsed === 7200 ? "completed" : "running",
+          firedEventIds: [...s.firedEventIds, ...due.map((e) => e.id)],
+        });
+      if (elapsed === 7200) {
+        stopAudio();
+        return;
+      }
+      // Missed announcements are consumed, never queued after a background gap.
+      if (activeRef.current && allowAudio && due.length === 1)
+        void announce(due[0], true);
+    },
+    [events, onSyncStep, save, announce, stopAudio],
   );
 
   useEffect(() => {
+    mounted.current = true;
     try {
-      const value = JSON.parse(
-        window.localStorage.getItem(SETTINGS_KEY) ?? "{}"
-      );
-      if (typeof value.chimeEnabled === "boolean") {
-        setChimeEnabled(value.chimeEnabled);
-      }
+      const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}");
+      if (typeof settings.chimeEnabled === "boolean")
+        setChimeEnabled(settings.chimeEnabled);
     } catch {
       /* no-op */
     }
-  }, []);
-
+    const stored = restore();
+    if (stored) {
+      const elapsed =
+        stored.status === "completed"
+          ? 7200
+          : Math.min(
+              7200,
+              getAutoFlowElapsedSec(
+                stored.startedAt,
+                stored.accumulatedPausedMs,
+                Date.now(),
+                stored.status === "paused" ? stored.pausedAt : null,
+              ),
+            );
+      const restoredEvents = buildStandardTwoHourEvents(stored.courts);
+      save({
+        ...stored,
+        status: elapsed === 7200 ? "completed" : stored.status,
+        firedEventIds: restoredEvents
+          .filter((e) => e.offsetSec <= elapsed)
+          .map((e) => e.id),
+      });
+      setElapsedSec(elapsed);
+    }
+    return () => {
+      mounted.current = false;
+      sequence.current++;
+      stopTransitionCue();
+    };
+  }, [save]);
   useEffect(() => {
-    if (restoredRef.current) return;
-    restoredRef.current = true;
-    const stored = loadSavedState();
-    if (!stored) return;
-
-    const restoredEvents = buildStandardTwoHourEvents();
-    const rawElapsed = getAutoFlowElapsedSec(
-      stored.startedAt,
-      stored.accumulatedPausedMs,
-      Date.now(),
-      stored.status === "paused" ? stored.pausedAt : null
-    );
-    const elapsed = Math.min(rawElapsed, STANDARD_TWO_HOUR_DURATION_SEC);
-    const nextStatus: Status =
-      elapsed >= STANDARD_TWO_HOUR_DURATION_SEC ? "completed" : stored.status;
-    const fired = restoredEvents
-      .filter((event) => event.offsetSec <= elapsed)
-      .map((event) => event.id);
-
-    setStatus(nextStatus);
-    setStartedAt(stored.startedAt);
-    setPausedAt(nextStatus === "paused" ? stored.pausedAt : null);
-    setAccumulatedPausedMs(stored.accumulatedPausedMs);
-    setFiredEventIds(fired);
-    setSavedIntroTiming("afterServe");
-    setElapsedSec(elapsed);
-    sync(eventAtElapsed(restoredEvents, elapsed));
-    persist(nextStatus, {
-      ...stored,
-      pausedAt: nextStatus === "paused" ? stored.pausedAt : null,
-      firedEventIds: fired,
-    });
-  }, [persist, sync]);
-
+    const leave = () => {
+      activeRef.current = false;
+      stopAudio();
+    };
+    window.addEventListener("will-flow-leave", leave);
+    return () => window.removeEventListener("will-flow-leave", leave);
+  }, [stopAudio]);
+  useEffect(() => onStatusChange(status), [onStatusChange, status]);
+  useEffect(() => {
+    if (active && status !== "idle" && current.refStep)
+      onSyncStep(current.refStep);
+  }, [active, status, current.refStep, onSyncStep]);
+  useEffect(() => {
+    if (pendingSeek)
+      document
+        .querySelector(".flow-seek-confirm")
+        ?.scrollIntoView({ block: "center" });
+  }, [pendingSeek]);
+  useEffect(() => {
+    if (
+      session &&
+      status !== "completed" &&
+      conditions.courts !== session.courts
+    )
+      onConditionsChange({ ...conditions, courts: session.courts });
+  }, [session, conditions, onConditionsChange, status]);
   useEffect(() => {
     preloadRecordedAudio(current.audioSrc);
     preloadRecordedAudio(next?.audioSrc);
-  }, [current, next]);
-
+  }, [current.audioSrc, next?.audioSrc]);
   useEffect(() => {
-    if (active) {
-      sync(current);
-      return;
-    }
-    cancelSequence();
-    onStopSpeaking();
-  }, [active, cancelSequence, current, onStopSpeaking, sync]);
-
-  useEffect(() => {
-    return () => {
-      sequenceRef.current += 1;
-      stopTransitionCue();
-    };
-  }, []);
-
-  const advance = useCallback(
-    (allowAnnouncement: boolean) => {
-      if (status !== "running" || startedAt === null) return;
-      const elapsed = Math.min(
-        getAutoFlowElapsedSec(startedAt, accumulatedPausedMs, Date.now()),
-        STANDARD_TWO_HOUR_DURATION_SEC
-      );
-      const due = events.filter(
-        (event) =>
-          event.offsetSec <= elapsed && !firedEventIds.includes(event.id)
-      );
-      const fired = due.length
-        ? [...firedEventIds, ...due.map((event) => event.id)]
-        : firedEventIds;
-      const event = due.at(-1) ?? eventAtElapsed(events, elapsed);
-      const nextStatus: Status =
-        elapsed >= STANDARD_TWO_HOUR_DURATION_SEC ? "completed" : "running";
-
-      setElapsedSec(elapsed);
-      setFiredEventIds(fired);
-      if (active) sync(event);
-      if (nextStatus === "completed") setStatus("completed");
-      persist(nextStatus, {
-        startedAt,
-        pausedAt: null,
-        accumulatedPausedMs,
-        firedEventIds: fired,
-        introTiming: savedIntroTiming,
-      });
-
-      if (active && allowAnnouncement && due.length === 1) {
-        void announce(event, true);
-      }
-    },
-    [
-      active,
-      accumulatedPausedMs,
-      announce,
-      events,
-      firedEventIds,
-      persist,
-      savedIntroTiming,
-      startedAt,
-      status,
-      sync,
-    ]
-  );
-
+    setPendingSeek(null);
+    if (!active) stopAudio();
+    else advance(false);
+  }, [active, advance, stopAudio]);
   useEffect(() => {
     if (status !== "running") return;
-
-    lastObservedRef.current = Date.now();
+    observed.current = Date.now();
     const tick = () => {
       const now = Date.now();
-      const gap = now - (lastObservedRef.current ?? now);
-      lastObservedRef.current = now;
-      advance(gap <= 15_000 && document.visibilityState === "visible");
+      const gap = now - observed.current;
+      observed.current = now;
+      advance(gap < 2500 && document.visibilityState === "visible");
     };
     const visibility = () => {
-      if (document.visibilityState === "visible") {
-        lastObservedRef.current = Date.now();
-        advance(false);
-      }
+      observed.current = Date.now();
+      if (document.visibilityState === "visible") advance(false);
+      else stopAudio();
     };
-
-    const interval = window.setInterval(tick, 1000);
+    const id = setInterval(tick, 1000);
     document.addEventListener("visibilitychange", visibility);
     return () => {
-      window.clearInterval(interval);
+      clearInterval(id);
       document.removeEventListener("visibilitychange", visibility);
     };
-  }, [advance, status]);
-
-  const setChime = (value: boolean) => {
-    setChimeEnabled(value);
-    try {
-      window.localStorage.setItem(
-        SETTINGS_KEY,
-        JSON.stringify({ chimeEnabled: value })
-      );
-    } catch {
-      /* no-op */
-    }
-  };
+  }, [status, advance, stopAudio]);
 
   const start = async () => {
-    onStopSpeaking();
-    await unlockTransitionCue();
-    cancelSequence();
-
-    const now = Date.now();
-    const event = buildStandardTwoHourEvents()[0];
-    const fired = [event.id];
-
-    setStatus("running");
-    setStartedAt(now);
-    setPausedAt(null);
-    setAccumulatedPausedMs(0);
-    setFiredEventIds(fired);
-    setSavedIntroTiming("afterServe");
-    setElapsedSec(0);
-    sync(event);
-    persist("running", {
-      startedAt: now,
-      pausedAt: null,
-      accumulatedPausedMs: 0,
-      firedEventIds: fired,
-      introTiming: "afterServe",
-    });
-    onSpeak(event.speakText, event.audioSrc);
-  };
-
-  const pause = () => {
-    if (status !== "running" || startedAt === null) return;
-    const now = Date.now();
-    const elapsed = Math.min(
-      getAutoFlowElapsedSec(startedAt, accumulatedPausedMs, now),
-      STANDARD_TWO_HOUR_DURATION_SEC
-    );
-    setElapsedSec(elapsed);
-    setStatus("paused");
-    setPausedAt(now);
-    persist("paused", {
-      startedAt,
-      pausedAt: now,
-      accumulatedPausedMs,
-      firedEventIds,
-      introTiming: savedIntroTiming,
-    });
-  };
-
-  const resume = () => {
-    if (status !== "paused" || startedAt === null || pausedAt === null) return;
-    const pausedMs = accumulatedPausedMs + Date.now() - pausedAt;
-    setAccumulatedPausedMs(pausedMs);
-    setPausedAt(null);
-    setStatus("running");
-    persist("running", {
-      startedAt,
-      pausedAt: null,
-      accumulatedPausedMs: pausedMs,
-      firedEventIds,
-      introTiming: savedIntroTiming,
-    });
-  };
-
-  const seek = (event: AutoFlowEvent) => {
-    cancelSequence();
-    const now = Date.now();
-    const elapsed = event.offsetSec;
-    const nextStatus: Status =
-      elapsed >= STANDARD_TWO_HOUR_DURATION_SEC
-        ? "completed"
-        : status === "paused"
-        ? "paused"
-        : "running";
-    const nextPausedAt = nextStatus === "paused" ? now : null;
-    const fired = events
-      .filter((item) => item.offsetSec <= elapsed)
-      .map((item) => item.id);
-    const nextStartedAt = now - elapsed * 1000;
-
-    setElapsedSec(elapsed);
-    setStartedAt(nextStartedAt);
-    setAccumulatedPausedMs(0);
-    setPausedAt(nextPausedAt);
-    setFiredEventIds(fired);
-    setStatus(nextStatus);
-    sync(event);
-    persist(nextStatus, {
-      startedAt: nextStartedAt,
-      pausedAt: nextPausedAt,
-      accumulatedPausedMs: 0,
-      firedEventIds: fired,
-      introTiming: savedIntroTiming,
-    });
-    void announce(event, true);
-  };
-
-  const stopAudio = () => {
-    cancelSequence();
-    onStopSpeaking();
-  };
-
-  const end = () => {
     stopAudio();
-    setStatus("idle");
-    setStartedAt(null);
-    setPausedAt(null);
-    setAccumulatedPausedMs(0);
-    setFiredEventIds([]);
-    setElapsedSec(0);
-    setSavedIntroTiming("afterServe");
-    persist("idle", {
-      startedAt: 0,
+    const ticket = sequence.current;
+    await unlockTransitionCue();
+    if (ticket !== sequence.current || !mounted.current || !activeRef.current)
+      return;
+    const first = buildStandardTwoHourEvents(conditions.courts)[0];
+    save({
+      version: 3,
+      status: "running",
+      startedAt: Date.now(),
       pausedAt: null,
       accumulatedPausedMs: 0,
-      firedEventIds: [],
-      introTiming: "afterServe",
+      firedEventIds: [first.id],
+      courts: conditions.courts,
     });
+    setElapsedSec(0);
+    showProgress();
+    onSyncStep(first.refStep!);
+    onSpeak(first.voiceText, first.audioSrc);
   };
-
+  const pauseResume = () => {
+    const s = sessionRef.current;
+    if (!s || s.status === "completed") return;
+    if (s.status === "running") {
+      stopAudio();
+      const now = Date.now();
+      setElapsedSec(
+        Math.min(
+          7200,
+          getAutoFlowElapsedSec(s.startedAt, s.accumulatedPausedMs, now),
+        ),
+      );
+      save({ ...s, status: "paused", pausedAt: now });
+    } else if (s.pausedAt !== null)
+      save({
+        ...s,
+        status: "running",
+        pausedAt: null,
+        accumulatedPausedMs: s.accumulatedPausedMs + Date.now() - s.pausedAt,
+      });
+  };
+  const seek = (e: AutoFlowEvent) => {
+    stopAudio();
+    const now = Date.now();
+    const nextStatus =
+      e.offsetSec === 7200
+        ? "completed"
+        : sessionRef.current?.status === "paused"
+          ? "paused"
+          : "running";
+    save({
+      version: 3,
+      status: nextStatus,
+      startedAt: now - e.offsetSec * 1000,
+      pausedAt: nextStatus === "paused" ? now : null,
+      accumulatedPausedMs: 0,
+      courts: session?.courts ?? conditions.courts,
+      firedEventIds: events
+        .filter((x) => x.offsetSec <= e.offsetSec)
+        .map((x) => x.id),
+    });
+    setElapsedSec(e.offsetSec);
+    showProgress();
+    setPendingSeek(null);
+    if (e.refStep) onSyncStep(e.refStep);
+    void announce(e, true);
+  };
   const testCue = async () => {
-    onStopSpeaking();
-    cancelSequence();
+    stopAudio();
+    const ticket = sequence.current;
     await unlockTransitionCue();
-    setIsCuePlaying(true);
+    if (ticket !== sequence.current || !mounted.current || !activeRef.current)
+      return;
+    setCuePlaying(true);
     await playTransitionCue();
-    setIsCuePlaying(false);
+    if (ticket === sequence.current && mounted.current) setCuePlaying(false);
   };
+  const progress = getAutoFlowProgress(elapsedSec);
 
-  if (status === "idle") {
-    const setupEvents = buildStandardTwoHourEvents();
+  if (status === "idle")
     return (
-      <section className="flow-surface auto-flow auto-flow--setup" aria-label="自動進行">
-        <header className="flow-section-head">
+      <section className="flow-surface auto-flow" aria-label="自動進行">
+        <header className="flow-header">
           <div>
-            <span className="flow-eyebrow">AUTO FLOW</span>
-            <h1 className="flow-section-title">自動進行</h1>
+            <p className="flow-eyebrow">STANDARD SESSION</p>
+            <h1>自動進行</h1>
           </div>
-          <span className="flow-duration-badge">標準 · 2時間</span>
+          <span className="flow-status">標準2時間</span>
         </header>
-        <p className="flow-section-lead">
-          開始後は時刻に沿って、メニュー切替と音声案内を進めます。
+        <p className="flow-lead">
+          開始すると、標準2時間メニューに沿ってチャイムと音声案内が自動で流れます。
         </p>
-
-        <div className="auto-flow__setup-grid">
-          <Setting label="コート数">
-            <Choice
-              selected={conditions.courts === 1}
-              onClick={() =>
-                onConditionsChange({ ...conditions, courts: 1 })
-              }
-            >
-              1面
-            </Choice>
-            <Choice
-              selected={conditions.courts === 2}
-              onClick={() =>
-                onConditionsChange({ ...conditions, courts: 2 })
-              }
-            >
-              2面
-            </Choice>
-          </Setting>
-          <Setting label="自己紹介">
-            <div className="auto-flow__fixed-setting">ゲーム前</div>
-          </Setting>
+        <div className="flow-setting">
+          <span>コート数</span>
+          <div className="flow-choice" aria-label="コート数">
+            {([1, 2] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={conditions.courts === c}
+                onClick={() => onConditionsChange({ ...conditions, courts: c })}
+              >
+                {c}面
+              </button>
+            ))}
+          </div>
         </div>
-
-        <div className="auto-flow__chime">
+        <div className="flow-setting">
           <label>
             <input
               type="checkbox"
               checked={chimeEnabled}
-              onChange={(event) => setChime(event.target.checked)}
-            />
-            切替チャイム
+              onChange={(e) => {
+                setChimeEnabled(e.target.checked);
+                try {
+                  localStorage.setItem(
+                    SETTINGS_KEY,
+                    JSON.stringify({ chimeEnabled: e.target.checked }),
+                  );
+                } catch {
+                  /* no-op */
+                }
+              }}
+            />{" "}
+            チャイム {chimeEnabled ? "ON" : "OFF"}
           </label>
-          <button type="button" onClick={() => void testCue()}>
-            チャイムを試す
-          </button>
-        </div>
-
-        <div className="flow-action-grid flow-action-grid--setup">
           <button
             type="button"
-            className="flow-btn flow-btn--secondary"
+            className="flow-btn"
+            onClick={() => void testCue()}
+          >
+            試聴
+          </button>
+        </div>
+        <div className="flow-actions">
+          <button
+            type="button"
+            className="flow-btn"
             onClick={() =>
-              onSpeak("音声テストです。聞こえ方をご確認ください。")
+              onSpeak(FLOW_VOICE_TEST.displayText, FLOW_VOICE_TEST.audioSrc)
             }
           >
             音声テスト
           </button>
           <button
             type="button"
-            className="flow-btn flow-btn--primary"
+            className="flow-btn"
+            onClick={stopAudio}
+            disabled={!isSpeaking && !cuePlaying}
+          >
+            音声を停止
+          </button>
+          <button
+            type="button"
+            className="flow-btn flow-btn--primary flow-btn--full"
             onClick={() => void start()}
           >
             自動進行を開始
           </button>
         </div>
-
-        <div className="flow-subsection">
-          <div className="flow-subsection__title">進行タイムライン</div>
-          <Timeline
-            events={setupEvents}
-            currentId={null}
-            firedIds={[]}
-            onSeek={() => undefined}
-            disabled
-          />
-        </div>
+        <p className="flow-help">
+          <Link
+            href="/guide"
+            onClick={() => {
+              activeRef.current = false;
+              stopAudio();
+            }}
+          >
+            初めて使う方へ → 使い方
+          </Link>
+          <span>全体の自己紹介は、ゲーム前に行います。</span>
+        </p>
+        <h2 className="flow-list-title">
+          流れを見る <span>開始からの経過時間</span>
+        </h2>
+        <Timeline events={events} currentId={null} elapsedSec={0} />
       </section>
     );
-  }
-
-  const remaining = next ? Math.max(0, next.offsetSec - elapsedSec) : 0;
-  const canStopAudio = isSpeaking || isCuePlaying;
-
   return (
-    <section className="flow-surface auto-flow" aria-live="polite">
-      <header className="flow-section-head">
-        <div>
-          <span className="flow-eyebrow">
-            {status === "completed"
-              ? "COMPLETED"
-              : status === "paused"
-              ? "PAUSED"
-              : "AUTO FLOW"}
+    <section className="auto-flow" aria-label="自動進行">
+      <div className="flow-surface flow-progress">
+        <header className="flow-header">
+          <span className="flow-eyebrow">自動進行 · {session?.courts}面</span>
+          <span className={`flow-status flow-status--${status}`} role="status">
+            {status === "paused"
+              ? "一時停止中"
+              : status === "completed"
+                ? "進行完了"
+                : "進行中"}
           </span>
-          <h1 className="flow-section-title">{current.title}</h1>
+        </header>
+        <h1>{current.title}</h1>
+        <div className="flow-progress__clock">
+          <strong>{formatClock(elapsedSec)}</strong>
+          <span> / 02:00:00</span>
         </div>
-        <span className="flow-duration-badge">標準 · 2時間</span>
-      </header>
-
-      <div className="auto-flow__countdown">
-        <span>次の切替まで</span>
-        <strong>{next ? formatClock(remaining) : "完了"}</strong>
-        <small>
-          経過 {formatClock(elapsedSec)} / 02:00:00
-        </small>
+        <div className="flow-progress__numbers">
+          <span>
+            進行 <strong>{progress.percentage}%</strong>
+          </span>
+          <span>残り {formatClock(progress.remainingSec)}</span>
+        </div>
+        <div
+          className="flow-progress__bar"
+          role="progressbar"
+          aria-label="2時間の進捗"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={progress.percentage}
+        >
+          <span style={{ width: `${(elapsedSec / 7200) * 100}%` }} />
+        </div>
+        <div className="flow-progress__times">
+          <span>開始 {timeOfDay(session!.startedAt)}</span>
+          <span>
+            {status === "paused" ? "終了予定（一時停止中）" : "終了予定"}{" "}
+            {timeOfDay(
+              session!.startedAt +
+                session!.accumulatedPausedMs +
+                (session!.pausedAt ? Date.now() - session!.pausedAt : 0) +
+                7200000,
+            )}
+          </span>
+        </div>
+        {next && (
+          <div className="flow-progress__next">
+            <div>
+              <span>次のメニュー</span>
+              <strong>
+                {formatOffset(next.offsetSec)} {next.title}
+              </strong>
+            </div>
+            <div>
+              <span>あと</span>
+              <strong>
+                {formatClock(next.offsetSec - elapsedSec).slice(3)}
+              </strong>
+            </div>
+          </div>
+        )}
       </div>
-
-      {next && (
-        <p className="auto-flow__next">
-          次 <strong>{formatOffset(next.offsetSec)} {next.title}</strong>
+      <div className="flow-surface flow-controls">
+        <div className="flow-actions">
+          <button
+            type="button"
+            className="flow-btn flow-btn--primary flow-btn--full"
+            disabled={status === "completed"}
+            onClick={pauseResume}
+          >
+            {status === "paused" ? "進行を再開" : "進行を一時停止"}
+          </button>
+          <button
+            type="button"
+            className="flow-btn"
+            onClick={() => void announce(current, false)}
+            disabled={!current.audioSrc}
+          >
+            案内を再生
+          </button>
+          <button
+            type="button"
+            className="flow-btn"
+            onClick={stopAudio}
+            disabled={!isSpeaking && !cuePlaying}
+          >
+            音声を停止
+          </button>
+        </div>
+        <p className="flow-audio-state" role="status">
+          {cuePlaying
+            ? "チャイムを再生中"
+            : isSpeaking
+              ? "音声案内を再生中"
+              : "音声案内は停止中"}
         </p>
-      )}
-
-      <div className="flow-action-grid">
-        <button
-          type="button"
-          className="flow-btn flow-btn--primary"
-          onClick={status === "paused" ? resume : pause}
-          disabled={status === "completed"}
-        >
-          {status === "completed"
-            ? "進行完了"
-            : status === "paused"
-            ? "進行を再開"
-            : "進行を一時停止"}
-        </button>
-        <button
-          type="button"
-          className="flow-btn flow-btn--secondary"
-          onClick={() => void announce(current, false)}
-        >
-          案内を再生
-        </button>
-        <button
-          type="button"
-          className="flow-btn flow-btn--secondary"
-          onClick={stopAudio}
-          disabled={!canStopAudio}
-        >
-          音声を停止
-        </button>
+        <details className="flow-script">
+          <summary>案内内容を見る</summary>
+          <p>{current.displayText}</p>
+        </details>
       </div>
-
-      <details className="auto-flow__script">
-        <summary>案内内容を見る</summary>
-        <p>{current.speakText}</p>
-      </details>
-
-      <div className="flow-subsection">
-        <div className="flow-subsection__title">進行タイムライン</div>
+      <div className="flow-surface">
+        <h2 className="flow-list-title">
+          進行タイムライン <span>タップして移動</span>
+        </h2>
+        {pendingSeek && (
+          <div className="flow-seek-confirm" role="alert">
+            <p>
+              {formatOffset(pendingSeek.offsetSec)} {pendingSeek.title}
+              へ移動しますか？
+            </p>
+            <div className="flow-actions">
+              <button
+                type="button"
+                className="flow-btn flow-btn--primary"
+                onClick={() => seek(pendingSeek)}
+              >
+                移動して案内
+              </button>
+              <button
+                type="button"
+                className="flow-btn"
+                onClick={() => setPendingSeek(null)}
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        )}
         <Timeline
           events={events}
           currentId={current.id}
-          firedIds={firedEventIds}
-          onSeek={seek}
+          elapsedSec={elapsedSec}
+          onSeek={(e) => (status === "running" ? setPendingSeek(e) : seek(e))}
         />
       </div>
-
       <button
         type="button"
         className="flow-btn flow-btn--danger flow-btn--full"
-        onClick={status === "completed" ? () => void start() : end}
+        onClick={() => {
+          stopAudio();
+          save(null);
+          setElapsedSec(0);
+          showProgress();
+          setPendingSeek(null);
+        }}
       >
-        {status === "completed" ? "新しい進行を開始" : "自動進行を終了"}
+        {status === "completed" ? "開始前の画面に戻る" : "自動進行を終了"}
       </button>
     </section>
   );
 }
-
-function Setting({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <span className="auto-flow__setting-label">{label}</span>
-      <div className="auto-flow__choice">{children}</div>
-    </div>
-  );
-}
-
-function Choice({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      className={selected ? "is-selected" : ""}
-      onClick={onClick}
-    >
-      {children}
-    </button>
-  );
-}
-
 function Timeline({
   events,
   currentId,
-  firedIds,
+  elapsedSec,
   onSeek,
-  disabled = false,
 }: {
   events: AutoFlowEvent[];
   currentId: string | null;
-  firedIds: string[];
-  onSeek: (event: AutoFlowEvent) => void;
-  disabled?: boolean;
+  elapsedSec: number;
+  onSeek?: (e: AutoFlowEvent) => void;
 }) {
   return (
-    <div className="auto-timeline" aria-label="自動進行タイムライン">
-      {events.map((event) => (
-        <button
-          key={event.id}
-          type="button"
-          disabled={disabled}
-          onClick={() => onSeek(event)}
-          className={`auto-timeline__item${
-            event.id === currentId ? " is-current" : ""
-          }${
-            firedIds.includes(event.id) && event.id !== currentId
-              ? " is-complete"
-              : ""
-          }`}
-        >
-          <time>{formatOffset(event.offsetSec)}</time>
-          <span>{event.title}</span>
-        </button>
-      ))}
-    </div>
+    <ol className="flow-timeline" aria-label="自動進行タイムライン">
+      {events.map((e) => {
+        const isCurrent = e.id === currentId;
+        const complete = !!currentId && e.offsetSec < elapsedSec && !isCurrent;
+        const content = (
+          <>
+            <span className="flow-timeline__dot" aria-hidden="true">
+              {complete ? "✓" : ""}
+            </span>
+            <time>{formatOffset(e.offsetSec)}</time>
+            <span className="flow-timeline__title">{e.title}</span>
+            {isCurrent && <span className="flow-timeline__label">現在</span>}
+          </>
+        );
+        return (
+          <li
+            key={e.id}
+            className={`${isCurrent ? "is-current" : ""} ${complete ? "is-complete" : ""}`}
+          >
+            {onSeek ? (
+              <button
+                type="button"
+                aria-current={isCurrent ? "step" : undefined}
+                onClick={() => onSeek(e)}
+              >
+                {content}
+              </button>
+            ) : (
+              <div>{content}</div>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
