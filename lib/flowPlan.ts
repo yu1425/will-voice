@@ -37,7 +37,7 @@ export const DEFAULT_CONDITIONS: FlowConditions = {
   newcomerCount: 0,
   manyBeginners: false,
   vibe: "standard",
-  introTiming: "start",
+  introTiming: "afterServe",
 };
 
 export type PlanItem = {
@@ -169,7 +169,7 @@ function adjustSegments(
 export function buildFlowPlan(c: FlowConditions): PlanItem[] {
   // 2時間だけは条件で時刻境界を変えない標準メニューとする。
   if (c.durationHours === 2) {
-    return buildStandardTwoHourPlan(c.introTiming);
+    return buildStandardTwoHourPlan();
   }
   const total = Math.round(c.durationHours * 60);
   const adjusted = adjustSegments(baseSegments(c.durationHours), c);

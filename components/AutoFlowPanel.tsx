@@ -109,9 +109,8 @@ export default function AutoFlowPanel({
   const [pausedAt, setPausedAt] = useState<number | null>(null);
   const [accumulatedPausedMs, setAccumulatedPausedMs] = useState(0);
   const [firedEventIds, setFiredEventIds] = useState<string[]>([]);
-  const [savedIntroTiming, setSavedIntroTiming] = useState<IntroTiming>(
-    conditions.introTiming
-  );
+  const [savedIntroTiming, setSavedIntroTiming] =
+    useState<IntroTiming>("afterServe");
   const [elapsedSec, setElapsedSec] = useState(0);
   const [chimeEnabled, setChimeEnabled] = useState(true);
   const [isCuePlaying, setIsCuePlaying] = useState(false);
@@ -120,10 +119,7 @@ export default function AutoFlowPanel({
   const lastObservedRef = useRef<number | null>(null);
   const sequenceRef = useRef(0);
 
-  const events = useMemo(
-    () => buildStandardTwoHourEvents(savedIntroTiming),
-    [savedIntroTiming]
-  );
+  const events = useMemo(() => buildStandardTwoHourEvents(), []);
   const current = eventAtElapsed(events, elapsedSec);
   const next = nextEventAtElapsed(events, elapsedSec);
 
@@ -202,7 +198,7 @@ export default function AutoFlowPanel({
     const stored = loadSavedState();
     if (!stored) return;
 
-    const restoredEvents = buildStandardTwoHourEvents(stored.introTiming);
+    const restoredEvents = buildStandardTwoHourEvents();
     const rawElapsed = getAutoFlowElapsedSec(
       stored.startedAt,
       stored.accumulatedPausedMs,
@@ -221,7 +217,7 @@ export default function AutoFlowPanel({
     setPausedAt(nextStatus === "paused" ? stored.pausedAt : null);
     setAccumulatedPausedMs(stored.accumulatedPausedMs);
     setFiredEventIds(fired);
-    setSavedIntroTiming(stored.introTiming);
+    setSavedIntroTiming("afterServe");
     setElapsedSec(elapsed);
     sync(eventAtElapsed(restoredEvents, elapsed));
     persist(nextStatus, {
@@ -343,7 +339,7 @@ export default function AutoFlowPanel({
     cancelSequence();
 
     const now = Date.now();
-    const event = buildStandardTwoHourEvents(conditions.introTiming)[0];
+    const event = buildStandardTwoHourEvents()[0];
     const fired = [event.id];
 
     setStatus("running");
@@ -351,7 +347,7 @@ export default function AutoFlowPanel({
     setPausedAt(null);
     setAccumulatedPausedMs(0);
     setFiredEventIds(fired);
-    setSavedIntroTiming(conditions.introTiming);
+    setSavedIntroTiming("afterServe");
     setElapsedSec(0);
     sync(event);
     persist("running", {
@@ -359,7 +355,7 @@ export default function AutoFlowPanel({
       pausedAt: null,
       accumulatedPausedMs: 0,
       firedEventIds: fired,
-      introTiming: conditions.introTiming,
+      introTiming: "afterServe",
     });
     onSpeak(event.speakText, event.audioSrc);
   };
@@ -444,13 +440,13 @@ export default function AutoFlowPanel({
     setAccumulatedPausedMs(0);
     setFiredEventIds([]);
     setElapsedSec(0);
-    setSavedIntroTiming(conditions.introTiming);
+    setSavedIntroTiming("afterServe");
     persist("idle", {
       startedAt: 0,
       pausedAt: null,
       accumulatedPausedMs: 0,
       firedEventIds: [],
-      introTiming: conditions.introTiming,
+      introTiming: "afterServe",
     });
   };
 
@@ -464,7 +460,7 @@ export default function AutoFlowPanel({
   };
 
   if (status === "idle") {
-    const setupEvents = buildStandardTwoHourEvents(conditions.introTiming);
+    const setupEvents = buildStandardTwoHourEvents();
     return (
       <section className="flow-surface auto-flow auto-flow--setup" aria-label="自動進行">
         <header className="flow-section-head">
@@ -498,25 +494,7 @@ export default function AutoFlowPanel({
             </Choice>
           </Setting>
           <Setting label="自己紹介">
-            <Choice
-              selected={conditions.introTiming === "start"}
-              onClick={() =>
-                onConditionsChange({ ...conditions, introTiming: "start" })
-              }
-            >
-              開始時
-            </Choice>
-            <Choice
-              selected={conditions.introTiming === "afterServe"}
-              onClick={() =>
-                onConditionsChange({
-                  ...conditions,
-                  introTiming: "afterServe",
-                })
-              }
-            >
-              サーブ後
-            </Choice>
+            <div className="auto-flow__fixed-setting">ゲーム前</div>
           </Setting>
         </div>
 

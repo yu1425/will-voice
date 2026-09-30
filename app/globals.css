@@ -2748,3 +2748,25 @@ body {
     font-size: 11px;
   }
 }
+
+.auto-flow__fixed-setting {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dfe6e1;
+  border-radius: 11px;
+  background: #f7faf8;
+  color: #347a46;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.plan-form__chip--static {
+  cursor: default;
+  user-select: none;
+}
+
+.plan-form__chip--static:hover {
+  background: var(--will-green);
+}

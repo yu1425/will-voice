@@ -154,26 +154,11 @@ export default function FlowPlanPanel({ conditions, onChange }: Props) {
 
             {conditions.durationHours === 2 && (
               <div className="plan-form__row">
-                <span className="plan-form__label">自己紹介タイミング</span>
+                <span className="plan-form__label">自己紹介</span>
                 <div className="plan-form__choices">
-                  <button
-                    type="button"
-                    className={`plan-form__chip ${
-                      conditions.introTiming === "start" ? "plan-form__chip--active" : ""
-                    }`}
-                    onClick={() => patch({ introTiming: "start" })}
-                  >
-                    開始時
-                  </button>
-                  <button
-                    type="button"
-                    className={`plan-form__chip ${
-                      conditions.introTiming === "afterServe" ? "plan-form__chip--active" : ""
-                    }`}
-                    onClick={() => patch({ introTiming: "afterServe" })}
-                  >
-                    サーブ練習後
-                  </button>
+                  <span className="plan-form__chip plan-form__chip--active plan-form__chip--static">
+                    ゲーム前
+                  </span>
                 </div>
               </div>
             )}
