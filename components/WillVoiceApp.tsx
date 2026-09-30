@@ -340,6 +340,13 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     setIsSpeaking(false);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      stopAllSpeaking();
+      listeningRef.current?.stop();
+    };
+  }, [stopAllSpeaking]);
+
   /** 全方式の読み上げを現在位置で一時停止 */
   const pauseAllSpeaking = useCallback(() => {
     if (!isSpeaking) return;
@@ -368,62 +375,54 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
    */
   const speak = useCallback(
     async (text: string, audioSrc?: string) => {
-      const generation = ++speechGenerationRef.current;
-      // 連続して呼ばれたときに備えて前回の再生を止める
+      // 旧セッションを完全停止してから、新しい再生だけを現行セッションにする。
       stopAllSpeaking();
-      // stopAllSpeaking の generation 更新後に、この新しい読み上げを現行として戻す。
-      speechGenerationRef.current = generation + 1;
-      const activeGeneration = speechGenerationRef.current;
+      const generation = ++speechGenerationRef.current;
+      const isCurrent = () => generation === speechGenerationRef.current;
+      const finishIfCurrent = () => {
+        if (!isCurrent()) return;
+        setIsSpeakingPaused(false);
+        setIsSpeaking(false);
+      };
+      const fallbackToStandard = () => {
+        if (!isCurrent()) return;
+        speakText(text, {
+          onEnd: finishIfCurrent,
+          voiceURI: standardVoiceURI ?? undefined,
+        });
+      };
+
       setIsSpeaking(true);
 
       if (voiceMode === "recorded" && audioSrc) {
         playRecordedAudio(audioSrc, {
           volume: recordedVolume,
-          onEnd: () => {
-            setIsSpeakingPaused(false);
-            setIsSpeaking(false);
-          },
-          onError: () => {
-            // 録音音声の再生失敗時は標準音声にフォールバック
-            speakText(text, {
-              onEnd: () => {
-                setIsSpeakingPaused(false);
-                setIsSpeaking(false);
-              },
-              voiceURI: standardVoiceURI ?? undefined,
-            });
-          },
+          onEnd: finishIfCurrent,
+          onError: fallbackToStandard,
         });
         return;
       }
 
       if (voiceMode === "voicevox") {
         if (!isLocalhost()) {
-          // 公開環境では VOICEVOX ENGINE に接続できないため標準音声で再生
-          speakText(text, {
-            onEnd: () => {
-              setIsSpeakingPaused(false);
-              setIsSpeaking(false);
-            },
-            voiceURI: standardVoiceURI ?? undefined,
-          });
+          fallbackToStandard();
           return;
         }
+
         const controller = new AbortController();
         voicevoxAbortRef.current = controller;
         const result = await speakWithVoicevox(text, {
           speakerId: styleId ?? undefined,
           params: audioParams,
           signal: controller.signal,
-          onEnd: () => {
-            setIsSpeakingPaused(false);
-            setIsSpeaking(false);
-          },
+          onEnd: finishIfCurrent,
         });
-        if (controller.signal.aborted || activeGeneration !== speechGenerationRef.current) {
+
+        if (controller.signal.aborted || !isCurrent()) {
           result.handle?.stop();
           return;
         }
+
         voicevoxAbortRef.current = null;
         voicevoxHandleRef.current = result.handle ?? null;
         if (pauseRequestedRef.current) {
@@ -433,23 +432,29 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
             pauseVoicevox();
           }
         }
+
         if (result.usedFallback) {
           setVoicevoxStatus("fallback");
           if (result.fallbackReason) setNotice(result.fallbackReason);
         } else {
           setVoicevoxStatus("connected");
         }
-      } else {
-        speakText(text, {
-          onEnd: () => {
-            setIsSpeakingPaused(false);
-            setIsSpeaking(false);
-          },
-          voiceURI: standardVoiceURI ?? undefined,
-        });
+        return;
       }
+
+      speakText(text, {
+        onEnd: finishIfCurrent,
+        voiceURI: standardVoiceURI ?? undefined,
+      });
     },
-    [voiceMode, styleId, audioParams, stopAllSpeaking, standardVoiceURI, recordedVolume]
+    [
+      audioParams,
+      recordedVolume,
+      standardVoiceURI,
+      stopAllSpeaking,
+      styleId,
+      voiceMode,
+    ]
   );
 
   /** ユーザー発話受領 → うぃる返答生成 → 読み上げ */
@@ -546,7 +551,11 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           <span className="header__subtitle">{mode === "flow" ? "WILL.tennis 進行アシスタント" : "WILL.tennis マスコット"}</span>
         </div>
         <div className="header__actions">
-          <Link className="header__page-link" href={mode === "flow" ? "/chat" : "/flow"}>
+          <Link
+            className="header__page-link"
+            href={mode === "flow" ? "/chat" : "/flow"}
+            onClick={stopAllSpeaking}
+          >
             {mode === "flow" ? "うぃるに聞く" : "進行へ"}
           </Link>
         <button
@@ -598,7 +607,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           className={`voice-mode__btn ${
             voiceMode === "recorded" ? "voice-mode__btn--active" : ""
           }`}
-          onClick={() => handleVoiceModeChange("recorded")}
+          onClick={() => { stopAllSpeaking(); handleVoiceModeChange("recorded"); }}
           title="録音済みのうぃる音声で再生します（進行モードのみ）"
         >
           録音音声
@@ -611,7 +620,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
             className={`voice-mode__btn ${
               voiceMode === "standard" ? "voice-mode__btn--active" : ""
             }`}
-            onClick={() => handleVoiceModeChange("standard")}
+            onClick={() => { stopAllSpeaking(); handleVoiceModeChange("standard"); }}
             title="ブラウザ標準の音声合成で読み上げます"
           >
             標準音声
@@ -625,7 +634,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
             className={`voice-mode__btn ${
               voiceMode === "voicevox" ? "voice-mode__btn--active" : ""
             }`}
-            onClick={() => handleVoiceModeChange("voicevox")}
+            onClick={() => { stopAllSpeaking(); handleVoiceModeChange("voicevox"); }}
             title="VOICEVOX:ずんだもん で読み上げます"
           >
             VOICEVOX

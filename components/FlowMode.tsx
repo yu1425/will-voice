@@ -354,17 +354,18 @@ export default function FlowMode({
     };
   }, [timerRunning, speak]);
 
-  const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
-  };
-
-
+  const handleFlowTabChange = useCallback(
+    (next: "auto" | "manual") => {
+      if (next === flowTab) return;
+      stopSpeaking();
+      setFlowTab(next);
+    },
+    [flowTab, stopSpeaking]
+  );
 
   // ============ render ============
-  // 2時間オートと個別進行は同じ「進行」内の表示方式としてだけタブにする。
-  // 両方を常にマウントしておくことで、個別進行へ切り替えても自動進行の時計は継続する。
+  // 自動進行と個別進行は同じ「進行」ページ内の表示方式としてタブで切り替える。
+  // 両方を常にマウントし、自動進行の時計はタブ移動でも維持する。
   return (
     <div className="flow-mode flow-mode--workspace">
       <div className="flow-kind-tabs" role="tablist" aria-label="進行方式">
@@ -373,16 +374,16 @@ export default function FlowMode({
           role="tab"
           aria-selected={flowTab === "auto"}
           className={flowTab === "auto" ? "is-active" : ""}
-          onClick={() => setFlowTab("auto")}
+          onClick={() => handleFlowTabChange("auto")}
         >
-          2時間オート
+          自動進行
         </button>
         <button
           type="button"
           role="tab"
           aria-selected={flowTab === "manual"}
           className={flowTab === "manual" ? "is-active" : ""}
-          onClick={() => setFlowTab("manual")}
+          onClick={() => handleFlowTabChange("manual")}
         >
           個別進行
         </button>
@@ -390,6 +391,7 @@ export default function FlowMode({
 
       <div hidden={flowTab !== "auto"}>
         <AutoFlowPanel
+          active={flowTab === "auto"}
           conditions={conditions}
           onConditionsChange={handleConditionsChange}
           onSpeak={speak}

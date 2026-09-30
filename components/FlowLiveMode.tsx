@@ -101,11 +101,16 @@ export default function FlowLiveMode({
       {/* 優先表示エリア: 現在ステップ・読み上げ・次へ/戻る */}
       <div className="flow-live__top">
         {/* 現在ステップの強調表示 */}
-        <div className="flow-live__hero">
-          <div className="flow-live__step-badge">
-            STEP {currentScript.step} / {totalSteps}
-          </div>
-          <h1 className="flow-live__title">{currentScript.title}</h1>
+        <div className="flow-surface flow-live__hero">
+          <header className="flow-section-head">
+            <div>
+              <span className="flow-eyebrow">INDIVIDUAL FLOW</span>
+              <h1 className="flow-section-title">{currentScript.title}</h1>
+            </div>
+            <span className="flow-duration-badge">
+              STEP {currentScript.step} / {totalSteps}
+            </span>
+          </header>
           {nextScript ? (
             <>
               <p className="flow-live__next-hint">
@@ -130,34 +135,31 @@ export default function FlowLiveMode({
           {previewText}
         </div>
 
-        {/* メインの読み上げ/停止 */}
-        <div className="flow-live__main">
-          {isSpeaking ? (
-            <div className="flow-live__speaking-actions">
-              <button
-                type="button"
-                className="flow-live__big flow-live__big--pause"
-                onClick={isSpeakingPaused ? onResumeSpeaking : onPauseSpeaking}
-              >
-                {isSpeakingPaused ? "▶ 再開" : "Ⅱ 一時停止"}
-              </button>
-              <button
-                type="button"
-                className="flow-live__stop-btn"
-                onClick={onStop}
-              >
-                ■ 停止
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="flow-live__big flow-live__big--primary"
-              onClick={onSpeak}
-            >
-              ▶ 読み上げ
-            </button>
-          )}
+        {/* 音声操作は再生状態で位置や個数を変えない */}
+        <div className="flow-action-grid flow-live__main">
+          <button
+            type="button"
+            className="flow-btn flow-btn--primary"
+            onClick={onSpeak}
+          >
+            {isSpeaking ? "案内を最初から再生" : "案内を再生"}
+          </button>
+          <button
+            type="button"
+            className="flow-btn flow-btn--secondary"
+            onClick={isSpeakingPaused ? onResumeSpeaking : onPauseSpeaking}
+            disabled={!isSpeaking}
+          >
+            {isSpeakingPaused ? "音声を再開" : "音声を一時停止"}
+          </button>
+          <button
+            type="button"
+            className="flow-btn flow-btn--secondary"
+            onClick={onStop}
+            disabled={!isSpeaking}
+          >
+            音声を停止
+          </button>
         </div>
 
         {/* 次へ (大) / 戻る (小) */}
@@ -296,7 +298,7 @@ export default function FlowLiveMode({
           className="flow-live__test-btn"
           onClick={() => onSpeakRaw(VOICE_TEST_TEXT)}
         >
-          🔊 音声テスト
+          音声テスト
         </button>
       </div>
     </div>
