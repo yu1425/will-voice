@@ -42,11 +42,18 @@ export async function playTransitionCue(): Promise<void> {
 
     const startedAt = audioContext.currentTime + 0.015;
     // 音の厚さ・間隔・余韻は元の3打ベルのまま。
-    // 周波数だけを、より自然な上昇感のあるGメジャー三和音（G5→B5→D6）へ調整する。
+    // 前半2音は元のEメジャー感へ戻し、最後はB5からC#6へ短く持ち上げて
+    // 「ターン」と上に抜ける着地にする。大きく飛ばさず、自然な上昇感を優先。
     const strikes = [
-      { frequency: 783.99, at: 0, tail: 1.7 },
-      { frequency: 987.77, at: 0.48, tail: 1.8 },
-      { frequency: 1174.66, at: 0.96, tail: 1.9 },
+      { frequency: 659.25, at: 0, tail: 1.7 },
+      { frequency: 830.61, at: 0.48, tail: 1.8 },
+      {
+        frequency: 987.77,
+        endFrequency: 1108.73,
+        glideSec: 0.24,
+        at: 0.96,
+        tail: 1.9,
+      },
     ];
     const partials = [
       { ratio: 1, gain: 0.13, tailScale: 1 },
@@ -68,6 +75,12 @@ export async function playTransitionCue(): Promise<void> {
           strike.frequency * partial.ratio,
           begin
         );
+        if ("endFrequency" in strike && strike.endFrequency) {
+          oscillator.frequency.exponentialRampToValueAtTime(
+            strike.endFrequency * partial.ratio,
+            begin + strike.glideSec
+          );
+        }
 
         gain.gain.setValueAtTime(0.0001, begin);
         gain.gain.exponentialRampToValueAtTime(
