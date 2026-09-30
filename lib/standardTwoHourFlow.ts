@@ -1,4 +1,5 @@
 import type { IntroTiming, PlanItem } from "./flowPlan";
+import { FLOW_RECORDINGS } from "./tennisFlowScripts";
 
 /** 標準2時間進行は、条件によって時刻境界を動かさない固定メニュー。 */
 export const STANDARD_TWO_HOUR_DURATION_SEC = 2 * 60 * 60;
@@ -9,6 +10,8 @@ export type AutoFlowEvent = {
   phaseId: string;
   title: string;
   speakText: string;
+  /** 録音音声モードで意味が矛盾しない既存録音だけを紐付ける。 */
+  audioSrc?: string;
   refStep?: number;
 };
 
@@ -16,8 +19,7 @@ const minutes = (value: number) => value * 60;
 
 /**
  * 自己紹介のタイミングだけを差し替えた自動進行イベントを返す。
- * audioSrc はあえて持たせない。既存録音は新タイムラインの短い案内と
- * 内容・尺が一致しないため、録音音声モード中も標準音声へフォールバックする。
+ * 旧録音を無理に短い切替キューへ流用せず、フェーズとして意味が一致するものだけ使う。
  */
 export function buildStandardTwoHourEvents(
   introTiming: IntroTiming
@@ -41,6 +43,7 @@ export function buildStandardTwoHourEvents(
       title: "ショートラリー",
       speakText:
         "それではショートラリーに移ります。ペアで5分ほど、相手が返しやすいボールをつないでください。",
+      audioSrc: FLOW_RECORDINGS.shortVolley.audioSrc,
       refStep: 2,
     },
     {
@@ -59,6 +62,7 @@ export function buildStandardTwoHourEvents(
       title: "ロングラリー",
       speakText:
         "続いてロングラリーです。ある程度打ったら交代しながら、なるべく同じ相手が続かないように進めてください。",
+      audioSrc: FLOW_RECORDINGS.longRally.audioSrc,
       refStep: 3,
     },
     {
@@ -68,6 +72,7 @@ export function buildStandardTwoHourEvents(
       title: "クロスラリー",
       speakText:
         "続いてクロスラリーです。なるべく同じ相手が続かないように、軽くメンバーを入れ替えてください。",
+      audioSrc: FLOW_RECORDINGS.crossRally.audioSrc,
       refStep: 4,
     },
     {
@@ -77,6 +82,7 @@ export function buildStandardTwoHourEvents(
       title: "サーブ・レシーブ",
       speakText:
         "続いてサーブ・レシーブです。片側がサーブ、反対側がレシーブで始めてください。5分後に交代します。",
+      audioSrc: FLOW_RECORDINGS.serveReturnDetail.audioSrc,
       refStep: 5,
     },
     {
@@ -97,6 +103,7 @@ export function buildStandardTwoHourEvents(
             title: "ゲーム形式（ダブルス）",
             speakText:
               "ここからゲーム形式です。ダブルスで4ポイント先取、デュースなし、1ゲームごとに交代でお願いします。サーブは最大3回までで大丈夫です。",
+            audioSrc: FLOW_RECORDINGS.game.audioSrc,
             refStep: 8,
           },
         ]
@@ -108,6 +115,7 @@ export function buildStandardTwoHourEvents(
             title: "自己紹介",
             speakText:
               "ここで軽く自己紹介をお願いします。お名前、テニス歴、初参加かどうかくらいで大丈夫です。",
+            audioSrc: FLOW_RECORDINGS.selfIntro.audioSrc,
             refStep: 6,
           },
           {
@@ -117,6 +125,7 @@ export function buildStandardTwoHourEvents(
             title: "ゲーム形式（ダブルス）",
             speakText:
               "ここからゲーム形式です。ダブルスで4ポイント先取、デュースなし、1ゲームごとに交代でお願いします。サーブは最大3回までで大丈夫です。",
+            audioSrc: FLOW_RECORDINGS.game.audioSrc,
             refStep: 8,
           },
         ]),
@@ -127,6 +136,7 @@ export function buildStandardTwoHourEvents(
       title: "ミニゲーム・ブレイク",
       speakText:
         "ゲームはここまでです。最後はミニゲームに移ります。リレーラリーを基本に、軽く楽しみながら締めましょう。",
+      audioSrc: FLOW_RECORDINGS.miniGame.audioSrc,
       refStep: 9,
     },
     {
@@ -136,6 +146,7 @@ export function buildStandardTwoHourEvents(
       title: "終了",
       speakText:
         "本日の進行は終了です。ご参加ありがとうございました。忘れ物に気をつけてお帰りください。",
+      audioSrc: FLOW_RECORDINGS.closing.audioSrc,
       refStep: 10,
     },
   ];

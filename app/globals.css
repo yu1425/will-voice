@@ -1459,6 +1459,42 @@ body {
   color: var(--text-soft);
 }
 
+/* ---- Structured navigation and the two auto/manual workspaces ---- */
+.app-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 8px 12px; background: #fff; border-bottom: 1px solid #e2e8e4; }
+.app-nav__item { min-height: 42px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--text-soft); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.app-nav__item--active { border-color: #cfe0d2; background: var(--will-green-soft); color: var(--will-green-dark); }
+.app:not(.app--settings-open) .voice-mode, .app:not(.app--settings-open) .voicevox-panel { display: none; }
+.flow-mode--workspace { gap: 14px; padding: 14px 12px 20px; }
+.flow-kind-tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; gap: 3px; background: #e9eeea; border-radius: 10px; }
+.flow-kind-tabs button { min-height: 40px; border: 0; border-radius: 8px; background: transparent; color: var(--text-soft); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.flow-kind-tabs button.is-active { background: #fff; color: var(--will-green-dark); box-shadow: 0 1px 2px rgba(30, 48, 34, .08); }
+.flow-manual__settings { margin-top: 12px; border: 1px solid #e1e7e2; border-radius: 12px; background: #fff; overflow: hidden; }
+.flow-manual__settings summary { padding: 12px 14px; color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; }
+.flow-manual__settings[open] summary { border-bottom: 1px solid #e8ede9; }
+.flow-manual__settings .plan-panel, .flow-manual__settings .caution-panel, .flow-manual__settings .flow-card { margin: 12px; }
+
+/* ---- Clean, single-purpose 2 hour auto flow ---- */
+.auto-flow { padding: 18px; border: 1px solid #dce5de; border-radius: 14px; background: #fff; color: var(--text); box-shadow: 0 2px 10px rgba(35, 50, 39, .05); }
+.auto-flow--active { color: var(--text); background: #fff; box-shadow: 0 2px 10px rgba(35, 50, 39, .05); }
+.auto-flow__setup-head span { color: var(--will-green-dark); font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.auto-flow__setup-head h1, .auto-flow__title { margin: 4px 0; color: var(--text); font-size: 27px; line-height: 1.25; }
+.auto-flow__setup-head p { margin: 0; color: var(--text-soft); font-size: 13px; }
+.auto-flow__setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 18px 0 10px; }
+.auto-flow__setting-label { display: block; margin-bottom: 6px; color: var(--text-soft); font-size: 11px; font-weight: 700; }
+.auto-flow__choice { display: flex; gap: 4px; padding: 3px; background: #edf1ee; border-radius: 9px; }
+.auto-flow__choice button { flex: 1; min-height: 34px; border: 0; border-radius: 7px; background: transparent; color: var(--text-soft); font: inherit; font-size: 12px; cursor: pointer; }
+.auto-flow__choice button.is-selected { background: #fff; color: var(--will-green-dark); box-shadow: 0 1px 2px rgba(0,0,0,.08); font-weight: 700; }
+.auto-flow__chime { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 0; color: var(--text); font-size: 13px; }
+.auto-flow__chime label { display: flex; align-items: center; gap: 6px; }.auto-flow__chime input { accent-color: var(--will-green); }
+.auto-flow__chime button, .auto-flow__setup-actions > button, .auto-flow__actions > button { min-height: 40px; padding: 8px 12px; border: 1px solid #d3ded5; border-radius: 9px; background: #fff; color: var(--text); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.auto-flow__setup-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 8px; margin-bottom: 16px; }.auto-flow__setup-actions .auto-flow__start, .auto-flow__actions .auto-flow__primary { border-color: var(--will-green); background: var(--will-green); color: #fff; }
+.auto-flow__status { display: inline-flex; width: fit-content; padding: 3px 8px; border-radius: 999px; background: var(--will-green-soft); color: var(--will-green-dark); font-size: 11px; font-weight: 800; }.auto-flow__current-label { margin: 18px 0 0; color: var(--text-soft); font-size: 12px; font-weight: 700; }
+.auto-flow__countdown { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 2px 10px; margin: 18px 0 10px; padding: 14px 0; border-top: 1px solid #e8ede9; border-bottom: 1px solid #e8ede9; }.auto-flow__countdown span, .auto-flow__countdown small { color: var(--text-soft); font-size: 12px; }.auto-flow__countdown strong { font-variant-numeric: tabular-nums; font-size: 29px; line-height: 1; color: var(--will-green-dark); }.auto-flow__countdown small { grid-column: 1 / -1; font-variant-numeric: tabular-nums; }
+.auto-flow__next { margin: 0 0 14px; color: var(--text-soft); font-size: 13px; }.auto-flow__next strong { color: var(--text); }.auto-flow__actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }.auto-flow__actions .auto-flow__primary { grid-column: 1 / -1; }
+.auto-flow__script { margin: 14px 0; color: var(--text-soft); font-size: 12px; }.auto-flow__script summary { cursor: pointer; font-weight: 700; }.auto-flow__script p { margin: 8px 0 0; line-height: 1.6; }
+.auto-timeline { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 8px; -webkit-overflow-scrolling: touch; }.auto-timeline__item { flex: 0 0 auto; display: grid; min-width: 104px; gap: 3px; padding: 9px 10px; border: 1px solid #e1e7e2; border-radius: 9px; background: #fff; color: var(--text-soft); text-align: left; cursor: pointer; }.auto-timeline__item time { font-variant-numeric: tabular-nums; font-size: 11px; }.auto-timeline__item span { font-size: 12px; font-weight: 700; }.auto-timeline__item.is-current { border-color: var(--will-green); background: var(--will-green-soft); color: var(--will-green-dark); }.auto-timeline__item.is-complete { color: #95a099; background: #f7f9f7; }.auto-timeline__item:disabled { cursor: default; opacity: .8; }
+.auto-flow__end { width: 100%; margin-top: 10px; min-height: 38px; border: 0; background: transparent; color: #8b5651; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+
 /* ---- 注意喚起 パネル ---- */
 .caution-panel {
   background: #fff;

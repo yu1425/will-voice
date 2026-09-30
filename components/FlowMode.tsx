@@ -80,6 +80,7 @@ export default function FlowMode({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [voiceLength, setVoiceLength] = useState<VoiceLength>("normal");
   const [isAutoFlowActive, setIsAutoFlowActive] = useState(false);
+  const [flowTab, setFlowTab] = useState<"auto" | "manual">("auto");
 
   // タイマー
   const [timerSec, setTimerSec] = useState(5 * 60);
@@ -379,6 +380,106 @@ export default function FlowMode({
   };
 
   // ============ render ============
+  // 2時間オートと個別進行は同じ「進行」内の表示方式としてだけタブにする。
+  // 両方を常にマウントしておくことで、個別進行へ切り替えても自動進行の時計は継続する。
+  return (
+    <div className="flow-mode flow-mode--workspace">
+      <div className="flow-kind-tabs" role="tablist" aria-label="進行方式">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={flowTab === "auto"}
+          className={flowTab === "auto" ? "is-active" : ""}
+          onClick={() => setFlowTab("auto")}
+        >
+          2時間オート
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={flowTab === "manual"}
+          className={flowTab === "manual" ? "is-active" : ""}
+          onClick={() => setFlowTab("manual")}
+        >
+          個別進行
+        </button>
+      </div>
+
+      <div hidden={flowTab !== "auto"}>
+        <AutoFlowPanel
+          conditions={conditions}
+          onConditionsChange={handleConditionsChange}
+          onSpeak={speak}
+          onStopSpeaking={stopSpeaking}
+          isSpeaking={isSpeaking}
+          onSyncStep={handleAutoFlowStepSync}
+        />
+      </div>
+
+      <div hidden={flowTab !== "manual"} className="flow-manual">
+        {currentScript && (
+          <FlowLiveMode
+            autoFlow={null}
+            manualControlsDisabled={false}
+            currentScript={currentScript}
+            nextScript={nextScript}
+            previewText={buildSpeakText(currentScript)}
+            nextPreviewText={nextScript ? buildSpeakText(nextScript as FlowScript) : null}
+            usesRecordedAudio={usesRecordedAudio(currentScript)}
+            isSpeaking={isSpeaking}
+            totalSteps={TOTAL_STEPS}
+            onSpeak={() => handleSpeak(currentScript)}
+            onStop={stopSpeaking}
+            isSpeakingPaused={isSpeakingPaused}
+            onPauseSpeaking={onPauseSpeaking}
+            onResumeSpeaking={onResumeSpeaking}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onSpeakRaw={speak}
+            scriptsForCourt={scriptsForCourt}
+            onStepJump={handleStepJump}
+            voiceMode={voiceMode}
+            timerRemaining={timerRemaining}
+            timerRunning={timerRunning}
+            timerSec={timerSec}
+            onStartTimer={startTimer}
+            onPauseTimer={pauseTimer}
+            onResetTimer={resetTimer}
+          />
+        )}
+        <details className="flow-manual__settings">
+          <summary>進行設定・セリフ編集</summary>
+          <FlowPlanPanel conditions={conditions} onChange={handleConditionsChange} />
+          <FlowCautionPanel speak={speak} voiceMode={voiceMode} />
+          {currentScript && (
+            <FlowStepCard
+              key={currentScript.id}
+              script={currentScript}
+              editedText={edits[currentScript.id]}
+              speakingText={buildSpeakText(currentScript)}
+              isEditing={editingId === currentScript.id}
+              isSpeaking={isSpeaking}
+              voiceLength={voiceLength}
+              usesRecordedAudio={usesRecordedAudio(currentScript)}
+              onVoiceLengthChange={handleVoiceLengthChange}
+              onSpeak={() => handleSpeak(currentScript)}
+              onSpeakBeginnerTip={() => handleSpeakBeginnerTip(currentScript)}
+              onStop={stopSpeaking}
+              isSpeakingPaused={isSpeakingPaused}
+              onPauseSpeaking={onPauseSpeaking}
+              onResumeSpeaking={onResumeSpeaking}
+              onCopy={() => handleCopy(currentScript)}
+              onEditToggle={() => setEditingId(editingId === currentScript.id ? null : currentScript.id)}
+              onEditChange={(value) => handleEdit(currentScript.id, value)}
+              onEditReset={() => handleEditReset(currentScript.id)}
+            />
+          )}
+        </details>
+      </div>
+    </div>
+  );
+
+  /* Legacy prepare/live renderer kept below only for reference during this migration. */
   // 表示モード切替トグル(両モード共通で先頭に表示)
   const viewToggle = (
     <div className="flow-viewmode" role="radiogroup" aria-label="表示モード">
@@ -417,10 +518,12 @@ export default function FlowMode({
             autoFlow={
               conditions.durationHours === 2 ? (
                 <AutoFlowPanel
-                  introTiming={conditions.introTiming}
+                  conditions={conditions}
+                  onConditionsChange={handleConditionsChange}
                   onSpeak={speak}
+                  onStopSpeaking={stopSpeaking}
+                  isSpeaking={isSpeaking}
                   onSyncStep={handleAutoFlowStepSync}
-                  onActiveChange={setIsAutoFlowActive}
                 />
               ) : null
             }
@@ -428,7 +531,7 @@ export default function FlowMode({
             currentScript={currentScript}
             nextScript={nextScript}
             previewText={buildSpeakText(currentScript)}
-            nextPreviewText={nextScript ? buildSpeakText(nextScript) : null}
+            nextPreviewText={nextScript ? buildSpeakText(nextScript as FlowScript) : null}
             usesRecordedAudio={usesRecordedAudio(currentScript)}
             isSpeaking={isSpeaking}
             totalSteps={TOTAL_STEPS}

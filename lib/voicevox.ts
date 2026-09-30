@@ -99,6 +99,7 @@ export async function speakWithVoicevox(
     }
 
     const blob = await res.blob();
+    if (options.signal?.aborted) return { usedFallback: false };
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     currentAudio = audio;
@@ -135,6 +136,9 @@ export async function speakWithVoicevox(
       },
     };
   } catch {
+    // 明示停止で AbortController が中断した場合は、標準音声へフォールバックして
+    // 停止後に古い音声を鳴らし直さない。
+    if (options.signal?.aborted) return { usedFallback: false };
     // ネットワーク失敗・タイムアウト等
     return fallback(
       text,

@@ -120,6 +120,8 @@ export default function Page() {
 
   const listeningRef = useRef<ListeningHandle | null>(null);
   const voicevoxHandleRef = useRef<VoicevoxHandle | null>(null);
+  const voicevoxAbortRef = useRef<AbortController | null>(null);
+  const speechGenerationRef = useRef(0);
   const pauseRequestedRef = useRef(false);
   const logRef = useRef<HTMLDivElement | null>(null);
 
@@ -339,6 +341,9 @@ export default function Page() {
 
   /** 全方式の読み上げ停止 */
   const stopAllSpeaking = useCallback(() => {
+    speechGenerationRef.current += 1;
+    voicevoxAbortRef.current?.abort();
+    voicevoxAbortRef.current = null;
     pauseRequestedRef.current = false;
     stopSpeaking();
     stopVoicevox();
@@ -376,8 +381,12 @@ export default function Page() {
    */
   const speak = useCallback(
     async (text: string, audioSrc?: string) => {
+      const generation = ++speechGenerationRef.current;
       // 連続して呼ばれたときに備えて前回の再生を止める
       stopAllSpeaking();
+      // stopAllSpeaking の generation 更新後に、この新しい読み上げを現行として戻す。
+      speechGenerationRef.current = generation + 1;
+      const activeGeneration = speechGenerationRef.current;
       setIsSpeaking(true);
 
       if (voiceMode === "recorded" && audioSrc) {
@@ -413,14 +422,22 @@ export default function Page() {
           });
           return;
         }
+        const controller = new AbortController();
+        voicevoxAbortRef.current = controller;
         const result = await speakWithVoicevox(text, {
           speakerId: styleId ?? undefined,
           params: audioParams,
+          signal: controller.signal,
           onEnd: () => {
             setIsSpeakingPaused(false);
             setIsSpeaking(false);
           },
         });
+        if (controller.signal.aborted || activeGeneration !== speechGenerationRef.current) {
+          result.handle?.stop();
+          return;
+        }
+        voicevoxAbortRef.current = null;
         voicevoxHandleRef.current = result.handle ?? null;
         if (pauseRequestedRef.current) {
           if (result.usedFallback) {
@@ -531,7 +548,7 @@ export default function Page() {
   }, [voiceMode, voicevoxStatus]);
 
   return (
-    <div className="app">
+    <div className={`app${settingsOpen ? " app--settings-open" : ""}`}>
       {/* ヘッダー */}
       <header className="header">
         <div className="header__avatar">
@@ -579,27 +596,25 @@ export default function Page() {
         </section>
       )}
 
-      {/* タブ切替 */}
-      <div className="tabs" role="tablist" aria-label="モード">
+      {/* アプリ内の大分類。進行内の表示方式とは分け、タブUIにはしない。 */}
+      <nav className="app-nav" aria-label="主なページ">
         <button
           type="button"
-          role="tab"
-          aria-selected={tab === "flow"}
-          className={`tabs__btn ${tab === "flow" ? "tabs__btn--active" : ""}`}
+          aria-current={tab === "flow" ? "page" : undefined}
+          className={`app-nav__item ${tab === "flow" ? "app-nav__item--active" : ""}`}
           onClick={() => handleTabChange("flow")}
         >
-          進行モード
+          進行
         </button>
         <button
           type="button"
-          role="tab"
-          aria-selected={tab === "chat"}
-          className={`tabs__btn ${tab === "chat" ? "tabs__btn--active" : ""}`}
+          aria-current={tab === "chat" ? "page" : undefined}
+          className={`app-nav__item ${tab === "chat" ? "app-nav__item--active" : ""}`}
           onClick={() => handleTabChange("chat")}
         >
-          通常チャット
+          うぃるに聞く
         </button>
-      </div>
+      </nav>
 
       {/* 音声モード切替 */}
       <div className="voice-mode" role="radiogroup" aria-label="読み上げ音声">
