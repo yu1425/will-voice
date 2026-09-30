@@ -27,7 +27,7 @@ export async function unlockTransitionCue(): Promise<boolean> {
   }
 }
 
-/** 約0.65秒の、柔らかい上昇2音チャイムを再生する。 */
+/** 約1.15秒の、屋外でも切替に気づきやすい3音チャイムを再生する。 */
 export async function playTransitionCue(): Promise<void> {
   try {
     const audioContext = getContext();
@@ -38,26 +38,27 @@ export async function playTransitionCue(): Promise<void> {
     stopTransitionCue();
     const startedAt = audioContext.currentTime + 0.01;
     const tones = [
-      { frequency: 880, at: 0, duration: 0.22 },
-      { frequency: 1175, at: 0.26, duration: 0.28 },
+      { frequency: 660, at: 0, duration: 0.28 },
+      { frequency: 880, at: 0.34, duration: 0.30 },
+      { frequency: 1175, at: 0.72, duration: 0.34 },
     ];
-    activeNodes = tones.map(({ frequency, at, duration }) => {
+    activeNodes = tones.map(({ frequency, at, duration }, index) => {
       const oscillator = audioContext.createOscillator();
       const gain = audioContext.createGain();
-      oscillator.type = "sine";
+      oscillator.type = index === 2 ? "triangle" : "sine";
       oscillator.frequency.setValueAtTime(frequency, startedAt + at);
       gain.gain.setValueAtTime(0.0001, startedAt + at);
-      gain.gain.exponentialRampToValueAtTime(0.075, startedAt + at + 0.025);
+      gain.gain.exponentialRampToValueAtTime(0.14, startedAt + at + 0.035);
       gain.gain.exponentialRampToValueAtTime(0.0001, startedAt + at + duration);
       oscillator.connect(gain).connect(audioContext.destination);
       oscillator.start(startedAt + at);
-      oscillator.stop(startedAt + at + duration + 0.03);
+      oscillator.stop(startedAt + at + duration + 0.04);
       oscillator.addEventListener("ended", () => {
         activeNodes = activeNodes.filter((node) => node !== oscillator);
       });
       return oscillator;
     });
-    await new Promise<void>((resolve) => window.setTimeout(resolve, 620));
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 1160));
   } catch {
     // 効果音非対応や再生拒否でも、次の音声アナウンスは継続する。
   }

@@ -42,9 +42,6 @@ const STEP_KEY = "will-flow-step";
 const EDIT_KEY = "will-flow-edits";
 const CONDITIONS_KEY = "will-flow-conditions";
 const VOICE_LENGTH_KEY = "will-flow-voice-length";
-const VIEW_MODE_KEY = "will-flow-view-mode";
-
-type ViewMode = "prepare" | "live";
 
 type Props = {
   /** 読み上げ実行(VOICEVOX/標準音声/録音音声は親側で判定) */
@@ -72,21 +69,17 @@ export default function FlowMode({
   onResumeSpeaking,
   voiceMode,
 }: Props) {
-  // 保存済み表示モードは復元せず、アクセスのたびに当日モードを入口にする。
-  const [viewMode, setViewMode] = useState<ViewMode>("live");
   const [conditions, setConditions] = useState<FlowConditions>(DEFAULT_CONDITIONS);
   const [stepNumber, setStepNumber] = useState(1);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [voiceLength, setVoiceLength] = useState<VoiceLength>("normal");
-  const [isAutoFlowActive, setIsAutoFlowActive] = useState(false);
   const [flowTab, setFlowTab] = useState<"auto" | "manual">("auto");
 
   // タイマー
   const [timerSec, setTimerSec] = useState(5 * 60);
   const [timerRemaining, setTimerRemaining] = useState(5 * 60);
   const [timerRunning, setTimerRunning] = useState(false);
-  const [customMin, setCustomMin] = useState("");
 
   // 初期復元
   useEffect(() => {
@@ -170,11 +163,6 @@ export default function FlowMode({
   const handleConditionsChange = useCallback((next: FlowConditions) => {
     setConditions(next);
     persist(CONDITIONS_KEY, JSON.stringify(next));
-  }, []);
-
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    setViewMode(mode);
-    persist(VIEW_MODE_KEY, mode);
   }, []);
 
   const handleVoiceLengthChange = useCallback((l: VoiceLength) => {
@@ -372,12 +360,7 @@ export default function FlowMode({
     return `${m}:${String(s).padStart(2, "0")}`;
   };
 
-  const handleCustomStart = () => {
-    const m = Number(customMin);
-    if (!Number.isFinite(m) || m <= 0) return;
-    const sec = Math.min(60, Math.max(1, Math.floor(m))) * 60;
-    startTimer(sec);
-  };
+
 
   // ============ render ============
   // 2時間オートと個別進行は同じ「進行」内の表示方式としてだけタブにする。
@@ -479,251 +462,6 @@ export default function FlowMode({
     </div>
   );
 
-  /* Legacy prepare/live renderer kept below only for reference during this migration. */
-  // 表示モード切替トグル(両モード共通で先頭に表示)
-  const viewToggle = (
-    <div className="flow-viewmode" role="radiogroup" aria-label="表示モード">
-      <button
-        type="button"
-        role="radio"
-        aria-checked={viewMode === "prepare"}
-        className={`flow-viewmode__btn ${
-          viewMode === "prepare" ? "flow-viewmode__btn--active" : ""
-        }`}
-        onClick={() => handleViewModeChange("prepare")}
-      >
-        準備モード
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={viewMode === "live"}
-        className={`flow-viewmode__btn ${
-          viewMode === "live" ? "flow-viewmode__btn--active" : ""
-        }`}
-        onClick={() => handleViewModeChange("live")}
-      >
-        当日モード
-      </button>
-    </div>
-  );
-
-  // 当日モード
-  if (viewMode === "live") {
-    return (
-      <div className="flow-mode flow-mode--live">
-        {viewToggle}
-        {currentScript && (
-          <FlowLiveMode
-            autoFlow={
-              conditions.durationHours === 2 ? (
-                <AutoFlowPanel
-                  conditions={conditions}
-                  onConditionsChange={handleConditionsChange}
-                  onSpeak={speak}
-                  onStopSpeaking={stopSpeaking}
-                  isSpeaking={isSpeaking}
-                  onSyncStep={handleAutoFlowStepSync}
-                />
-              ) : null
-            }
-            manualControlsDisabled={isAutoFlowActive}
-            currentScript={currentScript}
-            nextScript={nextScript}
-            previewText={buildSpeakText(currentScript)}
-            nextPreviewText={nextScript ? buildSpeakText(nextScript as FlowScript) : null}
-            usesRecordedAudio={usesRecordedAudio(currentScript)}
-            isSpeaking={isSpeaking}
-            totalSteps={TOTAL_STEPS}
-            onSpeak={() => handleSpeak(currentScript)}
-            onStop={stopSpeaking}
-            isSpeakingPaused={isSpeakingPaused}
-            onPauseSpeaking={onPauseSpeaking}
-            onResumeSpeaking={onResumeSpeaking}
-            onPrev={handlePrev}
-            onNext={handleNext}
-            onSpeakRaw={speak}
-            scriptsForCourt={scriptsForCourt}
-            onStepJump={handleStepJump}
-            voiceMode={voiceMode}
-            timerRemaining={timerRemaining}
-            timerRunning={timerRunning}
-            timerSec={timerSec}
-            onStartTimer={startTimer}
-            onPauseTimer={pauseTimer}
-            onResetTimer={resetTimer}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // 準備モード(従来通り)
-  return (
-    <div className="flow-mode">
-      {viewToggle}
-
-      <FlowPlanPanel conditions={conditions} onChange={handleConditionsChange} />
-
-      <FlowCautionPanel speak={speak} voiceMode={voiceMode} />
-
-      {/* 現在ステップ ナビ */}
-      <div className="flow-nav">
-        <button
-          type="button"
-          className="flow-nav__btn"
-          onClick={handlePrev}
-          disabled={stepNumber === 1}
-        >
-          ← 前へ
-        </button>
-        <span className="flow-nav__current">
-          ステップ {stepNumber} / {TOTAL_STEPS}
-        </span>
-        <button
-          type="button"
-          className="flow-nav__btn"
-          onClick={handleNext}
-          disabled={stepNumber === TOTAL_STEPS}
-        >
-          次へ →
-        </button>
-      </div>
-
-      {/* ステップ一覧チップ */}
-      <div className="flow-steps" role="tablist" aria-label="進行ステップ">
-        {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((n) => {
-          const matched =
-            scriptsForCourt.find((s) => s.step === n) ??
-            TENNIS_FLOW_SCRIPTS.find((s) => s.step === n);
-          const isActive = stepNumber === n;
-          return (
-            <button
-              key={n}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              className={`flow-step-chip ${
-                isActive ? "flow-step-chip--active" : ""
-              }`}
-              onClick={() => handleStepJump(n)}
-              title={matched?.title}
-            >
-              <span className="flow-step-chip__num">{n}</span>
-              <span className="flow-step-chip__label">
-                {matched?.shortLabel ?? ""}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 現ステップカード */}
-      {currentScript && (
-        <FlowStepCard
-          key={currentScript.id}
-          script={currentScript}
-          editedText={edits[currentScript.id]}
-          speakingText={buildSpeakText(currentScript)}
-          isEditing={editingId === currentScript.id}
-          isSpeaking={isSpeaking}
-          voiceLength={voiceLength}
-          usesRecordedAudio={usesRecordedAudio(currentScript)}
-          onVoiceLengthChange={handleVoiceLengthChange}
-          onSpeak={() => handleSpeak(currentScript)}
-          onSpeakBeginnerTip={() => handleSpeakBeginnerTip(currentScript)}
-          onStop={stopSpeaking}
-          isSpeakingPaused={isSpeakingPaused}
-          onPauseSpeaking={onPauseSpeaking}
-          onResumeSpeaking={onResumeSpeaking}
-          onCopy={() => handleCopy(currentScript)}
-          onEditToggle={() =>
-            setEditingId(editingId === currentScript.id ? null : currentScript.id)
-          }
-          onEditChange={(v) => handleEdit(currentScript.id, v)}
-          onEditReset={() => handleEditReset(currentScript.id)}
-        />
-      )}
-
-      {/* タイマー */}
-      <div className="flow-timer">
-        <div className="flow-timer__head">
-          <span className="flow-timer__label">タイマー</span>
-          <span
-            className={`flow-timer__time ${
-              timerRemaining === 0 ? "flow-timer__time--done" : ""
-            } ${timerRunning ? "flow-timer__time--running" : ""}`}
-          >
-            {formatTime(timerRemaining)}
-          </span>
-        </div>
-
-        <div className="flow-timer__preset">
-          <button
-            type="button"
-            className="flow-timer__btn"
-            onClick={() => startTimer(5 * 60)}
-            disabled={timerRunning}
-          >
-            5分
-          </button>
-          <button
-            type="button"
-            className="flow-timer__btn"
-            onClick={() => startTimer(10 * 60)}
-            disabled={timerRunning}
-          >
-            10分
-          </button>
-
-          <div className="flow-timer__custom">
-            <input
-              type="number"
-              className="flow-timer__input"
-              placeholder="分"
-              value={customMin}
-              onChange={(e) => setCustomMin(e.target.value)}
-              min={1}
-              max={60}
-              inputMode="numeric"
-              aria-label="カスタム分数"
-            />
-            <button
-              type="button"
-              className="flow-timer__btn"
-              onClick={handleCustomStart}
-              disabled={timerRunning || !customMin}
-            >
-              開始
-            </button>
-          </div>
-
-          {timerRunning ? (
-            <button
-              type="button"
-              className="flow-timer__btn flow-timer__btn--warn"
-              onClick={pauseTimer}
-            >
-              一時停止
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="flow-timer__btn"
-              onClick={resetTimer}
-              disabled={timerRemaining === timerSec}
-            >
-              リセット
-            </button>
-          )}
-        </div>
-
-        <p className="flow-timer__hint">
-          タイマー終了時に「次のメニューに移りましょう」と読み上げます。
-        </p>
-      </div>
-    </div>
-  );
 }
 
 /** localStorage から読んだ conditions を安全な値域にクランプ */

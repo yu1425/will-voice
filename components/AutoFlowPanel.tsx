@@ -46,7 +46,7 @@ export default function AutoFlowPanel({ conditions, onConditionsChange, onSpeak,
   const cancelSequence = useCallback(() => { sequenceRef.current += 1; stopTransitionCue(); }, []);
   const announce = useCallback(async (event: AutoFlowEvent, cue: boolean) => {
     const sequence = ++sequenceRef.current;
-    if (cue && chimeEnabled) { await playTransitionCue(); await new Promise<void>((resolve) => window.setTimeout(resolve, 180)); }
+    if (cue && chimeEnabled) { await playTransitionCue(); await new Promise<void>((resolve) => window.setTimeout(resolve, 700)); }
     if (sequence !== sequenceRef.current) return;
     onSpeak(event.speakText, event.audioSrc);
   }, [chimeEnabled, onSpeak]);
