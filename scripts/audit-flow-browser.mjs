@@ -436,6 +436,7 @@ try {
     .getByRole("navigation")
     .getByRole("link", { name: "うぃるに聞く", exact: true })
     .click();
+  await page.getByRole("button", { name: "送信", exact: true }).waitFor();
   await assertLayout("480x920 chat layout");
   await screenshot("flow-v2-chat-480");
   assert.deepEqual(errors, []);

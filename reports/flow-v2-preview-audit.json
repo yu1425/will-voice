@@ -1,0 +1,70 @@
+{
+  "auditedAt": "2026-09-30T13:28:12.725707+00:00",
+  "deploymentUrl": "https://will-voice-mocnp2pap-yu1425dx-5422s-projects.vercel.app",
+  "deploymentSha": "9474a5d586d171aa67c0e5a0b1b52bc0b5fb3d8d",
+  "deploymentId": "dpl_GK4svjFW2jH9xN2BHKguhSVp31cR",
+  "target": "preview",
+  "status": "READY",
+  "method": "Authenticated Codex in-app browser UI interaction; read-only Vercel CLI deployment inspection",
+  "viewports": [
+    "390x844",
+    "480x920"
+  ],
+  "checks": [
+    {
+      "name": "opening page renders",
+      "pass": true
+    },
+    {
+      "name": "voice test activates stop control",
+      "pass": true
+    },
+    {
+      "name": "start shows opening and 0%",
+      "pass": true
+    },
+    {
+      "name": "pause stops clock and voice",
+      "pass": true
+    },
+    {
+      "name": "seek 00:30 displays 25% and remaining 01:30:00",
+      "pass": true
+    },
+    {
+      "name": "resume and replay",
+      "pass": true
+    },
+    {
+      "name": "auto to manual stops voice and indicates continuing clock",
+      "pass": true
+    },
+    {
+      "name": "manual playback and stop",
+      "pass": true
+    },
+    {
+      "name": "guide and chat routes render",
+      "pass": true
+    },
+    {
+      "name": "return and reload restores 00:30 phase without announcement",
+      "pass": true
+    },
+    {
+      "name": "02:00 seek completes at 100%, remaining zero, playback disabled",
+      "pass": true
+    },
+    {
+      "name": "end returns to idle",
+      "pass": true
+    },
+    {
+      "name": "browser error log is empty",
+      "pass": true
+    }
+  ],
+  "browserErrors": [],
+  "applicationCodeUnchangedInFollowingAuditOnlyCommit": true,
+  "protectionSettingsChanged": false
+}

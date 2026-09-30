@@ -9,7 +9,9 @@
     "logic": "PASS (node scripts/test-flow.mjs)",
     "browserChecks": 46,
     "cancellationChecks": 5,
-    "browserRuntimeErrors": []
+    "browserRuntimeErrors": [],
+    "productionBuildBrowserChecks": 46,
+    "previewBrowserChecks": 13
   },
   "viewports": {
     "390x844": "PASS: visual inspection, no horizontal overflow or clipped controls; timeline/progress/STEP list/guide/chat/navigation readable",
@@ -235,6 +237,7 @@
     "reports/flow-v2-idle-480.png",
     "reports/flow-v2-manual-390.png",
     "reports/flow-v2-manual-480.png",
+    "reports/flow-v2-preview-audit.json",
     "reports/flow-v2-running-390.png",
     "reports/flow-v2-running-480.png",
     "reports/flow-v2-steps-390.png",
@@ -257,5 +260,6 @@
   "remaining": [
     "User Preview review",
     "iPhone Safari/Bluetooth speaker/physical screen-lock checks have not been performed; background audio is not guaranteed by browsers"
-  ]
+  ],
+  "previewAudit": "reports/flow-v2-preview-audit.json"
 }
