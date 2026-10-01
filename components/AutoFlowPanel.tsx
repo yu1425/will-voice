@@ -96,7 +96,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     const current = eventAtElapsed(events, elapsed);
     const next = nextEventAtElapsed(events, elapsed);
     const menuEvents = events.filter(
-      (event) => event.offsetSec < SESSION_SECONDS,
+      (event) => !event.autoOnly && event.offsetSec < SESSION_SECONDS,
     );
     const previous =
       [...menuEvents]

@@ -94,27 +94,41 @@
     ]
   },
   {
-    "id": "random-table",
+    "id": "gather-break",
     "offsetSec": 2400,
+    "autoOnly": true,
+    "title": "集合・水分補給",
+    "phaseId": "break",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "サーブ・リターンはここまでです。\n\nみなさん、一度コートから上がって集合してください。\n\nここで全員、2分間の休憩です。必ず水分補給をして、少し体を休めてください。\n\n2分後にこのまま乱数表の説明を始めますので、近くでお待ちください。",
+        "audioSrc": "/audio/flow/v2/40-gather-break.wav"
+      }
+    ]
+  },
+  {
+    "id": "random-table",
+    "offsetSec": 2520,
     "refStep": 7,
     "title": "乱数表の説明",
     "phaseId": "preparation",
     "variants": [
       {
         "courtMode": "single",
-        "displayText": "サーブ・リターンはここまでです。\n\nこのあとはゲーム形式に入ります。\n\nまず、乱数表を使ってゲームの組み合わせを決めます。\n\nこれから番号を振るので、自分の番号を確認してください。\n\n番号に合わせて、ペアと対戦相手を確認しながら、上から順番に進めていきます。",
-        "audioSrc": "/audio/flow/v2/40-random-table-single.wav"
+        "displayText": "休憩はここまでです。\n\nこのまま集合した状態で、乱数表の説明をします。\n\nこのあとはゲーム形式に入ります。\n\nまず、乱数表を使ってゲームの組み合わせを決めます。\n\nこれから番号を振るので、自分の番号を確認してください。\n\n番号に合わせて、ペアと対戦相手を確認しながら、上から順番に進めていきます。",
+        "audioSrc": "/audio/flow/v2/42-random-table-single.wav"
       },
       {
         "courtMode": "double",
-        "displayText": "サーブ・リターンはここまでです。\n\nこのあとはゲーム形式に入ります。\n\nまず、乱数表を使ってゲームの組み合わせを決めます。\n\nこれからコートごとに番号を振るので、自分のコートと番号を確認してください。\n\n番号に合わせて、ペアと対戦相手を確認しながら、上から順番に進めていきます。",
-        "audioSrc": "/audio/flow/v2/40-random-table-double.wav"
+        "displayText": "休憩はここまでです。\n\nこのまま集合した状態で、乱数表の説明をします。\n\nこのあとはゲーム形式に入ります。\n\nまず、乱数表を使ってゲームの組み合わせを決めます。\n\nこれからコートごとに番号を振るので、自分のコートと番号を確認してください。\n\n番号に合わせて、ペアと対戦相手を確認しながら、上から順番に進めていきます。",
+        "audioSrc": "/audio/flow/v2/42-random-table-double.wav"
       }
     ]
   },
   {
     "id": "game-rules",
-    "offsetSec": 2580,
+    "offsetSec": 2700,
     "refStep": 8,
     "title": "試合ルール",
     "phaseId": "preparation",
@@ -128,7 +142,7 @@
   },
   {
     "id": "self-intro",
-    "offsetSec": 2760,
+    "offsetSec": 2880,
     "refStep": 9,
     "title": "自己紹介",
     "phaseId": "preparation",
@@ -142,7 +156,7 @@
   },
   {
     "id": "game-start",
-    "offsetSec": 3000,
+    "offsetSec": 3120,
     "refStep": 10,
     "title": "ゲーム開始",
     "phaseId": "game",

@@ -11,6 +11,8 @@ export type AutoFlowEvent = {
   voiceText: string;
   audioSrc?: string;
   refStep?: number;
+  /** 自動進行だけで流す補助案内。12項目のメニューには表示しない。 */
+  autoOnly?: boolean;
 };
 
 export function buildStandardTwoHourEvents(courts: 1 | 2 = 1): AutoFlowEvent[] {
