@@ -71,9 +71,11 @@ try {
   await button("今の音声を止める").click();
   assert.equal(await page.evaluate(() => window.__media.filter((audio) => !audio.paused).length), 0);
   pass("replay uses opening WAV and current-audio stop cancels it");
+  await page.locator(".flow-session-settings > summary").click();
   await button("自動進行を終了").click();
+  await button("終了する").click();
   await button("個別進行").click();
-  await button("案内内容をすべて読む").click();
+  await button("全文を見る").click();
   assert.ok((await page.locator("body").innerText()).includes(source.displayText.split("\n\n")[1]));
   assert.ok(!(await page.locator("body").innerText()).includes("これからWILL.tennisを始めます"));
   await button("もう一度聞く").click();

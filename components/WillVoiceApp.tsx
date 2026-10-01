@@ -670,8 +670,20 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
             onClick={() => setSettingsOpen((open) => !open)}
             aria-expanded={settingsOpen}
             aria-controls="audio-volume-settings"
+            aria-label="設定を開く"
           >
-            設定
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              aria-hidden="true"
+            >
+              <path d="m9.5 3-.5 2-2 1-2-.5-2.5 4 1.5 1.5v2L2.5 15 5 19l2-.5 2 1 .5 2h5l.5-2 2-1 2 .5 2.5-4-1.5-2v-2L21.5 10 19 5.5l-2 .5-2-1-.5-2Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
           </button>
         </div>
       </header>

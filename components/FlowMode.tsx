@@ -1,7 +1,10 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import AutoFlowPanel, { type AutoStatus } from "./AutoFlowPanel";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AutoFlowPanel, {
+  type AutoStatus,
+  type AutoFlowHandle,
+} from "./AutoFlowPanel";
 import FlowLiveMode from "./FlowLiveMode";
 import FlowExtras from "./FlowExtras";
 import { getScriptsForCourt, TOTAL_STEPS } from "@/lib/tennisFlowScripts";
@@ -35,6 +38,26 @@ export default function FlowMode({
   const [autoStatus, setAutoStatus] = useState<AutoStatus>("idle");
   const [editedText, setEditedText] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
+  const [playbackContext, setPlaybackContext] = useState<
+    "step" | "extras" | "auto"
+  >("step");
+  const autoRef = useRef<AutoFlowHandle>(null);
+  const [ending, setEnding] = useState(false);
+  const speakAuto = useCallback(
+    (text: string, audioSrc?: string) => {
+      setPlaybackContext("auto");
+      speakRecorded(text, audioSrc);
+    },
+    [speakRecorded],
+  );
+  const speakExtra = useCallback(
+    (text: string, audioSrc?: string) => {
+      autoRef.current?.stopCurrentAudio();
+      setPlaybackContext("extras");
+      speakRecorded(text, audioSrc);
+    },
+    [speakRecorded],
+  );
   useEffect(() => {
     try {
       const saved = JSON.parse(
@@ -81,6 +104,7 @@ export default function FlowMode({
     stopTransitionCue();
     stopSpeaking();
     setMode(next);
+    setEnding(false);
     document.querySelector(".flow-scroll")?.scrollTo({ top: 0 });
     setEditing(false);
     setEditedText(null);
@@ -102,10 +126,11 @@ export default function FlowMode({
       </div>
       <div hidden={mode !== "auto"}>
         <AutoFlowPanel
+          ref={autoRef}
           active={mode === "auto"}
           conditions={conditions}
           onConditionsChange={changeConditions}
-          onSpeak={speakRecorded}
+          onSpeak={speakAuto}
           onStopSpeaking={stopSpeaking}
           isSpeaking={isSpeaking}
           onSyncStep={syncStep}
@@ -135,88 +160,147 @@ export default function FlowMode({
           currentScript={current}
           scriptsForCourt={scripts}
           totalSteps={TOTAL_STEPS}
+          courts={conditions.courts}
           isSpeaking={isSpeaking}
           isSpeakingPaused={isSpeakingPaused}
-          onSpeak={() =>
-            editedText === null
+          onSpeak={() => {
+            setPlaybackContext("step");
+            return editedText === null
               ? speakRecorded(current.voiceText, current.audioSrc)
-              : speak(editedText)
-          }
+              : speak(editedText);
+          }}
           onPauseSpeaking={onPauseSpeaking}
           onResumeSpeaking={onResumeSpeaking}
           onStop={stopSpeaking}
           onStepJump={jump}
           previewText={editedText ?? current.displayText}
         />
-        <FlowExtras speak={speak} active={mode === "manual"} />
-        <details className="flow-surface flow-manual-settings">
-          <summary>コート数・案内を調整</summary>
-          <div className="flow-setting">
-            <span>コート数</span>
-            <div className="flow-choice">
-              {([1, 2] as const).map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  disabled={autoOngoing}
-                  aria-pressed={conditions.courts === c}
-                  onClick={() => {
-                    stopSpeaking();
-                    setEditedText(null);
-                    changeConditions({ ...conditions, courts: c });
-                  }}
-                >
-                  {c}面
-                </button>
-              ))}
-            </div>
-          </div>
-          {autoOngoing && (
-            <p className="flow-muted">
-              コート数を変えるには自動進行を終了してください。
-            </p>
-          )}
-          <button
-            type="button"
-            className="flow-btn"
-            onClick={() => {
-              stopSpeaking();
-              setEditing(!editing);
-            }}
-          >
-            案内文を編集
-          </button>
-          {editing && (
-            <>
-              <label className="flow-edit-label" htmlFor="manual-script">
-                このSTEPの案内文
-              </label>
-              <textarea
-                id="manual-script"
-                value={editedText ?? current.displayText}
-                onChange={(e) => setEditedText(e.target.value)}
-              />
-              <p className="flow-muted">
-                編集した文は
-                {voiceMode === "voicevox" ? "選択中の音声" : "ブラウザの音声"}
-                で読み上げます。STEPを移動すると元の案内に戻ります。
-              </p>
-              <button
-                type="button"
-                className="flow-btn"
-                onClick={() => setEditedText(null)}
-              >
-                元の案内に戻す
-              </button>
-            </>
-          )}
-        </details>
         <p className="flow-help">
           <Link href="/guide" onClick={stopSpeaking}>
             初めて使う方へ → 使い方
           </Link>
         </p>
       </div>
+      <FlowExtras
+        speakRecorded={speakExtra}
+        stopSpeaking={() => autoRef.current?.stopCurrentAudio()}
+        isSpeaking={isSpeaking}
+        isCueSpeaking={
+          isSpeaking && !isSpeakingPaused && playbackContext === "extras"
+        }
+        active
+      />
+      <details className="flow-surface flow-session-settings">
+        <summary>開催設定</summary>
+        <div className="flow-setting">
+          <span>コート数</span>
+          {autoOngoing ? (
+            <strong>{conditions.courts}面</strong>
+          ) : (
+            <div className="flow-choice" aria-label="コート数設定">
+              {([1, 2] as const).map((courts) => (
+                <button
+                  key={courts}
+                  type="button"
+                  aria-pressed={conditions.courts === courts}
+                  onClick={() => {
+                    autoRef.current?.stopCurrentAudio();
+                    setEditedText(null);
+                    changeConditions({ ...conditions, courts });
+                  }}
+                >
+                  {courts}面
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {autoOngoing && (
+          <p className="flow-muted">進行中はコート数を変更できません</p>
+        )}
+        <button
+          type="button"
+          className="flow-btn"
+          onClick={() => {
+            if (mode === "auto") changeMode("manual");
+            stopSpeaking();
+            setEditing(!editing);
+          }}
+        >
+          案内文を編集
+        </button>
+        {editing && (
+          <>
+            <label className="flow-edit-label" htmlFor="manual-script">
+              このSTEPの案内文
+            </label>
+            <textarea
+              id="manual-script"
+              value={editedText ?? current.displayText}
+              onChange={(event) => setEditedText(event.target.value)}
+            />
+            <p className="flow-muted">
+              編集した文は
+              {voiceMode === "voicevox" ? "選択中の音声" : "ブラウザの音声"}
+              で読み上げます。STEPを移動すると元に戻ります。
+            </p>
+            <button
+              type="button"
+              className="flow-btn"
+              onClick={() => setEditedText(null)}
+            >
+              元の案内に戻す
+            </button>
+          </>
+        )}
+        {autoStatus !== "idle" && (
+          <div className="flow-session-end">
+            {!ending ? (
+              <button
+                type="button"
+                className="flow-text-button flow-text-button--danger"
+                onClick={() => {
+                  if (autoStatus === "completed") {
+                    autoRef.current?.endSession();
+                    changeMode("auto");
+                  } else setEnding(true);
+                }}
+              >
+                {autoStatus === "completed"
+                  ? "開始前の画面に戻る"
+                  : "自動進行を終了"}
+              </button>
+            ) : (
+              <div className="flow-end-confirm" role="alert">
+                <h3>自動進行を終了しますか？</h3>
+                <p>進行中の時計と音声を終了し、開始前の画面に戻ります。</p>
+                <div className="flow-actions">
+                  <button
+                    type="button"
+                    className="flow-btn"
+                    onClick={() => setEnding(false)}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="button"
+                    className="flow-btn flow-btn--danger"
+                    onClick={() => {
+                      autoRef.current?.endSession();
+                      setEnding(false);
+                      changeMode("auto");
+                      setEditing(false);
+                      setEditedText(null);
+                    }}
+                  >
+                    終了する
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </details>
     </div>
   );
 }

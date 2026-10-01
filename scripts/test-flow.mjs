@@ -16,6 +16,7 @@ try {
     "node_modules/typescript/bin/tsc",
     "lib/standardTwoHourFlow.ts",
     "lib/tennisFlowScripts.ts",
+    "lib/flowCues.ts",
     "--outDir",
     temp,
     "--module",
@@ -106,8 +107,28 @@ try {
   );
   assert.equal(audit.files.length, 16);
   assert.ok(audit.files.every((f) => f.readingChecks.every((c) => c.pass)));
+  const { FLOW_RECORDED_CUES } = require(join(temp, "flowCues.js"));
+  const extras = JSON.parse(
+    readFileSync("reports/flow-extras-audio-audit.json", "utf8"),
+  );
+  assert.equal(extras.styleId, 3);
+  assert.equal(extras.speaker, "ずんだもん");
+  assert.equal(extras.style, "ノーマル");
+  assert.equal(FLOW_RECORDED_CUES.length, 7);
+  assert.equal(extras.files.length, 7);
+  for (const cue of FLOW_RECORDED_CUES) {
+    const entry = extras.files.find((file) => file.id === cue.id);
+    assert.equal(entry.displayText, cue.displayText);
+    assert.equal(entry.voiceText, cue.voiceText);
+    assert.equal(entry.audioSrc, cue.audioSrc);
+    assert.ok(entry.readingChecks.every((check) => check.pass));
+    const wav = readFileSync("public" + cue.audioSrc);
+    assert.equal(wav.length, entry.bytes);
+    assert.equal(wav.toString("ascii", 0, 4), "RIFF");
+    assert.equal(wav.toString("ascii", 8, 12), "WAVE");
+  }
   console.log(
-    "PASS: both court timelines, boundaries, shared scripts/audio, progress, paused clock, normalization and 16 WAV audit entries",
+    "PASS: both court timelines, boundaries, shared scripts/audio, progress, paused clock, normalization, 16 flow WAVs and 7 Zundamon cue/timer WAVs",
   );
 } finally {
   rmSync(temp, { recursive: true, force: true });

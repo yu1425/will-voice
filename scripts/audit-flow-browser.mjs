@@ -73,6 +73,15 @@ const pass = (name, evidence) => {
   console.log("PASS " + name);
 };
 const button = (name) => page.getByRole("button", { name, exact: true });
+const openSessionSettings = async () => {
+  const settings = page.locator(".flow-session-settings");
+  if (await settings.getAttribute("open") === null) await settings.locator("summary").click();
+};
+const endFlow = async () => {
+  await openSessionSettings();
+  await button("自動進行を終了").click();
+  await button("終了する").click();
+};
 const readProgress = () =>
   page.locator('[role="progressbar"]').getAttribute("aria-valuenow");
 const activeAudio = () =>
@@ -122,8 +131,8 @@ try {
   await page.goto(base + "/flow");
   await button("自動進行を開始").waitFor();
   await assertLayout("390x844 idle layout");
-  await screenshot("flow-v4-idle-390");
-  await button("設定").click();
+  await screenshot("flow-v5-idle-390");
+  await button("設定を開く").click();
   const setVolume = async (percentage) => {
     const slider = page.locator("#audio-volume");
     await slider.press("Home");
@@ -144,7 +153,7 @@ try {
   }
   pass("voice test actual volume 100/50/20", volumeEvidence);
   await setVolume(100);
-  await button("設定").click();
+  await button("設定を開く").click();
   await button("2面").click();
   await button("音声テスト").click();
   await page.waitForFunction(() =>
@@ -171,7 +180,7 @@ try {
   const playingIndex = await page.evaluate(() =>
     window.__media.findLastIndex((a) => !a.paused),
   );
-  await button("設定").click();
+  await button("設定を開く").click();
   await setVolume(30);
   const activeChange = await page.evaluate(
     (index) => ({
@@ -185,7 +194,7 @@ try {
   assert.equal(activeChange.paused, false);
   assert.ok(activeChange.position > 0);
   pass("active recording volume 100 to 30 without interruption", activeChange);
-  await button("設定").click();
+  await button("設定を開く").click();
   await button("もう一度聞く").click();
   await page.waitForFunction(
     (index) => window.__media.findLastIndex((a) => !a.paused) > index,
@@ -201,9 +210,9 @@ try {
   pass("replay starts current recording from beginning at 30 percent", replay);
   await page.reload();
   await page.getByRole("progressbar").waitFor();
-  await button("設定").click();
+  await button("設定を開く").click();
   assert.equal(await page.locator("#audio-volume").inputValue(), "30");
-  await button("設定").click();
+  await button("設定を開く").click();
   await button("もう一度聞く").click();
   await page.waitForFunction(() => window.__media.some((a) => !a.paused));
   assert.equal(
@@ -244,7 +253,7 @@ try {
     aboveFold,
   );
 
-  await screenshot("flow-v4-running-390");
+  await screenshot("flow-v5-running-390");
   await assertLayout("390x844 running layout");
   await button("進行を一時停止").click();
   const pausedClock = await page.locator(".flow-progress__clock").innerText();
@@ -262,7 +271,7 @@ try {
       .allInnerTexts(),
     pausedDetails,
   );
-  await screenshot("flow-v4-paused-390");
+  await screenshot("flow-v5-paused-390");
   await noAudio();
   pass("pause freezes progress and stops voice");
   await button("進行を再開").click();
@@ -300,7 +309,7 @@ try {
   await button("次へ →").click();
   await noAudio();
   pass("manual playback, pause, resume and STEP change stop");
-  await screenshot("flow-v4-manual-390");
+  await screenshot("flow-v5-manual-390");
   await assertLayout("390x844 manual layout");
   await button("もう一度聞く").click();
   await button("自動進行").click();
@@ -314,7 +323,7 @@ try {
   await page.getByRole("heading", { name: "うぃる進行の使い方" }).waitFor();
   await noAudio();
   pass("flow to guide stops voice");
-  await screenshot("flow-v4-guide-390");
+  await screenshot("flow-v5-guide-390");
   await assertLayout("390x844 guide layout");
   await page
     .getByRole("navigation")
@@ -332,7 +341,7 @@ try {
   await page.getByRole("button", { name: "送信", exact: true }).waitFor();
   await noAudio();
   pass("flow to chat stops voice");
-  await screenshot("flow-v4-chat-390");
+  await screenshot("flow-v5-chat-390");
   await assertLayout("390x844 chat layout");
   await page
     .getByRole("navigation")
@@ -420,7 +429,8 @@ try {
   assert.ok(await button("もう一度聞く").isDisabled());
   assert.ok(await button("進行を一時停止").isDisabled());
   pass("120m completes silently, controls remain disabled");
-  await screenshot("flow-v4-completed-390");
+  await screenshot("flow-v5-completed-390");
+  await openSessionSettings();
   await button("開始前の画面に戻る").click();
   assert.equal(
     await page.evaluate(() =>
@@ -470,7 +480,7 @@ try {
     definitions.map((e) => e.id),
   );
   pass("natural event order, including game preparation");
-  await button("自動進行を終了").click();
+  await endFlow();
   // Chime -> delayed voice: cancel during bell and ensure no later start.
   await page.getByRole("checkbox").check();
   await button("自動進行を開始").click();
@@ -486,7 +496,7 @@ try {
   await noAudio();
   pass("mode switch cancels chime and delayed announcement");
   await button("自動進行").click();
-  await button("自動進行を終了").click();
+  await endFlow();
   // Recorded errors must not invoke browser speech.
   await page.route("**/audio/flow/v2/00-opening.wav", (r) =>
     r.fulfill({ status: 404, body: "missing" }),
@@ -500,7 +510,7 @@ try {
   assert.equal(await page.evaluate(() => window.__speechCalls), speechBefore);
   pass("recording error has zero SpeechSynthesis fallback");
   await page.unroute("**/audio/flow/v2/00-opening.wav");
-  await button("自動進行を終了").click();
+  await endFlow();
   // Decode and play all 16 real files in browser, including unused alternate court variants.
   const audioAudit = JSON.parse(
     readFileSync("reports/flow-audio-v2-audit.json", "utf8"),
@@ -533,32 +543,32 @@ try {
   pass("all 16 WAVs decode and play", mediaChecks);
   await page.setViewportSize({ width: 480, height: 920 });
   await assertLayout("480x920 idle layout");
-  await screenshot("flow-v4-idle-480");
+  await screenshot("flow-v5-idle-480");
   await button("自動進行を開始").click();
   await assertLayout("480x920 running layout");
-  await screenshot("flow-v4-running-480");
+  await screenshot("flow-v5-running-480");
   await button("個別進行").click();
   await assertLayout("480x920 manual layout");
-  await screenshot("flow-v4-manual-480");
+  await screenshot("flow-v5-manual-480");
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "使い方", exact: true })
     .click();
   await page.getByRole("heading", { name: "うぃる進行の使い方" }).waitFor();
   await assertLayout("480x920 guide layout");
-  await screenshot("flow-v4-guide-480");
+  await screenshot("flow-v5-guide-480");
   await page
     .getByRole("navigation")
     .getByRole("link", { name: "うぃるに聞く", exact: true })
     .click();
   await page.getByRole("button", { name: "送信", exact: true }).waitFor();
   await assertLayout("480x920 chat layout");
-  await screenshot("flow-v4-chat-480");
+  await screenshot("flow-v5-chat-480");
   assert.deepEqual(errors, []);
   pass("no browser runtime errors");
   mkdirSync("reports", { recursive: true });
   writeFileSync(
-    "reports/flow-v4-browser-audit.json",
+    "reports/flow-v5-browser-audit.json",
     JSON.stringify(
       {
         auditedAt: new Date().toISOString(),

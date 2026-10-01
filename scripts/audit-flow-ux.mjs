@@ -61,6 +61,15 @@ await context.addInitScript(() => {
   };
 });
 const b = (name) => page.getByRole("button", { name, exact: true });
+const openSessionSettings = async () => {
+  const settings = page.locator(".flow-session-settings");
+  if (await settings.getAttribute("open") === null) await settings.locator("summary").click();
+};
+const endFlow = async () => {
+  await openSessionSettings();
+  await b("自動進行を終了").click();
+  await b("終了する").click();
+};
 const setVolume = async (n) => {
   const slider = page.locator("#audio-volume");
   await slider.press("Home");
@@ -104,7 +113,7 @@ const shot = async (state, width) => {
   assert.equal(layout.width, layout.documentWidth);
   assert.ok(layout.appWidth <= 480);
   assert.ok(layout.contentBottom <= layout.navTop);
-  const path = `reports/flow-v4-ux-${state}-${width}.png`;
+  const path = `reports/flow-v5-ux-${state}-${width}.png`;
   await page.screenshot({ path });
   pass(`${width} ${state} layout`, { ...layout, screenshot: path });
 };
@@ -133,7 +142,7 @@ try {
       .getByRole("button", { name: "00:40 乱数表の説明", exact: true })
       .click();
     await b("移動して案内").click();
-    await b("設定").click();
+    await b("設定を開く").click();
     await setVolume(30);
     await page.waitForFunction(() =>
       window.__media.some(
@@ -146,7 +155,7 @@ try {
       await lastAudio(),
     );
     await shot("volume", width);
-    await b("設定").click();
+    await b("設定を開く").click();
     await b("今の音声を止める").click();
     await b("個別進行").click();
     await shot("manual", width);
@@ -169,20 +178,20 @@ try {
       .getByRole("link", { name: "進行", exact: true })
       .click();
     await page.getByRole("progressbar").waitFor();
-    await b("自動進行を終了").click();
+    await endFlow();
     await stopped();
   }
   // One uninterrupted actual WAV must follow 100 -> 50 -> 20 -> 30.
   await page.setViewportSize({ width: 390, height: 844 });
-  await b("設定").click();
+  await b("設定を開く").click();
   await setVolume(100);
-  await b("設定").click();
+  await b("設定を開く").click();
   await b("自動進行を開始").click();
   await playing();
   const index = await page.evaluate(() =>
     window.__media.findLastIndex((a) => !a.paused),
   );
-  await b("設定").click();
+  await b("設定を開く").click();
   const volumeEvidence = [];
   for (const slider of [100, 50, 20, 30]) {
     await setVolume(slider);
@@ -202,11 +211,11 @@ try {
     "same active WAV follows 100 50 20 30 without replacement",
     volumeEvidence,
   );
-  await b("設定").click();
-  await b("自動進行を終了").click();
-  await b("設定").click();
+  await b("設定を開く").click();
+  await endFlow();
+  await b("設定を開く").click();
   await setVolume(50);
-  await b("設定").click();
+  await b("設定を開く").click();
   await b("試聴").click();
   const master = await page.evaluate(() => window.__gain[0].gain.value);
   assert.equal(master, 0.5);
@@ -217,12 +226,12 @@ try {
   assert.equal(frequencies.length, 9);
   assert.deepEqual(await page.evaluate(() => window.__frequencyRamps), []);
   frequencies.forEach((f, i) => assert.ok(Math.abs(f - expected[i]) < 0.001));
-  await b("設定").click();
+  await b("設定を開く").click();
   await setVolume(20);
   await page.waitForFunction(
     () => Math.abs(window.__gain[0].gain.value - 0.2) < 0.00001,
   );
-  await b("設定").click();
+  await b("設定を開く").click();
   await b("今の音声を止める").click();
   pass("restored original three bell pitches and live common chime gain", {
     frequencies,
@@ -241,7 +250,7 @@ try {
   });
   await page.reload();
   await b("個別進行").click();
-  await page.getByText("コート数・案内を調整", { exact: true }).click();
+  await page.getByText("開催設定", { exact: true }).click();
   await b("案内文を編集").click();
   await page
     .getByLabel("このSTEPの案内文")
@@ -263,7 +272,7 @@ try {
   await b("もう一度聞く").click();
   for (let i = 0; i < 50 && !pending; i++) await page.waitForTimeout(100);
   assert.ok(pending);
-  await b("設定").click();
+  await b("設定を開く").click();
   await setVolume(30);
   release();
   await playing();
@@ -277,7 +286,7 @@ try {
     "live VOICEVOX pending synthesis uses latest volume and playing audio updates",
     { liveStart, liveChange },
   );
-  await b("設定").click();
+  await b("設定を開く").click();
   await b("今の音声を止める").click();
   await page.unroute("**/api/voicevox/tts");
   await page.evaluate(() =>
@@ -285,19 +294,19 @@ try {
   );
   await page.reload();
   await b("個別進行").click();
-  await page.getByText("コート数・案内を調整", { exact: true }).click();
+  await page.getByText("開催設定", { exact: true }).click();
   await b("案内文を編集").click();
   await page
     .getByLabel("このSTEPの案内文")
     .fill("標準音声の音量も確認します。");
-  await b("設定").click();
+  await b("設定を開く").click();
   await setVolume(20);
   assert.ok(
     (await page.getByRole("region", { name: "音量設定" }).innerText()).includes(
       "標準音声は次の再生から反映",
     ),
   );
-  await b("設定").click();
+  await b("設定を開く").click();
   await b("もう一度聞く").click();
   const standard = await page.evaluate(() => window.__utterances.at(-1));
   assert.ok(Math.abs(standard.volume - 0.2) < 0.00001);
@@ -309,7 +318,7 @@ try {
   assert.deepEqual(errors, []);
   pass("no runtime errors");
   writeFileSync(
-    "reports/flow-v4-ux-audit.json",
+    "reports/flow-v5-ux-audit.json",
     JSON.stringify(
       {
         auditedAt: new Date().toISOString(),

@@ -1,0 +1,44 @@
+[
+  {
+    "id": "q-rotate",
+    "label": "交代お願いします",
+    "displayText": "交代をお願いします。",
+    "audioSrc": "/audio/flow/extras/q-rotate.wav"
+  },
+  {
+    "id": "q-no-strong",
+    "label": "強打は控えめに",
+    "displayText": "強打は控えめにお願いします。",
+    "audioSrc": "/audio/flow/extras/q-no-strong.wav"
+  },
+  {
+    "id": "q-health",
+    "label": "無理せず休んで",
+    "displayText": "無理せず、体調に合わせて休憩してください。",
+    "audioSrc": "/audio/flow/extras/q-health.wav"
+  },
+  {
+    "id": "q-welcome",
+    "label": "初参加の方にも声かけ",
+    "displayText": "初参加のかたにも、ぜひ声をかけてください。",
+    "audioSrc": "/audio/flow/extras/q-welcome.wav"
+  },
+  {
+    "id": "q-next-menu",
+    "label": "次のメニューへ",
+    "displayText": "次のメニューに移ります。",
+    "audioSrc": "/audio/flow/extras/q-next-menu.wav"
+  },
+  {
+    "id": "q-gather",
+    "label": "集合お願いします",
+    "displayText": "一度、集合をお願いします。",
+    "audioSrc": "/audio/flow/extras/q-gather.wav"
+  },
+  {
+    "id": "timer-ended",
+    "label": "タイマー終了",
+    "displayText": "時間になりました。次のメニューに移りましょう。",
+    "audioSrc": "/audio/flow/extras/timer-ended.wav"
+  }
+]

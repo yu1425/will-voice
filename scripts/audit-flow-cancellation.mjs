@@ -46,6 +46,12 @@ await context.addInitScript(() => {
   };
 });
 const b = (name) => page.getByRole("button", { name, exact: true });
+const endFlow = async () => {
+  const settings = page.locator(".flow-session-settings");
+  if (await settings.getAttribute("open") === null) await settings.locator("summary").click();
+  await b("自動進行を終了").click();
+  await b("終了する").click();
+};
 try {
   await page.goto(base + "/flow");
   await b("自動進行を開始").waitFor();
@@ -94,7 +100,7 @@ try {
   });
   await page.reload();
   await b("個別進行").click();
-  await page.getByText("コート数・案内を調整", { exact: true }).click();
+  await page.getByText("開催設定", { exact: true }).click();
   await b("案内文を編集").click();
   await page
     .getByLabel("このSTEPの案内文")
@@ -153,7 +159,7 @@ try {
   );
   await page.reload();
   await b("個別進行").click();
-  await page.getByText("コート数・案内を調整", { exact: true }).click();
+  await page.getByText("開催設定", { exact: true }).click();
   await b("案内文を編集").click();
   await page
     .getByLabel("このSTEPの案内文")
@@ -176,8 +182,7 @@ try {
     [480, 920],
   ]) {
     await page.setViewportSize({ width, height });
-    if (await b("自動進行を終了").isVisible())
-      await b("自動進行を終了").click();
+    if (await page.getByRole("progressbar").count()) await endFlow();
     await b("自動進行を開始").click();
     await b("進行を一時停止").click();
     await page.locator(".auto-flow .flow-overview > summary").click();
@@ -188,23 +193,23 @@ try {
     await page
       .locator(".flow-timeline")
       .evaluate((el) => el.scrollIntoView({ block: "start" }));
-    await page.screenshot({ path: `reports/flow-v4-timeline-${width}.png` });
+    await page.screenshot({ path: `reports/flow-v5-timeline-${width}.png` });
     await b("個別進行").click();
     await page
       .locator(".flow-step-list")
       .evaluate((el) => el.scrollIntoView({ block: "start" }));
-    await page.screenshot({ path: `reports/flow-v4-steps-${width}.png` });
+    await page.screenshot({ path: `reports/flow-v5-steps-${width}.png` });
     await b("自動進行").click();
-    await b("自動進行を終了").click();
+    await endFlow();
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   const rect = await page.locator(".app").boundingBox();
   assert.equal(rect.width, 480);
   assert.equal(rect.x, 480);
   pass("desktop preserves centered 480px app");
-  await page.screenshot({ path: "reports/flow-v4-desktop.png" });
+  await page.screenshot({ path: "reports/flow-v5-desktop.png" });
   writeFileSync(
-    "reports/flow-v4-cancellation-audit.json",
+    "reports/flow-v5-cancellation-audit.json",
     JSON.stringify(
       { auditedAt: new Date().toISOString(), base, checks },
       null,

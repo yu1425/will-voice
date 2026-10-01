@@ -1,0 +1,346 @@
+{
+  "auditedAt": "2026-10-01T00:37:10.774Z",
+  "base": "http://127.0.0.1:3002",
+  "checks": [
+    {
+      "name": "390 idle layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appWidth": 390,
+        "contentBottom": 740.40625,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-ux-idle-390.png"
+      }
+    },
+    {
+      "name": "390 playing layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appWidth": 390,
+        "contentBottom": 740.40625,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-ux-playing-390.png"
+      }
+    },
+    {
+      "name": "390 stopped layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appWidth": 390,
+        "contentBottom": 740.40625,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-ux-stopped-390.png"
+      }
+    },
+    {
+      "name": "390 paused layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appWidth": 390,
+        "contentBottom": 740.40625,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-ux-paused-390.png"
+      }
+    },
+    {
+      "name": "390 running layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appWidth": 390,
+        "contentBottom": 740.40625,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-ux-running-390.png"
+      }
+    },
+    {
+      "name": "390 timeline layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appWidth": 390,
+        "contentBottom": 740.40625,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-ux-timeline-390.png"
+      }
+    },
+    {
+      "name": "390 volume change during chime preserves delayed announcement",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/v2/40-random-table-single.wav",
+        "volume": 0.3,
+        "currentTime": 0
+      }
+    },
+    {
+      "name": "390 volume layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appWidth": 390,
+        "contentBottom": 740.40625,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-ux-volume-390.png"
+      }
+    },
+    {
+      "name": "390 manual layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appWidth": 390,
+        "contentBottom": 740.40625,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-ux-manual-390.png"
+      }
+    },
+    {
+      "name": "390 manual STEP selection returns current content to top",
+      "pass": true
+    },
+    {
+      "name": "390 guide layout",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "height": 844,
+        "documentWidth": 390,
+        "appWidth": 390,
+        "contentBottom": 775,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-ux-guide-390.png"
+      }
+    },
+    {
+      "name": "480 idle layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "height": 920,
+        "documentWidth": 480,
+        "appWidth": 480,
+        "contentBottom": 816.40625,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-ux-idle-480.png"
+      }
+    },
+    {
+      "name": "480 playing layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "height": 920,
+        "documentWidth": 480,
+        "appWidth": 480,
+        "contentBottom": 816.40625,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-ux-playing-480.png"
+      }
+    },
+    {
+      "name": "480 stopped layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "height": 920,
+        "documentWidth": 480,
+        "appWidth": 480,
+        "contentBottom": 816.40625,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-ux-stopped-480.png"
+      }
+    },
+    {
+      "name": "480 paused layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "height": 920,
+        "documentWidth": 480,
+        "appWidth": 480,
+        "contentBottom": 816.40625,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-ux-paused-480.png"
+      }
+    },
+    {
+      "name": "480 running layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "height": 920,
+        "documentWidth": 480,
+        "appWidth": 480,
+        "contentBottom": 816.40625,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-ux-running-480.png"
+      }
+    },
+    {
+      "name": "480 timeline layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "height": 920,
+        "documentWidth": 480,
+        "appWidth": 480,
+        "contentBottom": 816.40625,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-ux-timeline-480.png"
+      }
+    },
+    {
+      "name": "480 volume change during chime preserves delayed announcement",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/v2/40-random-table-single.wav",
+        "volume": 0.3,
+        "currentTime": 0
+      }
+    },
+    {
+      "name": "480 volume layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "height": 920,
+        "documentWidth": 480,
+        "appWidth": 480,
+        "contentBottom": 816.40625,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-ux-volume-480.png"
+      }
+    },
+    {
+      "name": "480 manual layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "height": 920,
+        "documentWidth": 480,
+        "appWidth": 480,
+        "contentBottom": 816.40625,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-ux-manual-480.png"
+      }
+    },
+    {
+      "name": "480 manual STEP selection returns current content to top",
+      "pass": true
+    },
+    {
+      "name": "480 guide layout",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "height": 920,
+        "documentWidth": 480,
+        "appWidth": 480,
+        "contentBottom": 851,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-ux-guide-480.png"
+      }
+    },
+    {
+      "name": "same active WAV follows 100 50 20 30 without replacement",
+      "pass": true,
+      "evidence": [
+        {
+          "slider": 100,
+          "volume": 1,
+          "paused": false,
+          "currentTime": 0.154764
+        },
+        {
+          "slider": 50,
+          "volume": 0.5,
+          "paused": false,
+          "currentTime": 0.27263
+        },
+        {
+          "slider": 20,
+          "volume": 0.2,
+          "paused": false,
+          "currentTime": 0.34589
+        },
+        {
+          "slider": 30,
+          "volume": 0.3,
+          "paused": false,
+          "currentTime": 0.437365
+        }
+      ]
+    },
+    {
+      "name": "restored original three bell pitches and live common chime gain",
+      "pass": true,
+      "evidence": {
+        "frequencies": [
+          659.25,
+          1325.0925,
+          1964.565,
+          830.61,
+          1669.5260999999998,
+          2475.2178,
+          987.77,
+          1985.4176999999997,
+          2943.5546
+        ],
+        "masterBefore": 0.5,
+        "masterAfter": 0.2,
+        "source": "4c7a9b5"
+      }
+    },
+    {
+      "name": "live VOICEVOX pending synthesis uses latest volume and playing audio updates",
+      "pass": true,
+      "evidence": {
+        "liveStart": {
+          "src": "blob:http://127.0.0.1:3002/8120b75c-e55f-4e26-b2cd-0c0da5e54bf9",
+          "volume": 0.3,
+          "currentTime": 0
+        },
+        "liveChange": {
+          "src": "blob:http://127.0.0.1:3002/8120b75c-e55f-4e26-b2cd-0c0da5e54bf9",
+          "volume": 0.5,
+          "currentTime": 0.073296
+        }
+      }
+    },
+    {
+      "name": "standard speech receives shared volume with explicit next-playback guidance",
+      "pass": true,
+      "evidence": {
+        "volume": 0.20000000298023224,
+        "text": "標準音声の音量も確認します。"
+      }
+    },
+    {
+      "name": "no runtime errors",
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "method": "Real Chromium with native Audio, AudioContext, SpeechSynthesis and real local VOICEVOX ENGINE; slider operated with native keyboard input"
+}

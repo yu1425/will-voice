@@ -6,6 +6,7 @@ type Props = {
   currentScript: FlowScript;
   scriptsForCourt: FlowScript[];
   totalSteps: number;
+  courts: 1 | 2;
   previewText: string;
   isSpeaking: boolean;
   isSpeakingPaused: boolean;
@@ -19,6 +20,7 @@ export default function FlowLiveMode({
   currentScript: s,
   scriptsForCourt,
   totalSteps,
+  courts,
   previewText,
   isSpeaking,
   isSpeakingPaused,
@@ -33,14 +35,13 @@ export default function FlowLiveMode({
   return (
     <div className="flow-manual">
       <section className="flow-surface">
-        <header className="flow-header">
-          <span className="flow-eyebrow">個別進行</span>
-          <span className="flow-status">
-            STEP {s.step} / {totalSteps}
-          </span>
-        </header>
+        <p className="flow-eyebrow">個別進行 · {courts}面</p>
+        <p className="flow-step-position">
+          STEP {String(s.step).padStart(2, "0")} / {totalSteps}
+        </p>
         <h1>{s.title}</h1>
         <div className="flow-manual__script">
+          <h2>案内</h2>
           <p
             className={`flow-script-text${scriptExpanded ? "" : " flow-script-text--preview"}`}
           >
@@ -52,26 +53,19 @@ export default function FlowLiveMode({
             aria-expanded={scriptExpanded}
             onClick={() => setScriptExpanded(!scriptExpanded)}
           >
-            {scriptExpanded ? "案内内容を閉じる" : "案内内容をすべて読む"}
+            {scriptExpanded ? "全文を閉じる" : "全文を見る"}
           </button>
         </div>
+        <div className="flow-audio-heading">
+          <span>音声</span>
+          <span className="flow-audio-state" role="status">
+            {isSpeaking && !isSpeakingPaused ? "再生中" : "待機中"}
+          </span>
+        </div>
         <div className="flow-actions">
-          <button
-            type="button"
-            className="flow-btn flow-btn--primary flow-btn--full"
-            onClick={onSpeak}
-          >
+          <button type="button" className="flow-btn" onClick={onSpeak}>
             <FlowTransportIcon kind="replay" />
             もう一度聞く
-          </button>
-          <button
-            type="button"
-            className="flow-btn"
-            onClick={isSpeakingPaused ? onResumeSpeaking : onPauseSpeaking}
-            disabled={!isSpeaking}
-          >
-            <FlowTransportIcon kind={isSpeakingPaused ? "play" : "pause"} />
-            {isSpeakingPaused ? "音声を再開" : "音声を一時停止"}
           </button>
           <button
             type="button"
@@ -83,13 +77,15 @@ export default function FlowLiveMode({
             今の音声を止める
           </button>
         </div>
-        <p className="flow-audio-state" role="status">
-          {isSpeakingPaused
-            ? "音声を一時停止中"
-            : isSpeaking
-              ? "音声案内を再生中"
-              : "音声は再生していません"}
-        </p>
+        <button
+          type="button"
+          className="flow-text-button"
+          onClick={isSpeakingPaused ? onResumeSpeaking : onPauseSpeaking}
+          disabled={!isSpeaking}
+        >
+          <FlowTransportIcon kind={isSpeakingPaused ? "play" : "pause"} />
+          {isSpeakingPaused ? "音声を再開" : "音声を一時停止"}
+        </button>
         <div className="flow-manual__nav">
           <button
             type="button"
@@ -121,7 +117,7 @@ export default function FlowLiveMode({
               >
                 <span>{String(script.step).padStart(2, "0")}</span>
                 <strong>{script.title}</strong>
-                {s.step === script.step && <small>選択中</small>}
+                {s.step === script.step && <small>現在</small>}
               </button>
             </li>
           ))}

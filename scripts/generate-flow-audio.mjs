@@ -12,14 +12,19 @@ import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 const engine = process.env.VOICEVOX_ENGINE_URL ?? "http://127.0.0.1:50021";
-const reportPath = "reports/flow-audio-v2-audit.json";
+const extras = process.argv.includes("--extras");
+const sourcePath = extras ? "lib/flowCues.json" : "lib/flowScripts.json";
+const reportPath = extras
+  ? "reports/flow-extras-audio-audit.json"
+  : "reports/flow-audio-v2-audit.json";
 const only = process.argv.find((arg) => arg.startsWith("--only="))?.slice(7);
 const previous = existsSync(reportPath)
   ? JSON.parse(readFileSync(reportPath, "utf8"))
   : null;
 if (existsSync(reportPath) && !process.argv.includes("--replace"))
   throw Error("Audit exists; review before using --replace");
-if (only && !previous) throw Error("Partial regeneration requires an existing audit");
+if (only && !previous)
+  throw Error("Partial regeneration requires an existing audit");
 const temp = mkdtempSync(join(tmpdir(), "will-flow-normalizer-"));
 try {
   execFileSync("node", [
@@ -42,22 +47,30 @@ try {
   });
   const speaker = speakers.find((s) => s.name === "ずんだもん");
   const style = speaker?.styles.find((s) => s.name === "ノーマル");
-  if (!style) throw Error("ずんだもん・ノーマル not found");
-  const definitions = JSON.parse(readFileSync("lib/flowScripts.json", "utf8"));
-  const sources = definitions.flatMap((e) =>
-    e.variants.map((v) => ({ ...v, id: e.id, offsetSec: e.offsetSec })),
-  );
-  sources.push({
-    id: "voice-test",
-    courtMode: "both",
-    offsetSec: null,
-    displayText: "音声テストです。聞こえ方をご確認ください。",
-    audioSrc: "/audio/flow/v2/voice-test.wav",
-  });
-  const selected = only ? sources.filter((source) => source.id === only) : sources;
+  if (!style || style.id !== 3)
+    throw Error("ずんだもん・ノーマル styleId 3 not found");
+  const definitions = JSON.parse(readFileSync(sourcePath, "utf8"));
+  const sources = extras
+    ? definitions.map((cue) => ({ ...cue, courtMode: "both", offsetSec: null }))
+    : definitions.flatMap((e) =>
+        e.variants.map((v) => ({ ...v, id: e.id, offsetSec: e.offsetSec })),
+      );
+  if (!extras)
+    sources.push({
+      id: "voice-test",
+      courtMode: "both",
+      offsetSec: null,
+      displayText: "音声テストです。聞こえ方をご確認ください。",
+      audioSrc: "/audio/flow/v2/voice-test.wav",
+    });
+  const selected = only
+    ? sources.filter((source) => source.id === only)
+    : sources;
   if (!selected.length) throw Error("Unknown source: " + only);
   if (only && (previous.styleId !== style.id || previous.engine !== engine))
-    throw Error("Partial regeneration must use the original speaker and engine");
+    throw Error(
+      "Partial regeneration must use the original speaker and engine",
+    );
   const audited = [];
   for (const source of selected) {
     const voiceText = sanitizeForVoicevox(source.displayText);
@@ -90,6 +103,17 @@ try {
       ["はじめて参加されるかた", "ハジメテサンカサレルカタ"],
       ["ペアになったかた", "ペアニナッタカタ"],
       ["ごふん", "ゴフン"],
+      ["まっているかた", "マッテイルカタ"],
+      ["こうたい", "コ[ウオー]タイ"],
+      ["きょうだ", "キョ[ウオー]ダ"],
+      ["すいぶんほきゅう", "スイブンホキュ[ウー]"],
+      ["しゅうごう", "シュ[ウー]ゴ[ウオー]"],
+      ["いどう", "イド[ウオー]"],
+      ["はじめて参加のかた", "ハジメテサンカノカタ"],
+      ["いちど", "イチド"],
+      ["次のメニュー", "ツギノメニュ[ウー]"],
+      ["時間になりました", "ジカンニナリマシタ"],
+      ["むりせず", "ムリセズ"],
     ];
     const readingChecks = expected
       .filter(([text]) => voiceText.includes(text))
@@ -126,7 +150,7 @@ try {
       p += 8 + size + (size % 2);
     }
     const durationSec = dataSize / byteRate;
-    if (!(durationSec > 3 && durationSec < 90))
+    if (!(durationSec > (extras ? 1 : 3) && durationSec < 90))
       throw Error("Unexpected duration " + durationSec);
     const path = "public" + source.audioSrc;
     mkdirSync(join(path, ".."), { recursive: true });
@@ -155,17 +179,21 @@ try {
       {
         ...(only ? previous : {}),
         generatedAt: only ? previous.generatedAt : new Date().toISOString(),
-        ...(only ? { updatedAt: new Date().toISOString(), regeneratedIds: [only] } : {}),
+        ...(only
+          ? { updatedAt: new Date().toISOString(), regeneratedIds: [only] }
+          : {}),
         engine,
         engineVersion: await fetch(engine + "/version").then((r) => r.json()),
         speaker: speaker.name,
         style: style.name,
         styleId: style.id,
-        source: "lib/flowScripts.json",
+        source: sourcePath,
         normalizer: "lib/voicevoxText.ts",
         files: only
-          ? previous.files.map((file) =>
-              audited.find((entry) => entry.audioSrc === file.audioSrc) ?? file,
+          ? previous.files.map(
+              (file) =>
+                audited.find((entry) => entry.audioSrc === file.audioSrc) ??
+                file,
             )
           : audited,
       },

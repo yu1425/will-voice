@@ -1,11 +1,11 @@
 /* Shared mobile surfaces. One definition per primitive; no legacy flow overrides. */
 :root {
-  --flow-border: #e2e4e3;
-  --flow-accent: #44546a;
-  --flow-soft: #eef1f5;
+  --flow-border: #e4e7ea;
+  --flow-accent: #455a73;
+  --flow-soft: #f0f3f7;
   --flow-success: #5f7d68;
   --flow-warning: #a66a2c;
-  --flow-danger: #b05252;
+  --flow-danger: #b65353;
 }
 [hidden] {
   display: none !important;
@@ -132,7 +132,7 @@ a {
   display: inline-flex;
   align-items: center;
   min-height: 28px;
-  border-radius: 5px;
+  border-radius: 999px;
   padding: 3px 8px;
   background: var(--flow-soft);
   font-size: 12px;
@@ -141,8 +141,8 @@ a {
 }
 .flow-status--running,
 .flow-status--completed {
-  color: #496252;
-  background: #edf3ee;
+  color: #526473;
+  background: #edf1f3;
 }
 .flow-status--paused {
   color: #8b5725;
@@ -316,29 +316,50 @@ a {
   font-variant-numeric: tabular-nums;
 }
 .flow-progress__next {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f3f5f8;
+  box-shadow: inset 3px 0 var(--flow-accent);
+}
+.flow-next-heading {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 18px;
-  padding-top: 0;
+  gap: 8px;
 }
-.flow-progress__next div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.flow-progress__next span {
+.flow-next-heading h2,
+.flow-progress__later h2 {
+  margin: 0;
   font-size: 12px;
-  color: var(--text-soft);
-}
-.flow-progress__next strong {
-  font-size: 14px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  color: var(--flow-accent);
 }
-.flow-progress__next div:last-child {
+.flow-countdown {
+  border-radius: 999px;
+  padding: 3px 8px;
+  background: #fff;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--flow-accent);
+}
+.flow-next-menu {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 5px;
+}
+.flow-next-menu time,
+.flow-progress__later time {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: #60666d;
   flex-shrink: 0;
-  text-align: right;
+}
+.flow-next-menu strong {
+  font-size: 15px;
+  font-weight: 600;
 }
 .flow-audio-state {
   margin: 10px 0 0;
@@ -347,7 +368,7 @@ a {
   min-height: 20px;
 }
 .flow-audio-controls {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 .flow-audio-heading {
   display: flex;
@@ -392,9 +413,13 @@ a {
 }
 .flow-overview summary,
 .flow-script summary,
-.flow-manual-settings summary,
+.flow-session-settings summary,
 .flow-extras summary {
   cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   min-height: 44px;
   padding: 12px 0;
   color: var(--flow-accent);
@@ -546,16 +571,52 @@ a {
 .flow-extras {
   margin-top: 14px;
 }
+.flow-extras__timer,
+.flow-extras__cues {
+  padding-top: 4px;
+}
+.flow-extras__timer > h2,
+.flow-extras__cues h2 {
+  margin: 12px 0;
+}
+.flow-extras__cues {
+  margin-top: 12px;
+  border-top: 1px solid var(--flow-border);
+}
+.flow-timer-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 9px;
+  background: var(--flow-soft);
+}
+.flow-timer-display span {
+  font-size: 12px;
+  color: var(--flow-accent);
+}
+.flow-extras__audio {
+  margin-top: 14px;
+}
+.flow-extras__audio .flow-audio-state {
+  margin-bottom: 8px;
+}
+.flow-extras__audio .flow-btn {
+  min-height: 44px;
+  padding: 8px;
+  font-size: 12px;
+}
 .flow-extra-time {
   font-size: 26px;
   font-variant-numeric: tabular-nums;
 }
-.flow-manual-settings {
+.flow-session-settings {
   margin-top: 14px;
   padding-top: 8px;
   padding-bottom: 8px;
 }
-.flow-manual-settings textarea {
+.flow-session-settings textarea {
   width: 100%;
   min-height: 240px;
   font: inherit;
@@ -674,17 +735,19 @@ a {
 }
 /* The main controls share the progress surface; no second card or bottom overlay. */
 .flow-controls {
-  margin-top: 20px;
+  margin-top: 16px;
 }
 .flow-progress__later {
   display: flex;
   align-items: baseline;
-  gap: 12px;
-  margin-top: 10px;
+  gap: 9px;
+  margin-top: 6px;
+  border: 1px solid #edf0f3;
+  border-radius: 10px;
+  padding: 8px 10px;
 }
-.flow-progress__later span {
+.flow-progress__later h2 {
   flex-shrink: 0;
-  font-size: 12px;
   color: var(--text-soft);
 }
 .flow-progress__later strong {
@@ -692,15 +755,47 @@ a {
   color: #60666d;
   font-weight: 400;
 }
+.flow-text-button--danger {
+  color: var(--flow-danger);
+  font-size: 12px;
+}
+.flow-end-confirm {
+  width: 100%;
+  padding: 12px;
+  border-radius: 9px;
+  background: #faf3f3;
+}
+.flow-end-confirm p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text);
+}
+.flow-end-confirm .flow-btn--danger {
+  margin: 0;
+  border-color: #e7cccc;
+  background: #fff;
+}
 .flow-overview {
   padding: 0 4px;
 }
 .flow-manual__script {
   margin: 14px 0 16px;
 }
+.flow-manual__script h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.flow-step-position {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
 .flow-script-text--preview {
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -721,4 +816,55 @@ a {
   width: 100%;
   min-height: 32px;
   accent-color: var(--flow-accent);
+}
+
+.flow-session-end {
+  border-top: 1px solid var(--flow-border);
+  margin-top: 18px;
+  padding-top: 8px;
+}
+.flow-end-confirm h3 {
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+.flow-timer-choice {
+  margin-bottom: 12px;
+}
+.flow-extras__cues .flow-btn {
+  flex-wrap: wrap;
+  font-size: 13px;
+  gap: 3px 6px;
+}
+.flow-extras__cues .flow-btn[data-playing="true"] {
+  background: var(--flow-soft);
+  border-color: #cad3df;
+  color: var(--flow-accent);
+}
+.flow-extras__cues .flow-btn small {
+  font-size: 11px;
+  font-weight: 400;
+}
+.flow-overview summary::-webkit-details-marker,
+.flow-script summary::-webkit-details-marker,
+.flow-session-settings summary::-webkit-details-marker,
+.flow-extras summary::-webkit-details-marker {
+  display: none;
+}
+.flow-overview summary::before,
+.flow-script summary::before,
+.flow-session-settings summary::before,
+.flow-extras summary::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  flex-shrink: 0;
+}
+details[open].flow-overview > summary::before,
+details[open].flow-script > summary::before,
+details[open].flow-session-settings > summary::before,
+details[open].flow-extras > summary::before {
+  transform: rotate(45deg);
 }

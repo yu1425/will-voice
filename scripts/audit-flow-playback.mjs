@@ -92,6 +92,16 @@ await context.addInitScript(() => {
   };
 });
 const b = (name) => page.getByRole("button", { name, exact: true });
+const openSessionSettings = async () => {
+  const settings = page.locator(".flow-session-settings");
+  if ((await settings.getAttribute("open")) === null)
+    await settings.locator("summary").click();
+};
+const endFlow = async () => {
+  await openSessionSettings();
+  await b("自動進行を終了").click();
+  await b("終了する").click();
+};
 const stop = () => b("今の音声を止める").click();
 const clock = () => page.locator(".flow-progress__clock").innerText();
 const noAudio = async () => {
@@ -124,27 +134,28 @@ const boundary = async (sec) => {
       localStorage.getItem("will-standard-two-hour-auto-flow"),
     );
     window.__offset +=
-      s.startedAt + s.accumulatedPausedMs + (sec - 1) * 1000 - Date.now();
+      s.startedAt + s.accumulatedPausedMs + (sec - 3) * 1000 - Date.now();
   }, sec);
   // The first catch-up tick occurs before the boundary, so the next tick is a normal foreground tick.
   await page.waitForFunction(
-    (sec) =>
-      document
-        .querySelector(".flow-progress__clock")
-        ?.textContent.startsWith(
-          new Date((sec - 1) * 1000).toISOString().slice(11, 19),
-        ),
+    (sec) => {
+      const clock = document.querySelector(".flow-progress__clock strong")?.textContent;
+      if (!clock) return false;
+      const [h, m, s] = clock.split(":").map(Number);
+      const elapsed = h * 3600 + m * 60 + s;
+      return elapsed >= sec - 3 && elapsed < sec;
+    },
     sec,
   );
 };
 try {
   await page.goto(base + "/flow");
   await b("自動進行を開始").waitFor();
-  await b("設定").click();
+  await b("設定を開く").click();
   await page.locator("#audio-volume").press("Home");
   for (let i = 0; i < 30; i++)
     await page.locator("#audio-volume").press("ArrowRight");
-  await b("設定").click();
+  await b("設定を開く").click();
   await b("自動進行を開始").click();
   await playing("00-opening.wav");
   await page.waitForTimeout(1000);
@@ -152,7 +163,7 @@ try {
   await noAudio();
   assert.ok(
     await page
-      .getByText("次の案内は通常どおり再生されます。", { exact: true })
+      .getByText("次の案内は自動で再生されます", { exact: false })
       .isVisible(),
   );
   const stoppedAt = await clock();
@@ -180,7 +191,7 @@ try {
     eventEvidence,
   );
   await page.screenshot({
-    path: "reports/flow-v4-next-event-after-stop-390.png",
+    path: "reports/flow-v5-next-event-after-stop-390.png",
   });
   await b("進行を一時停止").click();
   await noAudio();
@@ -233,6 +244,18 @@ try {
   await stop();
   await b("進行を再開").click();
   pass("paused clock permits explicit replay without resuming progress");
+  const chimesBeforeResume = await page.evaluate(() => window.__chimes.length);
+  await boundary(600);
+  await playing("10-long-rally.wav");
+  assert.equal((await actual()).volume, 0.3);
+  assert.equal(
+    await page.evaluate(() => window.__chimes.length),
+    chimesBeforeResume + 9,
+  );
+  pass(
+    "CASE 2: manual stop → pause → replay → stop → resume permits future chime/WAV",
+    await actual(),
+  );
   await page.locator(".auto-flow .flow-overview > summary").click();
   await b("00:20 クロスラリー").click();
   await b("移動して案内").click();
@@ -262,7 +285,7 @@ try {
     "stop cancels pending chime/WAV, but the following natural event still plays",
     await actual(),
   );
-  await b("自動進行を終了").click();
+  await endFlow();
   await noAudio();
   // Exercise the actual panel with a changed playback callback at exactly the event boundary.
   await page.route("**/__flow-harness", (r) =>
@@ -282,6 +305,11 @@ try {
   await playing("00-opening.wav");
   await stop();
   await boundary(300);
+  await page.waitForFunction(() =>
+    document
+      .querySelector(".flow-progress__clock")
+      ?.textContent.startsWith("00:04:59"),
+  );
   await page.evaluate(() => {
     const s = JSON.parse(
       localStorage.getItem("will-standard-two-hour-auto-flow"),
@@ -306,7 +334,7 @@ try {
   assert.deepEqual(errors, []);
   pass("zero SpeechSynthesis fallback and zero runtime errors");
   writeFileSync(
-    "reports/flow-v4-playback-audit.json",
+    "reports/flow-v5-playback-audit.json",
     JSON.stringify(
       {
         auditedAt: new Date().toISOString(),
