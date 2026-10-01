@@ -31,7 +31,7 @@ export default function HomePage() {
             <div className="home-hero__copy">
               <p className="home-kicker">WILL.TENNIS OFFICIAL CHARACTER</p>
               <h1 id="will-home-title">うぃる</h1>
-              <p>WILL.tennis🎾公式キャラクター</p>
+              <p>WILL.tennis🎾 公式キャラクター</p>
             </div>
             <Image
               className="home-hero__character"
