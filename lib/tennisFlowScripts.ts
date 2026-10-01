@@ -19,7 +19,7 @@ export const TIMER_FINISH_MESSAGE =
   "時間になりました。いったん手を止めて、次の案内をお待ちください。";
 export function getScriptsForCourt(mode: "single" | "double"): FlowScript[] {
   return getFlowScripts(mode === "double" ? 2 : 1).flatMap((s) =>
-    s.autoOnly || typeof s.refStep !== "number"
+    typeof s.refStep !== "number"
       ? []
       : [
           {

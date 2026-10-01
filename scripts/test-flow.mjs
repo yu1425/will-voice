@@ -85,14 +85,12 @@ try {
         assert.ok(manual);
         assert.equal(manual.displayText, e.displayText);
         assert.equal(manual.audioSrc, e.audioSrc);
-      } else {
-        assert.equal(e.id, "gather-break");
-        assert.equal(e.refStep, undefined);
       }
     }
     const hydrationBreak = events.find((e) => e.id === "gather-break");
     assert.ok(hydrationBreak);
-    assert.equal(hydrationBreak.autoOnly, true);
+    assert.equal(hydrationBreak.refStep, 7);
+    assert.equal(hydrationBreak.autoOnly, undefined);
     assert.match(hydrationBreak.displayText, /一度コートから上がって集合/);
     assert.match(hydrationBreak.displayText, /3分ほど/);
     assert.match(hydrationBreak.displayText, /必ず水分補給/);
@@ -101,12 +99,17 @@ try {
     assert.equal(events.find((e) => e.id === "game-rules")?.chime, false);
     assert.equal(events.find((e) => e.id === "self-intro")?.chime, false);
     assert.equal(events.find((e) => e.id === "game-play")?.audioSrc, undefined);
-    assert.equal(getScriptsForCourt(courts === 2 ? "double" : "single").length, 11);
+    assert.equal(getScriptsForCourt(courts === 2 ? "double" : "single").length, 12);
+    const manualBreak = getScriptsForCourt(
+      courts === 2 ? "double" : "single",
+    ).find((s) => s.id === "gather-break");
+    assert.ok(manualBreak);
+    assert.equal(manualBreak.step, 7);
     assert.equal(
-      getScriptsForCourt(courts === 2 ? "double" : "single").some(
-        (s) => s.id === "gather-break",
-      ),
-      false,
+      getScriptsForCourt(courts === 2 ? "double" : "single").find(
+        (s) => s.id === "random-table",
+      )?.step,
+      8,
     );
     assert.equal(events.at(-1).audioSrc, undefined);
     assert.equal(events.at(-1).voiceText, "");
