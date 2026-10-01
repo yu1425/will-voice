@@ -111,15 +111,6 @@ export default function HomePage() {
             </div>
           </section>
 
-          <section className="home-about" aria-labelledby="home-about-title">
-            <div>
-              <p className="home-kicker">ABOUT WILL</p>
-              <h2 id="home-about-title">うぃるについて</h2>
-            </div>
-            <p>
-              進行、会話、そのほかのキャラクターコンテンツを、このHOMEから広げていくための入口です。
-            </p>
-          </section>
         </div>
       </main>
     </div>

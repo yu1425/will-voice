@@ -1145,8 +1145,7 @@ details[open].flow-extras > summary::before {
   gap: 12px;
   padding: 0 2px;
 }
-.home-section__heading h2,
-.home-about h2 {
+.home-section__heading h2 {
   margin: 2px 0 0;
   font-size: 18px;
   letter-spacing: -0.02em;
@@ -1255,19 +1254,6 @@ details[open].flow-extras > summary::before {
 .home-utility-list small {
   color: var(--text-soft);
   font-size: 10.5px;
-}
-.home-about {
-  display: grid;
-  gap: 12px;
-  padding: 18px;
-  border-radius: 15px;
-  background: #edf1f5;
-}
-.home-about > p {
-  margin: 0;
-  color: #59616b;
-  font-size: 12.5px;
-  line-height: 1.8;
 }
 .settings-index-page {
   align-content: start;

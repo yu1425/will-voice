@@ -193,7 +193,9 @@ try {
   assert.ok(await page.locator('a[href="/chat"]').isVisible());
   assert.ok(await page.getByRole("link", { name: /設定/ }).isVisible());
   assert.ok(await page.getByRole("link", { name: /使い方/ }).isVisible());
-  pass("HOME is the parent character hub for flow, chat, settings and guide");
+  assert.equal(await page.getByText("ABOUT WILL", { exact: true }).count(), 0);
+  assert.equal(await page.getByRole("heading", { name: "うぃるについて", exact: true }).count(), 0);
+  pass("HOME is the parent character hub without a separate About section");
   await page.goto(base + "/flow");
   await button("自動進行を開始").waitFor();
   assert.equal(
@@ -241,8 +243,8 @@ try {
     .locator(".page-menu-panel a,.page-menu-panel button")
     .allTextContents();
   assert.deepEqual(
-    names.map((x) => x.replace(/[⌂▷◇⚙?]/g, "").trim()),
-    ["ホーム", "進行", "チャット", "設定", "使い方"],
+    names.map((x) => x.replace(/[▷◇⚙?]/g, "").trim()),
+    ["進行", "チャット", "設定", "使い方"],
   );
   await layout("menu-390");
   await page.keyboard.press("Escape");
@@ -429,6 +431,11 @@ try {
   await layout("manual-390");
   const extras = page.locator(".flow-extras");
   await extras.locator("summary").tap();
+  const timerChoices = await extras
+    .locator(".flow-timer-choice button")
+    .allTextContents();
+  assert.deepEqual(timerChoices, ["1分", "3分", "5分", "10分", "15分", "20分"]);
+  pass("manual timer offers six practical duration presets", timerChoices);
   await button("交代お願いします").tap();
   const cue = await waitVoice("q-rotate.wav");
   assert.equal(cue.volume, 0.3);
@@ -600,7 +607,7 @@ try {
   await desk.keyboard.press("Tab");
   assert.equal(
     await desk.evaluate(() => document.activeElement.getAttribute("href")),
-    "/",
+    "/flow",
   );
   await desk.keyboard.press("Escape");
   pass(

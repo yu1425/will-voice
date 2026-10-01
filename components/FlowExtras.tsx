@@ -100,7 +100,7 @@ export default function FlowExtras({
               role="group"
               aria-label="タイマーの時間"
             >
-              {[5, 10].map((minutes) => (
+              {[1, 3, 5, 10, 15, 20].map((minutes) => (
                 <button
                   key={minutes}
                   type="button"

@@ -127,13 +127,6 @@ export default function PageNavigation({
         <div className="page-menu-panel" id="app-page-menu">
           <p className="page-menu-title">うぃる</p>
           <Link
-            href="/"
-            aria-current={current === "home" ? "page" : undefined}
-            onClick={(event) => visit("home", event)}
-          >
-            <span aria-hidden="true">⌂</span>ホーム
-          </Link>
-          <Link
             href="/flow"
             aria-current={current === "flow" ? "page" : undefined}
             onClick={(event) => visit("flow", event)}
