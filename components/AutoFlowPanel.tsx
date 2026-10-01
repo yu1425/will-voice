@@ -95,10 +95,13 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     eventsRef.current = events;
     const current = eventAtElapsed(events, elapsed);
     const next = nextEventAtElapsed(events, elapsed);
-    const later = next ? nextEventAtElapsed(events, next.offsetSec) : null;
     const menuEvents = events.filter(
       (event) => event.offsetSec < SESSION_SECONDS,
     );
+    const previous =
+      [...menuEvents]
+        .reverse()
+        .find((event) => event.offsetSec < current.offsetSec) ?? null;
     const status = session?.status ?? "idle";
     const progress = getAutoFlowProgress(elapsed);
 
@@ -454,12 +457,25 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
                   </span>
                 </button>
               )}
-              {later && (
-                <div className="flow-progress__later">
-                  <span>その次</span>
-                  <time>{offset(later.offsetSec)}</time>
-                  <strong>{later.title}</strong>
-                </div>
+              {previous && (
+                <button
+                  type="button"
+                  className="flow-previous-card"
+                  aria-label={`${previous.title}へ戻る`}
+                  onClick={() => seek(previous)}
+                >
+                  <span
+                    className="flow-previous-card__arrow"
+                    aria-hidden="true"
+                  >
+                    ←
+                  </span>
+                  <span className="flow-previous-card__label">
+                    前のメニュー
+                  </span>
+                  <time>{offset(previous.offsetSec)}</time>
+                  <strong>{previous.title}</strong>
+                </button>
               )}
             </>
           )}

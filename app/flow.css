@@ -428,7 +428,7 @@ a {
   margin-top: 5px;
 }
 .flow-next-menu time,
-.flow-progress__later time {
+.flow-previous-card time {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: #60666d;
@@ -749,24 +749,44 @@ a {
   }
 }
 /* The main controls share the progress surface; no second card or bottom overlay. */
-.flow-progress__later {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 10px;
+.flow-previous-card {
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
   margin-top: 8px;
   border: 1px solid #e8ecf1;
   border-radius: 10px;
   padding: 9px 12px;
-  font-size: 12px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.flow-progress__later > span {
+.flow-previous-card:hover {
+  background: #f7f8fa;
+}
+.flow-previous-card__arrow {
+  color: var(--flow-accent);
+  font-size: 15px;
+  line-height: 1;
+}
+.flow-previous-card__label {
   color: var(--text-soft);
+  font-size: 12px;
+  white-space: nowrap;
 }
-.flow-progress__later strong {
+.flow-previous-card strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #57616c;
   font-size: 13px;
   font-weight: 500;
-  color: #57616c;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .flow-text-button--danger {
   color: var(--flow-danger);
@@ -809,12 +829,6 @@ a {
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--text-soft);
-}
-.flow-script-text--preview {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 .flow-text-button {
   min-height: 44px;

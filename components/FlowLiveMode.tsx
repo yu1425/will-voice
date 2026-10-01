@@ -34,9 +34,6 @@ export default function FlowLiveMode({
           </span>
         </header>
         <h1>{s.title}</h1>
-        <p className="flow-script-text flow-script-text--preview">
-          {previewText}
-        </p>
         <div
           className="flow-manual-transport"
           role="group"

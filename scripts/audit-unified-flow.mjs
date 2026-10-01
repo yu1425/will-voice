@@ -312,7 +312,26 @@ try {
       "00:20:00",
     ),
   );
-  pass("paused navigation moves only; no unsolicited audio");
+  assert.equal(await auto().getByText("その次", { exact: true }).count(), 0);
+  const previousButton = auto().getByRole("button", {
+    name: "ロングラリーへ戻る",
+    exact: true,
+  });
+  assert.ok(await previousButton.isVisible());
+  assert.match(await previousButton.innerText(), /前のメニュー/);
+  assert.match(await previousButton.innerText(), /00:10/);
+  await previousButton.tap();
+  await silence();
+  assert.ok(
+    (await page.locator(".flow-progress__clock").innerText()).startsWith(
+      "00:10:00",
+    ),
+  );
+  await seek("00:20 クロスラリー");
+  await silence();
+  pass(
+    "paused navigation offers a selectable previous item and no next-next row",
+  );
   await auto().getByRole("button", { name: "再開", exact: true }).tap();
   await page.waitForFunction(() => window.__osc.some((o) => o.active));
   await page.waitForTimeout(200);
@@ -387,6 +406,9 @@ try {
   await silence();
   assert.equal((await stored()).status, "paused");
   assert.equal(await auto().isVisible(), false);
+  assert.equal(await manual().locator(".flow-script-text--preview").count(), 0);
+  assert.equal(await manual().locator(".flow-script p").count(), 1);
+  pass("manual mode shows the selected script only once");
   await button("この案内を再生").tap();
   await waitVoice("00-opening.wav");
   await page.waitForTimeout(1200);
