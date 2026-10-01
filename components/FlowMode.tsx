@@ -1,635 +1,288 @@
 "use client";
-
-/**
- * テニス会 進行モード
- * ============================================================
- *  - 今日の進行プランパネル (FlowPlanPanel)
- *  - やさしい注意喚起パネル (FlowCautionPanel)
- *  - ステップ一覧 + 現ステップカード (FlowStepCard)
- *  - タイマー (5分/10分/カスタム)
- *
- *  読み上げは親(page.tsx)から渡される speak(text) を使う:
- *    VOICEVOX→失敗時 標準音声フォールバックは親側で担保。
- * ============================================================
- */
-
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import FlowStepCard from "./FlowStepCard";
-import FlowPlanPanel from "./FlowPlanPanel";
-import FlowCautionPanel from "./FlowCautionPanel";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import AutoFlowPanel, {
+  type AutoStatus,
+  type AutoFlowHandle,
+} from "./AutoFlowPanel";
 import FlowLiveMode from "./FlowLiveMode";
-import {
-  TENNIS_FLOW_SCRIPTS,
-  TIMER_FINISH_MESSAGE,
-  TOTAL_STEPS,
-  getCrowdPrefix,
-  getScriptsForCourt,
-  isCrowdAdjustedStep,
-  pickVoiceText,
-  type FlowScript,
-  type VoiceLength,
-} from "@/lib/tennisFlowScripts";
-import {
-  DEFAULT_CONDITIONS,
-  type FlowConditions,
-  type FlowDurationHours,
-  type FlowVibe,
-} from "@/lib/flowPlan";
-import { preloadRecordedAudio } from "@/lib/recordedAudio";
-
-const STEP_KEY = "will-flow-step";
-const EDIT_KEY = "will-flow-edits";
-const CONDITIONS_KEY = "will-flow-conditions";
-const VOICE_LENGTH_KEY = "will-flow-voice-length";
-const VIEW_MODE_KEY = "will-flow-view-mode";
-
-type ViewMode = "prepare" | "live";
+import FlowExtras from "./FlowExtras";
+import { getScriptsForCourt, TOTAL_STEPS } from "@/lib/tennisFlowScripts";
+import { DEFAULT_CONDITIONS, type FlowConditions } from "@/lib/flowPlan";
+import { getRecordedAudioPosition } from "@/lib/recordedAudio";
 
 type Props = {
-  /** 読み上げ実行(VOICEVOX/標準音声/録音音声は親側で判定) */
   speak: (text: string, audioSrc?: string) => void;
-  /** 読み上げ停止 */
+  speakRecorded: (text: string, audioSrc?: string, startAtSec?: number) => void;
   stopSpeaking: () => void;
-  /** 現在読み上げ中か */
   isSpeaking: boolean;
-  /** 読み上げを一時停止中か */
-  isSpeakingPaused: boolean;
-  /** 読み上げを現在位置で一時停止 */
-  onPauseSpeaking: () => void;
-  /** 一時停止中の読み上げを現在位置から再開 */
-  onResumeSpeaking: () => void;
-  /** 現在の読み上げ音声モード(注意喚起は録音音声非対応なので案内表示に使う) */
-  voiceMode: "standard" | "voicevox" | "recorded";
+  voiceMode: "standard" | "voicevox" | "recorded" | "openai";
+  chimeEnabled: boolean;
+  onChimePlayingChange: (playing: boolean) => void;
 };
-
-export default function FlowMode({
-  speak,
-  stopSpeaking,
-  isSpeaking,
-  isSpeakingPaused,
-  onPauseSpeaking,
-  onResumeSpeaking,
-  voiceMode,
-}: Props) {
-  // 保存済み表示モードは復元せず、アクセスのたびに当日モードを入口にする。
-  const [viewMode, setViewMode] = useState<ViewMode>("live");
-  const [conditions, setConditions] = useState<FlowConditions>(DEFAULT_CONDITIONS);
-  const [stepNumber, setStepNumber] = useState(1);
-  const [edits, setEdits] = useState<Record<string, string>>({});
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [voiceLength, setVoiceLength] = useState<VoiceLength>("normal");
-
-  // タイマー
-  const [timerSec, setTimerSec] = useState(5 * 60);
-  const [timerRemaining, setTimerRemaining] = useState(5 * 60);
-  const [timerRunning, setTimerRunning] = useState(false);
-  const [customMin, setCustomMin] = useState("");
-
-  // 初期復元
+export type FlowModeHandle = Pick<
+  AutoFlowHandle,
+  "pauseForNavigation" | "stopCurrentAudio" | "playChimeTest" | "playVoiceTest"
+>;
+const FlowMode = forwardRef<FlowModeHandle, Props>(function FlowMode(
+  {
+    speak,
+    speakRecorded,
+    stopSpeaking,
+    isSpeaking,
+    voiceMode,
+    chimeEnabled,
+    onChimePlayingChange,
+  },
+  ref,
+) {
+  const [conditions, setConditions] =
+    useState<FlowConditions>(DEFAULT_CONDITIONS);
+  const [step, setStep] = useState(1);
+  const [mode, setMode] = useState<"auto" | "manual">("auto");
+  const [autoStatus, setAutoStatus] = useState<AutoStatus>("idle");
+  const [editedText, setEditedText] = useState<string | null>(null);
+  const [manualCursor, setManualCursor] = useState<{
+    id: string;
+    positionSec: number;
+  } | null>(null);
+  const [playbackContext, setPlaybackContext] = useState<
+    "step" | "extras" | "auto"
+  >("step");
+  const autoRef = useRef<AutoFlowHandle>(null);
+  useImperativeHandle(
+    ref,
+    () => ({
+      pauseForNavigation: () => autoRef.current?.pauseForNavigation(),
+      stopCurrentAudio: () => autoRef.current?.stopCurrentAudio(),
+      playChimeTest: async () => {
+        await autoRef.current?.playChimeTest();
+      },
+      playVoiceTest: () => autoRef.current?.playVoiceTest(),
+    }),
+    [],
+  );
   useEffect(() => {
     try {
-      const c = window.localStorage.getItem(CONDITIONS_KEY);
-      if (c) {
-        const parsed = JSON.parse(c) as Partial<FlowConditions>;
-        setConditions((prev) => ({
-          ...prev,
-          ...sanitizeConditions(parsed),
-        }));
-      }
-
-      const s = window.localStorage.getItem(STEP_KEY);
-      if (s !== null) {
-        const n = Number(s);
-        if (Number.isFinite(n) && n >= 1 && n <= TOTAL_STEPS) {
-          setStepNumber(n);
-        }
-      }
-
-      const e = window.localStorage.getItem(EDIT_KEY);
-      if (e !== null) {
-        const parsed = JSON.parse(e);
-        if (parsed && typeof parsed === "object") {
-          setEdits(parsed as Record<string, string>);
-        }
-      }
-
-      const v = window.localStorage.getItem(VOICE_LENGTH_KEY);
-      if (v === "normal" || v === "short" || v === "veryShort") {
-        setVoiceLength(v);
-      }
+      const saved = JSON.parse(
+        localStorage.getItem("will-flow-conditions") ?? "{}",
+      );
+      if (saved.courts === 1 || saved.courts === 2)
+        setConditions({ ...DEFAULT_CONDITIONS, courts: saved.courts });
+      const n = Number(localStorage.getItem("will-flow-step"));
+      if (Number.isInteger(n) && n >= 1 && n <= TOTAL_STEPS) setStep(n);
     } catch {
       /* no-op */
     }
   }, []);
-
-  const courtMode: "single" | "double" =
-    conditions.courts === 2 ? "double" : "single";
-
-  const scriptsForCourt = useMemo(
-    () => getScriptsForCourt(courtMode),
-    [courtMode]
-  );
-
-  const currentScript = useMemo(
-    () =>
-      scriptsForCourt.find((s) => s.step === stepNumber) ?? scriptsForCourt[0],
-    [scriptsForCourt, stepNumber]
-  );
-
-  // コート数切替などで stepNumber が現在の courtMode に存在しない場合、
-  // 無言で先頭ステップへ飛ばすのではなく stepNumber 自体を実際のステップに
-  // 合わせて補正する(表示中の「ステップ X」ラベルと中身がズレないようにする)。
-  useEffect(() => {
-    if (currentScript && currentScript.step !== stepNumber) {
-      setStepNumber(currentScript.step);
-    }
-  }, [currentScript, stepNumber]);
-
-  const nextScript = useMemo(
-    () => scriptsForCourt.find((s) => s.step === stepNumber + 1) ?? null,
-    [scriptsForCourt, stepNumber]
-  );
-
-  // 現在と次のステップの録音音声を先読みし、最初の読み上げからラグを減らす
-  useEffect(() => {
-    preloadRecordedAudio(currentScript?.audioSrc);
-    preloadRecordedAudio(nextScript?.audioSrc);
-  }, [currentScript, nextScript]);
-
-  const persist = (key: string, value: string) => {
+  const changeConditions = useCallback((c: FlowConditions) => {
+    setConditions(c);
     try {
-      window.localStorage.setItem(key, value);
+      localStorage.setItem("will-flow-conditions", JSON.stringify(c));
     } catch {
       /* no-op */
     }
-  };
-
-  const handleConditionsChange = useCallback((next: FlowConditions) => {
-    setConditions(next);
-    persist(CONDITIONS_KEY, JSON.stringify(next));
   }, []);
-
-  const handleViewModeChange = useCallback((mode: ViewMode) => {
-    setViewMode(mode);
-    persist(VIEW_MODE_KEY, mode);
-  }, []);
-
-  const handleVoiceLengthChange = useCallback((l: VoiceLength) => {
-    setVoiceLength(l);
-    persist(VOICE_LENGTH_KEY, l);
-  }, []);
-
-  const handleStepJump = useCallback((n: number) => {
-    if (n < 1 || n > TOTAL_STEPS) return;
-    setStepNumber(n);
-    persist(STEP_KEY, String(n));
-    setEditingId(null);
-  }, []);
-
-  const handlePrev = useCallback(() => {
-    if (stepNumber > 1) handleStepJump(stepNumber - 1);
-  }, [stepNumber, handleStepJump]);
-
-  const handleNext = useCallback(() => {
-    if (stepNumber < TOTAL_STEPS) handleStepJump(stepNumber + 1);
-  }, [stepNumber, handleStepJump]);
-
-  const handleEdit = useCallback((id: string, value: string) => {
-    setEdits((prev) => {
-      const next = { ...prev, [id]: value };
-      persist(EDIT_KEY, JSON.stringify(next));
-      return next;
-    });
-  }, []);
-
-  const handleEditReset = useCallback((id: string) => {
-    setEdits((prev) => {
-      const next = { ...prev };
-      delete next[id];
-      persist(EDIT_KEY, JSON.stringify(next));
-      return next;
-    });
-  }, []);
-
-  /** 実際にうぃるに渡す読み上げテキストを組み立てる */
-  const buildSpeakText = useCallback(
-    (script: FlowScript): string => {
-      const edited = edits[script.id];
-      if (edited !== undefined) return edited;
-
-      // 録音再生時は、実際の発話内容をそのままプレビューに使う。
-      // voiceLength や人数調整は録音内容を変えられないため適用しない。
-      if (
-        voiceMode === "recorded" &&
-        script.audioSrc &&
-        script.recordedText
-      ) {
-        return script.recordedText;
-      }
-
-      const base = pickVoiceText(script, voiceLength);
-
-      // 人数調整が無効なステップなら、プレフィックスは付けない
-      if (!isCrowdAdjustedStep(script.step)) return base;
-
-      const prefix = getCrowdPrefix(conditions.participants, conditions.courts);
-      if (!prefix) return base;
-      return `${prefix}\n${base}`;
+  const speakAuto = useCallback(
+    (text: string, src?: string, position?: number) => {
+      setPlaybackContext("auto");
+      speakRecorded(text, src, position);
     },
-    [
-      edits,
-      voiceMode,
-      voiceLength,
-      conditions.participants,
-      conditions.courts,
-    ]
+    [speakRecorded],
   );
-
-  const usesRecordedAudio = useCallback(
-    (script: FlowScript): boolean =>
-      voiceMode === "recorded" &&
-      edits[script.id] === undefined &&
-      Boolean(script.audioSrc && script.recordedText),
-    [voiceMode, edits]
-  );
-
-  const handleSpeak = useCallback(
-    (script: FlowScript) => {
-      // 録音パスと実発話テキストが揃った未編集STEPだけ録音を使う。
-      // 編集済み・録音テキスト未定義なら、表示中の文章を合成音声で読む。
-      speak(
-        buildSpeakText(script),
-        usesRecordedAudio(script) ? script.audioSrc : undefined
-      );
+  const speakExtra = useCallback(
+    (text: string, src?: string) => {
+      setManualCursor(null);
+      setPlaybackContext("extras");
+      speakRecorded(text, src);
     },
-    [speak, buildSpeakText, usesRecordedAudio]
+    [speakRecorded],
   );
-
-  const handleSpeakBeginnerTip = useCallback(
-    (script: FlowScript) => {
-      if (script.beginnerTip) speak(script.beginnerTip);
-    },
-    [speak]
+  const scripts = useMemo(
+    () => getScriptsForCourt(conditions.courts === 2 ? "double" : "single"),
+    [conditions.courts],
   );
-
-  const handleCopy = useCallback(
-    async (script: FlowScript) => {
-      const edited = edits[script.id];
-      const text = edited !== undefined ? edited : script.displayText;
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch {
-        /* no-op */
-      }
-    },
-    [edits]
-  );
-
-  // ============ タイマー ============
-  // 実時刻(Date.now())ベースで残り時間を計算する。setInterval のカウンタを
-  // 直接減算する方式だと、画面ロックやタブのバックグラウンド化で tick が
-  // 間引かれた際に実際の経過時間とズレるため、常に「終了予定時刻との差」から
-  // 残り秒数を再計算する。
-  const timerIntervalRef = useRef<number | null>(null);
-  const timerEndAtRef = useRef<number | null>(null);
-
-  const clearTimerInterval = () => {
-    if (timerIntervalRef.current !== null) {
-      window.clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
+  const current = scripts.find((s) => s.step === step) ?? scripts[0];
+  const autoOngoing = autoStatus === "running" || autoStatus === "paused";
+  const jump = (n: number) => {
+    stopSpeaking();
+    setStep(n);
+    setManualCursor(null);
+    setEditedText(null);
+    try {
+      localStorage.setItem("will-flow-step", String(n));
+    } catch {
+      /* no-op */
     }
+    document.querySelector(".flow-scroll")?.scrollTo({ top: 0 });
   };
-
-  const startTimer = useCallback((sec: number) => {
-    if (sec <= 0) return;
-    setTimerSec(sec);
-    setTimerRemaining(sec);
-    timerEndAtRef.current = Date.now() + sec * 1000;
-    setTimerRunning(true);
-  }, []);
-
-  const pauseTimer = useCallback(() => {
-    // 一時停止時点の残り秒数を確定させてから止める
-    if (timerEndAtRef.current !== null) {
-      const remaining = Math.max(
-        0,
-        Math.round((timerEndAtRef.current - Date.now()) / 1000)
+  const changeMode = (next: typeof mode) => {
+    if (next === mode) return;
+    autoRef.current?.pauseForNavigation();
+    stopSpeaking();
+    setManualCursor(null);
+    setEditedText(null);
+    setMode(next);
+    document.querySelector(".flow-scroll")?.scrollTo({ top: 0 });
+  };
+  const toggleManual = () => {
+    if (isSpeaking && playbackContext === "step") {
+      const position = getRecordedAudioPosition();
+      setManualCursor(
+        position ? { id: current.id, positionSec: position.positionSec } : null,
       );
-      setTimerRemaining(remaining);
-    }
-    timerEndAtRef.current = null;
-    setTimerRunning(false);
-  }, []);
-
-  const resetTimer = useCallback(() => {
-    timerEndAtRef.current = null;
-    setTimerRunning(false);
-    setTimerRemaining(timerSec);
-  }, [timerSec]);
-
-  useEffect(() => {
-    if (!timerRunning) {
-      clearTimerInterval();
+      stopSpeaking();
       return;
     }
-
-    const tick = () => {
-      const endAt = timerEndAtRef.current;
-      if (endAt === null) return;
-      const remaining = Math.max(0, Math.round((endAt - Date.now()) / 1000));
-      setTimerRemaining(remaining);
-      if (remaining <= 0) {
-        timerEndAtRef.current = null;
-        setTimerRunning(false);
-        speak(TIMER_FINISH_MESSAGE);
-      }
-    };
-
-    // 画面ロック解除やタブ復帰の直後にも即座に正しい残り時間を反映する
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") tick();
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-
-    timerIntervalRef.current = window.setInterval(tick, 1000);
-    return () => {
-      clearTimerInterval();
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, [timerRunning, speak]);
-
-  const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
+    const position =
+      manualCursor?.id === current.id ? manualCursor.positionSec : 0;
+    setManualCursor(null);
+    setPlaybackContext("step");
+    if (editedText === null)
+      speakRecorded(current.voiceText, current.audioSrc, position);
+    else speak(editedText);
   };
-
-  const handleCustomStart = () => {
-    const m = Number(customMin);
-    if (!Number.isFinite(m) || m <= 0) return;
-    const sec = Math.min(60, Math.max(1, Math.floor(m))) * 60;
-    startTimer(sec);
-  };
-
-  // ============ render ============
-  // 表示モード切替トグル(両モード共通で先頭に表示)
-  const viewToggle = (
-    <div className="flow-viewmode" role="radiogroup" aria-label="表示モード">
-      <button
-        type="button"
-        role="radio"
-        aria-checked={viewMode === "prepare"}
-        className={`flow-viewmode__btn ${
-          viewMode === "prepare" ? "flow-viewmode__btn--active" : ""
-        }`}
-        onClick={() => handleViewModeChange("prepare")}
-      >
-        準備モード
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={viewMode === "live"}
-        className={`flow-viewmode__btn ${
-          viewMode === "live" ? "flow-viewmode__btn--active" : ""
-        }`}
-        onClick={() => handleViewModeChange("live")}
-      >
-        当日モード
-      </button>
-    </div>
-  );
-
-  // 当日モード
-  if (viewMode === "live") {
-    return (
-      <div className="flow-mode flow-mode--live">
-        {viewToggle}
-        {currentScript && (
-          <FlowLiveMode
-            currentScript={currentScript}
-            nextScript={nextScript}
-            previewText={buildSpeakText(currentScript)}
-            nextPreviewText={nextScript ? buildSpeakText(nextScript) : null}
-            usesRecordedAudio={usesRecordedAudio(currentScript)}
-            isSpeaking={isSpeaking}
-            totalSteps={TOTAL_STEPS}
-            onSpeak={() => handleSpeak(currentScript)}
-            onStop={stopSpeaking}
-            isSpeakingPaused={isSpeakingPaused}
-            onPauseSpeaking={onPauseSpeaking}
-            onResumeSpeaking={onResumeSpeaking}
-            onPrev={handlePrev}
-            onNext={handleNext}
-            onSpeakRaw={speak}
-            scriptsForCourt={scriptsForCourt}
-            onStepJump={handleStepJump}
-            voiceMode={voiceMode}
-            timerRemaining={timerRemaining}
-            timerRunning={timerRunning}
-            timerSec={timerSec}
-            onStartTimer={startTimer}
-            onPauseTimer={pauseTimer}
-            onResetTimer={resetTimer}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // 準備モード(従来通り)
   return (
-    <div className="flow-mode">
-      {viewToggle}
-
-      <FlowPlanPanel conditions={conditions} onChange={handleConditionsChange} />
-
-      <FlowCautionPanel speak={speak} voiceMode={voiceMode} />
-
-      {/* 現在ステップ ナビ */}
-      <div className="flow-nav">
-        <button
-          type="button"
-          className="flow-nav__btn"
-          onClick={handlePrev}
-          disabled={stepNumber === 1}
-        >
-          ← 前へ
-        </button>
-        <span className="flow-nav__current">
-          ステップ {stepNumber} / {TOTAL_STEPS}
-        </span>
-        <button
-          type="button"
-          className="flow-nav__btn"
-          onClick={handleNext}
-          disabled={stepNumber === TOTAL_STEPS}
-        >
-          次へ →
-        </button>
-      </div>
-
-      {/* ステップ一覧チップ */}
-      <div className="flow-steps" role="tablist" aria-label="進行ステップ">
-        {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((n) => {
-          const matched =
-            scriptsForCourt.find((s) => s.step === n) ??
-            TENNIS_FLOW_SCRIPTS.find((s) => s.step === n);
-          const isActive = stepNumber === n;
-          return (
-            <button
-              key={n}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              className={`flow-step-chip ${
-                isActive ? "flow-step-chip--active" : ""
-              }`}
-              onClick={() => handleStepJump(n)}
-              title={matched?.title}
-            >
-              <span className="flow-step-chip__num">{n}</span>
-              <span className="flow-step-chip__label">
-                {matched?.shortLabel ?? ""}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 現ステップカード */}
-      {currentScript && (
-        <FlowStepCard
-          key={currentScript.id}
-          script={currentScript}
-          editedText={edits[currentScript.id]}
-          speakingText={buildSpeakText(currentScript)}
-          isEditing={editingId === currentScript.id}
-          isSpeaking={isSpeaking}
-          voiceLength={voiceLength}
-          usesRecordedAudio={usesRecordedAudio(currentScript)}
-          onVoiceLengthChange={handleVoiceLengthChange}
-          onSpeak={() => handleSpeak(currentScript)}
-          onSpeakBeginnerTip={() => handleSpeakBeginnerTip(currentScript)}
-          onStop={stopSpeaking}
-          isSpeakingPaused={isSpeakingPaused}
-          onPauseSpeaking={onPauseSpeaking}
-          onResumeSpeaking={onResumeSpeaking}
-          onCopy={() => handleCopy(currentScript)}
-          onEditToggle={() =>
-            setEditingId(editingId === currentScript.id ? null : currentScript.id)
-          }
-          onEditChange={(v) => handleEdit(currentScript.id, v)}
-          onEditReset={() => handleEditReset(currentScript.id)}
-        />
-      )}
-
-      {/* タイマー */}
-      <div className="flow-timer">
-        <div className="flow-timer__head">
-          <span className="flow-timer__label">タイマー</span>
-          <span
-            className={`flow-timer__time ${
-              timerRemaining === 0 ? "flow-timer__time--done" : ""
-            } ${timerRunning ? "flow-timer__time--running" : ""}`}
+    <div className="flow-page">
+      <div className="flow-mode-switch" role="group" aria-label="進行方法">
+        {(["auto", "manual"] as const).map((m) => (
+          <button
+            type="button"
+            key={m}
+            aria-pressed={mode === m}
+            onClick={() => changeMode(m)}
           >
-            {formatTime(timerRemaining)}
-          </span>
+            {m === "auto" ? "自動進行" : "個別進行"}
+          </button>
+        ))}
+      </div>
+      <section
+        className={`flow-surface flow-setup${autoOngoing ? " flow-setup--locked" : ""}`}
+        aria-label="開催準備"
+      >
+        <div>
+          <h2>{autoOngoing ? "開催情報" : "開催準備"}</h2>
+          <p>
+            {mode === "auto"
+              ? `標準2時間 · ${voiceMode === "openai" ? "AI音声" : "ずんだもん"}`
+              : "必要な項目を選んで案内"}
+          </p>
         </div>
-
-        <div className="flow-timer__preset">
-          <button
-            type="button"
-            className="flow-timer__btn"
-            onClick={() => startTimer(5 * 60)}
-            disabled={timerRunning}
-          >
-            5分
-          </button>
-          <button
-            type="button"
-            className="flow-timer__btn"
-            onClick={() => startTimer(10 * 60)}
-            disabled={timerRunning}
-          >
-            10分
-          </button>
-
-          <div className="flow-timer__custom">
-            <input
-              type="number"
-              className="flow-timer__input"
-              placeholder="分"
-              value={customMin}
-              onChange={(e) => setCustomMin(e.target.value)}
-              min={1}
-              max={60}
-              inputMode="numeric"
-              aria-label="カスタム分数"
-            />
-            <button
-              type="button"
-              className="flow-timer__btn"
-              onClick={handleCustomStart}
-              disabled={timerRunning || !customMin}
-            >
-              開始
-            </button>
-          </div>
-
-          {timerRunning ? (
-            <button
-              type="button"
-              className="flow-timer__btn flow-timer__btn--warn"
-              onClick={pauseTimer}
-            >
-              一時停止
-            </button>
+        <div className="flow-setup-courts">
+          <span>コート数</span>
+          {autoOngoing ? (
+            <strong>{conditions.courts}面</strong>
           ) : (
-            <button
-              type="button"
-              className="flow-timer__btn"
-              onClick={resetTimer}
-              disabled={timerRemaining === timerSec}
-            >
-              リセット
-            </button>
+            <div className="flow-choice" role="group" aria-label="コート数">
+              {([1, 2] as const).map((courts) => (
+                <button
+                  key={courts}
+                  type="button"
+                  aria-pressed={conditions.courts === courts}
+                  onClick={() => {
+                    stopSpeaking();
+                    setManualCursor(null);
+                    setEditedText(null);
+                    changeConditions({ ...conditions, courts });
+                  }}
+                >
+                  {courts}面
+                </button>
+              ))}
+            </div>
           )}
         </div>
-
-        <p className="flow-timer__hint">
-          タイマー終了時に「次のメニューに移りましょう」と読み上げます。
-        </p>
+      </section>
+      <div hidden={mode !== "auto"}>
+        <AutoFlowPanel
+          ref={autoRef}
+          active={mode === "auto"}
+          conditions={conditions}
+          onConditionsChange={changeConditions}
+          onSpeak={speakAuto}
+          onStopSpeaking={stopSpeaking}
+          onStatusChange={setAutoStatus}
+          chimeEnabled={chimeEnabled}
+          onChimePlayingChange={onChimePlayingChange}
+        />
+      </div>
+      <div hidden={mode !== "manual"} className="flow-manual-workspace">
+        {autoOngoing && (
+          <div className="flow-background-status" role="status">
+            <span>自動進行は一時停止中です。</span>
+            <button
+              type="button"
+              className="flow-text-button"
+              onClick={() => changeMode("auto")}
+            >
+              自動進行に戻る →
+            </button>
+          </div>
+        )}
+        <FlowLiveMode
+          currentScript={current}
+          scriptsForCourt={scripts}
+          totalSteps={TOTAL_STEPS}
+          courts={conditions.courts}
+          isSpeaking={isSpeaking && playbackContext === "step"}
+          isPaused={manualCursor?.id === current.id}
+          onToggle={toggleManual}
+          onStepJump={jump}
+          previewText={editedText ?? current.displayText}
+        />
+        <FlowExtras
+          speakRecorded={speakExtra}
+          stopSpeaking={stopSpeaking}
+          isSpeaking={isSpeaking}
+          isCueSpeaking={isSpeaking && playbackContext === "extras"}
+          active={mode === "manual"}
+        />
+        <details className="flow-surface flow-session-settings">
+          <summary>
+            案内文の調整<span className="flow-summary-meta">個別進行のみ</span>
+          </summary>
+          <label className="flow-edit-label" htmlFor="manual-script">
+            {current.title}
+          </label>
+          <textarea
+            id="manual-script"
+            value={editedText ?? current.displayText}
+            onChange={(event) => {
+              stopSpeaking();
+              setManualCursor(null);
+              setEditedText(event.target.value);
+            }}
+          />
+          <p className="flow-muted">
+            編集文は
+            {voiceMode === "openai"
+              ? "AI音声"
+              : voiceMode === "voicevox"
+                ? "選択中の音声"
+                : "ブラウザの音声"}
+            で再生します。項目を変えると元に戻ります。
+          </p>
+          <button
+            type="button"
+            className="flow-btn"
+            onClick={() => {
+              stopSpeaking();
+              setManualCursor(null);
+              setEditedText(null);
+            }}
+          >
+            元の案内に戻す
+          </button>
+        </details>
       </div>
     </div>
   );
-}
-
-/** localStorage から読んだ conditions を安全な値域にクランプ */
-function sanitizeConditions(
-  raw: Partial<FlowConditions>
-): Partial<FlowConditions> {
-  const out: Partial<FlowConditions> = {};
-  if (typeof raw.participants === "number" && Number.isFinite(raw.participants)) {
-    out.participants = Math.max(0, Math.min(40, Math.floor(raw.participants)));
-  }
-  if (raw.courts === 1 || raw.courts === 2) out.courts = raw.courts;
-  if (
-    raw.durationHours === 1 ||
-    raw.durationHours === 1.5 ||
-    raw.durationHours === 2 ||
-    raw.durationHours === 3
-  ) {
-    out.durationHours = raw.durationHours as FlowDurationHours;
-  }
-  if (typeof raw.newcomerCount === "number" && Number.isFinite(raw.newcomerCount)) {
-    out.newcomerCount = Math.max(0, Math.min(40, Math.floor(raw.newcomerCount)));
-  }
-  if (typeof raw.manyBeginners === "boolean") {
-    out.manyBeginners = raw.manyBeginners;
-  }
-  if (raw.vibe === "casual" || raw.vibe === "standard" || raw.vibe === "serious") {
-    out.vibe = raw.vibe as FlowVibe;
-  }
-  return out;
-}
+});
+export default FlowMode;

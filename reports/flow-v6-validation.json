@@ -1,0 +1,223 @@
+{
+  "auditedAt": "2026-10-01T01:28:20.703Z",
+  "startingSha": "7326d1236dd6feebabe9771e30cdf91da57e68f4",
+  "branch": "codex/standard-two-hour-auto-flow",
+  "implementationSha": "7352b55d87abd22e3a779af87bffcb510af7ed44",
+  "checks": {
+    "flowTests": "PASS",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "diffCheck": "PASS"
+  },
+  "browser": {
+    "passed": 133,
+    "audits": [
+      {
+        "path": "reports/flow-v6-browser-audit.json",
+        "passed": 53,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v6-cancellation-audit.json",
+        "passed": 5,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v6-playback-audit.json",
+        "passed": 9,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v6-ux-audit.json",
+        "passed": 27,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v6-extras-audit.json",
+        "passed": 18,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v6-design-audit.json",
+        "passed": 8,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v6-settings-audit.json",
+        "passed": 13,
+        "errors": []
+      }
+    ],
+    "method": "Actual optimized Next.js app and native Chromium Audio/AudioContext; Date.now acceleration only for long event/timer boundaries. Delayed cancellation/404 cases use controlled network routes; callback regression uses the real React panel in a temporary bundle."
+  },
+  "changes": [
+    "Current menu 26px/700, clock 18px/600, unpadded-hour remaining time; current, next, later hierarchy",
+    "Later menu has a separate heading row and time/menu row; fixed 全体の進行 disclosure label",
+    "Header settings consolidate shared volume, persistent chime ON/OFF, cancellable chime and recorded voice previews, and VOICEVOX attribution",
+    "Manual first listen becomes replay; fixed 全文を見る label and exactly two audio controls",
+    "Timer duration controls visible only before start; pause/resume and reset while active",
+    "開催設定 includes explicit 案内文 label, read-only courts during a session and confirmed end action",
+    "Closed auxiliary settings have weaker backgrounds; whole current card fits initial mobile viewport"
+  ],
+  "audio": {
+    "files": [
+      {
+        "path": "public/audio/flow/extras/q-gather.wav",
+        "sha256": "d6edace7281f85fb17ae4df2beafcad805aed76c36ae2050c57901d94db38c18",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/extras/q-health.wav",
+        "sha256": "32c8d43a9982fec8bbccddaaac7222d9081de30c0cf53d2b561dd1ab8c7ee0f7",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/extras/q-next-menu.wav",
+        "sha256": "c28d9614cf6d339233df29b5557d15eb94f1f6062f2394285c8b7cbd1ba17e1a",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/extras/q-no-strong.wav",
+        "sha256": "7c878190a11c24291c10a738d58334a41071e22841bd558132dfe971d26db0b1",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/extras/q-rotate.wav",
+        "sha256": "23e28fa63b4249b0ab4f5ff5bcc58d178c5304f11fce1c2b651c14a3ccb56e10",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/extras/q-welcome.wav",
+        "sha256": "5571128bff441a6e20617971b1793a37b71fea21827d7a73c6f697cf6a52bf29",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/extras/timer-ended.wav",
+        "sha256": "4bfbb0eff09abf0a05f0651bc01aa6cfe58a391822626e3dcffe2ad471194887",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/00-opening.wav",
+        "sha256": "6cd01aa1a135b25fb41694da92fc807b5e6b2f98f66223e836a1e1ee487f6ed1",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/05-volley.wav",
+        "sha256": "7d54dfa0f9c4f946e6ba625ab14c556166a8aef1ee1c39cfeb014386ab467350",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/10-long-rally.wav",
+        "sha256": "ab15c9add690a8ebcf8874c34a3eb764c9bb28082655ac46f8c3ae29dd323554",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/105-mini-game.wav",
+        "sha256": "083f18d961d6f15f99aa10f8e01cbac3bc3fa21f010f34b278714b3ab4be0785",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/117-closing.wav",
+        "sha256": "dc8533c67812d572f51b51e15131e5d6ba8d8d52c18f45e09dbf626aa7580e57",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/20-cross-rally-double.wav",
+        "sha256": "8eddb7909b301686d751e7723905d8d7b12fbf93d22c51ed9b0863bca8e67931",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/20-cross-rally-single.wav",
+        "sha256": "a388885faf26e8d35f0efe53826efb0a03332de24f47cd9b8f4015fac10b0fa7",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/30-serve-return-double.wav",
+        "sha256": "31d0e072a842f48356bf07634dd0d8b7194a2c3906ec35effb3ecb6b80ac1ce4",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/30-serve-return-single.wav",
+        "sha256": "73618da4732e9f3d0f4424bca2d30d709075470fe4205bb655710c325050de42",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/35-serve-return-switch.wav",
+        "sha256": "c0c281428518e5e176decc7c2df39084dd2317b686119f003ca03ffa762ebc9a",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/40-random-table-double.wav",
+        "sha256": "c5751db9ed726396395ed83442ba0211ed2b6d06d1339f2a0e2eb5eff8f659bc",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/40-random-table-single.wav",
+        "sha256": "76473d637261f840a61d7b8f427a31cad8d4b67ea880c6ee052640f70a21190e",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/43-game-rules.wav",
+        "sha256": "0851d62948b91c60b15079684dc2880ae30a4da549ff2740fcee85b175bdfb5d",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/46-self-intro.wav",
+        "sha256": "c59bb234555182174d0e728252b3f0233459b025385564ca526559b84e298f6b",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/50-game-start.wav",
+        "sha256": "063d3f87f9d87c0f429cd2a196e8cb0e454c4949037702dfad46bfc31c4bdd43",
+        "unchangedMatchesStartingCommit": true
+      },
+      {
+        "path": "public/audio/flow/v2/voice-test.wav",
+        "sha256": "a16542a7fde1d2f3a55de6c562e555fdaa07c34ff5336933ee09ab5f2a8180fe",
+        "unchangedMatchesStartingCommit": true
+      }
+    ],
+    "regeneratedInThisUiUpdate": false,
+    "speaker": "ずんだもん・ノーマル",
+    "styleId": 3,
+    "readingAudit": "reports/flow-extras-audio-audit.json",
+    "readingChecksPassed": 9
+  },
+  "opening": {
+    "path": "public/audio/flow/v2/00-opening.wav",
+    "sha256": "6cd01aa1a135b25fb41694da92fc807b5e6b2f98f66223e836a1e1ee487f6ed1",
+    "source": "lib/flowScripts.json",
+    "formalFirstSentences": "本日はご参加ありがとうございます。まずは近くの方とペアを作って、ショートラリーから始めてください。",
+    "unchangedInThisUiUpdate": true
+  },
+  "baseline": {
+    "sha": "272370b5483096ef3049a919e3c90add231cf363",
+    "observations": "Normal stop/pause/replay/resume continued to allow future events in targeted baseline checks. Permanent mute was not reproduced. The prior callback-dependent activation effect defect was already fixed in a695d5f. The UI still failed to distinguish current audio stop from paused/waiting audio; the new state machine and brief feedback clarify this. This report does not assert the entire temporary baseline audit passed."
+  },
+  "regressions": [
+    "Stop cancels only current WAV/chime/pending cue; future events remain eligible",
+    "Pause freezes clock and countdown; resume does not replay interrupted audio",
+    "Shared cue and settings tests cancel pending auto WAV before replacing audio",
+    "Chime OFF suppresses only automatic bell; recorded WAV and explicit bell preview still work",
+    "Changing chime while running preserves current WAV and applies at future event",
+    "Native recorded, synthesized, cue and timer volume follow shared settings"
+  ],
+  "visualReview": {
+    "before": "reports/flow-v5-design-390.png",
+    "390x844": "Whole current card including この案内の内容 fits initial scroll area; later heading/time row separate; no horizontal overflow or navigation overlap.",
+    "480x920": "Current/next/later, manual, settings and auxiliary tools reviewed with readable sizes and separate bottom navigation.",
+    "example390": "reports/flow-v6-design-390.png",
+    "example480": "reports/flow-v6-design-480.png",
+    "manual390": "reports/flow-v6-design-manual-390.png",
+    "settings390": "reports/flow-v6-settings-390.png",
+    "settings480": "reports/flow-v6-settings-480.png"
+  },
+  "limitations": [
+    "Physical iPhone Safari, Bluetooth speaker, background/lock delivery not tested. Background gaps consume missed events without burst playback."
+  ],
+  "scope": {
+    "mainMerges": 0,
+    "productionChanges": 0,
+    "protectedUntrackedEntriesChangedOrStaged": 0
+  }
+}

@@ -13,7 +13,7 @@ import { FLOW_CAUTIONS } from "@/lib/flowCautions";
 
 type Props = {
   speak: (text: string) => void;
-  voiceMode: "standard" | "voicevox" | "recorded";
+  voiceMode: "standard" | "voicevox" | "recorded" | "openai";
 };
 
 export default function FlowCautionPanel({ speak, voiceMode }: Props) {

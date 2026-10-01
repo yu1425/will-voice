@@ -1,0 +1,239 @@
+{
+  "auditedAt": "2026-10-01T00:38:34.184Z",
+  "base": "http://127.0.0.1:3002",
+  "checks": [
+    {
+      "name": "390 current/next/later hierarchy, frozen countdown and all primary/audio controls above fold",
+      "pass": true,
+      "evidence": {
+        "switch": {
+          "top": 85,
+          "bottom": 137,
+          "width": 366,
+          "height": 52
+        },
+        "gear": {
+          "top": 12,
+          "bottom": 56,
+          "width": 44,
+          "height": 44
+        },
+        "title": {
+          "top": 207,
+          "bottom": 241.796875,
+          "width": 334,
+          "height": 34.796875
+        },
+        "clock": {
+          "top": 253.796875,
+          "bottom": 282.59375,
+          "width": 334,
+          "height": 28.796875
+        },
+        "bar": {
+          "top": 294.59375,
+          "bottom": 300.59375,
+          "width": 334,
+          "height": 6
+        },
+        "next": "次のメニュー\nあと 5:25\n00:20\nクロスラリー",
+        "later": {
+          "top": 427.578125,
+          "bottom": 466.375,
+          "width": 334,
+          "height": 38.796875
+        },
+        "primary": {
+          "top": 482.375,
+          "bottom": 530.375,
+          "width": 334,
+          "height": 48
+        },
+        "audio": {
+          "top": 542.375,
+          "bottom": 615.171875,
+          "width": 334,
+          "height": 72.796875
+        },
+        "timeline": {
+          "top": 736.15625,
+          "bottom": 782.546875,
+          "width": 366,
+          "height": 46.390625
+        },
+        "extras": {
+          "top": 796.546875,
+          "bottom": 874.9375,
+          "width": 366,
+          "height": 78.390625
+        },
+        "settings": {
+          "top": 888.9375,
+          "bottom": 967.328125,
+          "width": 366,
+          "height": 78.390625
+        },
+        "nav": {
+          "top": 775,
+          "bottom": 844,
+          "width": 390,
+          "height": 69
+        },
+        "titleStyle": {
+          "fontSize": "24px",
+          "background": "rgba(0, 0, 0, 0)",
+          "radius": "0px"
+        },
+        "nextStyle": {
+          "fontSize": "16px",
+          "background": "rgb(243, 245, 248)",
+          "radius": "10px"
+        },
+        "primaryStyle": {
+          "fontSize": "14px",
+          "background": "rgb(69, 90, 115)",
+          "radius": "9px"
+        },
+        "audioStyle": {
+          "fontSize": "13px",
+          "background": "rgb(255, 255, 255)",
+          "radius": "9px"
+        },
+        "documentWidth": 390,
+        "screenshot": "reports/flow-v5-design-390.png"
+      }
+    },
+    {
+      "name": "390 readonly court row and end confirmation cancel preserve the paused session",
+      "pass": true
+    },
+    {
+      "name": "390 stop feedback expires, status returns to waiting, stop stays visible disabled",
+      "pass": true
+    },
+    {
+      "name": "390 manual STEP 03, truncated preview and matching audio controls",
+      "pass": true,
+      "evidence": {
+        "screenshot": "reports/flow-v5-design-manual-390.png"
+      }
+    },
+    {
+      "name": "480 current/next/later hierarchy, frozen countdown and all primary/audio controls above fold",
+      "pass": true,
+      "evidence": {
+        "switch": {
+          "top": 89,
+          "bottom": 141,
+          "width": 448,
+          "height": 52
+        },
+        "gear": {
+          "top": 12,
+          "bottom": 56,
+          "width": 44,
+          "height": 44
+        },
+        "title": {
+          "top": 215,
+          "bottom": 249.796875,
+          "width": 408,
+          "height": 34.796875
+        },
+        "clock": {
+          "top": 261.796875,
+          "bottom": 290.59375,
+          "width": 408,
+          "height": 28.796875
+        },
+        "bar": {
+          "top": 302.59375,
+          "bottom": 308.59375,
+          "width": 408,
+          "height": 6
+        },
+        "next": "次のメニュー\nあと 5:25\n00:20\nクロスラリー",
+        "later": {
+          "top": 435.578125,
+          "bottom": 474.375,
+          "width": 408,
+          "height": 38.796875
+        },
+        "primary": {
+          "top": 490.375,
+          "bottom": 538.375,
+          "width": 408,
+          "height": 48
+        },
+        "audio": {
+          "top": 550.375,
+          "bottom": 623.171875,
+          "width": 408,
+          "height": 72.796875
+        },
+        "timeline": {
+          "top": 748.15625,
+          "bottom": 794.546875,
+          "width": 448,
+          "height": 46.390625
+        },
+        "extras": {
+          "top": 808.546875,
+          "bottom": 894.9375,
+          "width": 448,
+          "height": 86.390625
+        },
+        "settings": {
+          "top": 908.9375,
+          "bottom": 971.328125,
+          "width": 448,
+          "height": 62.390625
+        },
+        "nav": {
+          "top": 851,
+          "bottom": 920,
+          "width": 480,
+          "height": 69
+        },
+        "titleStyle": {
+          "fontSize": "24px",
+          "background": "rgba(0, 0, 0, 0)",
+          "radius": "0px"
+        },
+        "nextStyle": {
+          "fontSize": "16px",
+          "background": "rgb(243, 245, 248)",
+          "radius": "10px"
+        },
+        "primaryStyle": {
+          "fontSize": "14px",
+          "background": "rgb(69, 90, 115)",
+          "radius": "9px"
+        },
+        "audioStyle": {
+          "fontSize": "13px",
+          "background": "rgb(255, 255, 255)",
+          "radius": "9px"
+        },
+        "documentWidth": 480,
+        "screenshot": "reports/flow-v5-design-480.png"
+      }
+    },
+    {
+      "name": "480 readonly court row and end confirmation cancel preserve the paused session",
+      "pass": true
+    },
+    {
+      "name": "480 stop feedback expires, status returns to waiting, stop stays visible disabled",
+      "pass": true
+    },
+    {
+      "name": "480 manual STEP 03, truncated preview and matching audio controls",
+      "pass": true,
+      "evidence": {
+        "screenshot": "reports/flow-v5-design-manual-480.png"
+      }
+    }
+  ],
+  "errors": []
+}

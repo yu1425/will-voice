@@ -1,21 +1,21 @@
 /* ============================================================
    うぃる AIボイス - グローバルスタイル
-   やさしい / 親しみやすい / テニスサークルらしい配色。
-   LINEのトーク画面に近い見やすさを意識しています。
+   スマホで使う、落ち着いたスレートと白の配色。
+   進行・使い方・チャットの共通スタイル。
    ============================================================ */
 
 :root {
-  /* テニスコートのグリーンをベースにした、やさしい配色 */
-  --will-green: #5fae6e;
-  --will-green-dark: #4e9a5d;
-  --will-green-soft: #e8f3ea;
-  --user-bubble: #a8e063;
-  --user-bubble-text: #243b26;
-  --bg: #eef3ef;
+  /* 旧チャット用の変数名も共通のスレート配色へ揃える */
+  --will-green: #44546a;
+  --will-green-dark: #344257;
+  --will-green-soft: #eef1f5;
+  --user-bubble: #eef1f5;
+  --user-bubble-text: #202326;
+  --bg: #f7f7f5;
   --bubble-bg: #ffffff;
-  --text: #2d332e;
-  --text-soft: #7a857c;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --text: #202326;
+  --text-soft: #71767c;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 * {
@@ -32,7 +32,8 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Hiragino Sans",
     "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
@@ -58,14 +59,16 @@ body {
    ------------------------------------------------------------ */
 .header {
   flex: 0 0 auto;
-  background: var(--will-green);
-  color: #fff;
-  padding: 14px 16px;
+  background: #fff;
+  color: var(--text);
+  border-bottom: 1px solid #e2e4e3;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  z-index: 2;
+  box-shadow: none;
+  position: relative;
+  z-index: 20;
 }
 
 .header__avatar {
@@ -84,6 +87,8 @@ body {
 }
 
 .header__titles {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   line-height: 1.25;
@@ -91,11 +96,16 @@ body {
 
 .settings-toggle {
   margin-left: auto;
-  padding: 5px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  padding: 0;
+  width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  background: #fff;
+  color: var(--text);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
@@ -103,7 +113,7 @@ body {
 }
 
 .settings-toggle:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: #eef1f5;
 }
 
 .settings-panel {
@@ -112,7 +122,7 @@ body {
   flex-direction: column;
   gap: 10px;
   padding: 12px 14px;
-  background: #f6faf7;
+  background: #fff;
   border-bottom: 1px solid #d7e3d9;
 }
 
@@ -148,6 +158,88 @@ body {
   accent-color: var(--will-green);
 }
 
+.app--flow .settings-panel {
+  position: absolute;
+  top: 76px;
+  left: 12px;
+  right: 12px;
+  z-index: 40;
+  max-height: calc(100dvh - 92px);
+  border: 1px solid #e3e6ea;
+  border-radius: 16px;
+  box-shadow: 0 14px 36px #23334a24;
+  overflow-y: auto;
+  padding: 16px 20px;
+  gap: 18px;
+  border-color: #e3e6ea;
+}
+.settings-panel__heading,
+.settings-panel__section h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.settings-panel__heading {
+  font-size: 16px;
+}
+.settings-panel__volume,
+.settings-panel__section {
+  display: grid;
+  gap: 8px;
+}
+.settings-panel__volume > label,
+.settings-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.settings-panel .flow-muted,
+.settings-panel__about p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+.settings-panel__switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.settings-panel__switch input {
+  appearance: none;
+  position: relative;
+  width: 36px;
+  height: 22px;
+  margin: 0;
+  border-radius: 999px;
+  background: #d7dbe1;
+  cursor: pointer;
+}
+.settings-panel__switch input::before {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 3px;
+  left: 3px;
+  border-radius: 50%;
+  background: #fff;
+}
+.settings-panel__switch input:checked {
+  background: #455a73;
+}
+.settings-panel__switch input:checked::before {
+  transform: translateX(14px);
+}
+.settings-panel__switch input:focus-visible {
+  outline: 2px solid #455a73;
+  outline-offset: 3px;
+}
+
 .header__title {
   font-size: 17px;
   font-weight: 700;
@@ -155,7 +247,7 @@ body {
 
 .header__subtitle {
   font-size: 12px;
-  opacity: 0.9;
+  color: var(--text-soft);
 }
 
 /* ------------------------------------------------------------
@@ -377,7 +469,10 @@ body {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 3px 8px rgba(95, 174, 110, 0.4);
-  transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.1s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -456,7 +551,9 @@ body {
   color: var(--text);
   outline: none;
   font-family: inherit;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .chat-input:focus {
@@ -555,7 +652,10 @@ body {
   color: var(--text);
   font-size: 12px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   display: inline-flex;
   align-items: center;
@@ -711,1107 +811,6 @@ body {
 }
 
 /* ------------------------------------------------------------
-   進行モード
-   ------------------------------------------------------------ */
-.flow-scroll {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
-}
-
-.flow-scroll::-webkit-scrollbar {
-  width: 5px;
-}
-
-.flow-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 4px;
-}
-
-.flow-mode {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 12px 18px;
-}
-
-.flow-mode--live {
-  gap: 14px;
-  padding: 10px 10px 18px;
-  min-height: 100%;
-}
-
-/* ---- 表示モード切替 (準備 / 当日) ---- */
-.flow-viewmode {
-  display: flex;
-  gap: 6px;
-  padding: 4px;
-  background: var(--will-green-soft);
-  border-radius: 12px;
-}
-
-.flow-viewmode__btn {
-  flex: 1 1 0;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--will-green-dark);
-  font-size: 13.5px;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-viewmode__btn--active {
-  background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* ---- 当日モード ----
-   進行画面全体は外側の .flow-scroll だけでスクロールさせる。
-   内側にもスクロール領域を作ると、長い台本でタイマーや注意喚起の高さが
-   なくなるため、主要操作から補助操作まで自然に縦へ並べる。 */
-.flow-live {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 100%;
-}
-
-.flow-live__top {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.flow-live__scroll {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.flow-live__hero {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  background: linear-gradient(135deg, #4e9a5d 0%, #5fae6e 100%);
-  color: #fff;
-  border-radius: 16px;
-  padding: 14px 16px 16px;
-  box-shadow: 0 3px 8px rgba(78, 154, 93, 0.35);
-}
-
-.flow-live__step-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-}
-
-.flow-live__title {
-  margin: 4px 0 0;
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1.25;
-  color: #ffffff;
-}
-
-.flow-live__next-hint {
-  margin: 6px 0 0;
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.flow-live__next-label {
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.flow-live__next-preview {
-  margin: 2px 0 0;
-  font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.78);
-}
-
-.flow-live__preview {
-  background: #ffffff;
-  border: 1px solid #d8e1da;
-  border-radius: 12px;
-  padding: 12px 14px;
-  font-size: 14.5px;
-  line-height: 1.65;
-  color: var(--text);
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-height: 35vh;
-  overflow-y: auto;
-}
-
-.flow-live__recorded-label {
-  display: block;
-  width: fit-content;
-  margin-bottom: 7px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--will-green-soft);
-  color: var(--will-green-dark);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.5;
-}
-
-/* メイン読み上げボタン(大): 現在STEPのすぐ下で最優先に表示する。 */
-.flow-live__main {
-  display: flex;
-}
-
-.flow-live__speaking-actions {
-  display: flex;
-  width: 100%;
-  gap: 8px;
-}
-
-.flow-live__big {
-  flex: 1 1 100%;
-  padding: 18px 16px;
-  border: none;
-  border-radius: 16px;
-  font-size: 19px;
-  font-weight: 800;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  letter-spacing: 0.02em;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-}
-
-.flow-live__big--primary {
-  background: var(--will-green);
-  color: #ffffff;
-}
-
-.flow-live__big--primary:active {
-  transform: scale(0.98);
-}
-
-.flow-live__big--stop {
-  background: #e74c3c;
-  color: #ffffff;
-}
-
-.flow-live__big--pause {
-  flex: 1 1 auto;
-  background: #f2b84b;
-  color: #4b3811;
-}
-
-.flow-live__big--pause:active,
-.flow-live__stop-btn:active {
-  transform: scale(0.98);
-}
-
-.flow-live__stop-btn {
-  flex: 0 0 auto;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 12px;
-  background: #e74c3c;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* 次へ(大) / 戻る(小) */
-.flow-live__nav {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-}
-
-.flow-live__next-btn {
-  width: 100%;
-  padding: 14px 14px;
-  border: none;
-  border-radius: 14px;
-  background: #ffffff;
-  color: var(--will-green-dark);
-  border: 2px solid var(--will-green);
-  font-size: 16px;
-  font-weight: 800;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.flow-live__next-btn:disabled {
-  color: #b9c6bc;
-  border-color: #d8e1da;
-  background: #f4f6f4;
-  cursor: not-allowed;
-}
-
-.flow-live__next-sub {
-  font-size: 12px;
-  color: var(--text-soft);
-  font-weight: 600;
-}
-
-.flow-live__back-btn {
-  padding: 6px 14px;
-  background: transparent;
-  border: none;
-  color: var(--text-soft);
-  font-size: 12.5px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-live__back-btn:disabled {
-  color: #c8d2cb;
-  cursor: not-allowed;
-}
-
-.flow-live__steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
-  gap: 6px;
-}
-
-/* タイマー(コンパクト) */
-.flow-live__timer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  background: #ffffff;
-  border: 1px solid #d8e1da;
-  border-radius: 12px;
-  padding: 10px 14px;
-}
-
-.flow-live__timer-time {
-  font-variant-numeric: tabular-nums;
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: 0.02em;
-}
-
-.flow-live__timer-time--running {
-  color: var(--will-green-dark);
-}
-
-.flow-live__timer-time--done {
-  color: #c0392b;
-}
-
-.flow-live__timer-btns {
-  margin-left: auto;
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.flow-live__timer-btn {
-  padding: 8px 12px;
-  border: 1px solid #cfd9d2;
-  border-radius: 999px;
-  background: #ffffff;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-live__timer-btn:disabled {
-  color: #b9c6bc;
-  background: #f4f6f4;
-  cursor: not-allowed;
-}
-
-.flow-live__timer-btn--warn {
-  background: #fff6e5;
-  border-color: #f0d79a;
-  color: #8a6d1f;
-}
-
-/* クイック注意喚起 */
-.flow-live__quick {
-  background: #ffffff;
-  border: 1px solid #f0d79a;
-  border-radius: 14px;
-  padding: 10px 12px;
-}
-
-.flow-live__quick-head {
-  font-size: 13px;
-  font-weight: 700;
-  color: #8a6d1f;
-  margin-bottom: 8px;
-}
-
-.flow-live__quick-note {
-  margin-left: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-soft);
-}
-
-.flow-live__quick-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 6px;
-}
-
-.flow-live__quick-btn {
-  padding: 12px 10px;
-  border: 1px solid #f0d79a;
-  border-radius: 12px;
-  background: #fffaf0;
-  color: #8a6d1f;
-  font-size: 13.5px;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-  line-height: 1.4;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-live__quick-btn:active {
-  background: #fff6e5;
-}
-
-/* 音声テスト */
-.flow-live__test-btn {
-  align-self: center;
-  padding: 10px 18px;
-  border: 1px solid #cfd9d2;
-  border-radius: 999px;
-  background: #ffffff;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-live__test-btn:hover {
-  background: var(--will-green-soft);
-}
-
-/* ---- 進行プラン パネル ---- */
-.plan-panel {
-  background: #fff;
-  border: 1px solid #e2e8e4;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.plan-panel__toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  background: var(--will-green-soft);
-  border: none;
-  color: var(--will-green-dark);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.plan-panel__chev {
-  font-size: 12px;
-  margin-left: 8px;
-}
-
-.plan-panel__body {
-  padding: 12px 14px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.plan-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.plan-form__row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.plan-form__label {
-  flex: 0 0 auto;
-  font-size: 12.5px;
-  color: var(--text);
-  font-weight: 600;
-  min-width: 84px;
-}
-
-.plan-form__input {
-  width: 78px;
-  padding: 6px 10px;
-  border: 1px solid #cfd9d2;
-  border-radius: 8px;
-  font-size: 13.5px;
-  background: #fff;
-  color: var(--text);
-}
-
-.plan-form__choices {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.plan-form__hint {
-  flex: 1 1 100%;
-  font-size: 11px;
-  color: var(--text-soft);
-}
-
-.plan-form__chip {
-  padding: 5px 12px;
-  border: 1px solid #cfd9d2;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.plan-form__chip:hover {
-  background: var(--will-green-soft);
-}
-
-.plan-form__chip--active {
-  background: var(--will-green);
-  border-color: var(--will-green);
-  color: #fff;
-}
-
-.plan-form__check {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text);
-  cursor: pointer;
-  padding: 4px 0;
-}
-
-.plan-form__check input {
-  width: 16px;
-  height: 16px;
-}
-
-.plan-result {
-  border-top: 1px dashed #d8e1da;
-  padding-top: 10px;
-}
-
-.plan-result__head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.plan-result__title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.plan-result__copy {
-  margin-left: auto;
-  padding: 5px 10px;
-  border: 1px solid #cfd9d2;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--text);
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.plan-result__copy:hover {
-  background: var(--will-green-soft);
-}
-
-.plan-result__list {
-  margin: 0;
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.plan-result__item {
-  font-size: 13px;
-  color: var(--text);
-  line-height: 1.6;
-}
-
-.plan-result__time {
-  font-variant-numeric: tabular-nums;
-  color: var(--will-green-dark);
-  font-weight: 700;
-  margin-right: 6px;
-}
-
-.plan-result__label {
-  color: var(--text);
-}
-
-.plan-result__hint {
-  margin: 8px 0 0;
-  font-size: 11px;
-  color: var(--text-soft);
-}
-
-/* ---- 注意喚起 パネル ---- */
-.caution-panel {
-  background: #fff;
-  border: 1px solid #e2e8e4;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.caution-panel__toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  background: #fff6e5;
-  border: none;
-  color: #8a6d1f;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.caution-panel__chev {
-  font-size: 12px;
-}
-
-.caution-panel__body {
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.caution-panel__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 6px;
-}
-
-.caution-panel__btn {
-  padding: 8px 10px;
-  border: 1px solid #f0d79a;
-  border-radius: 10px;
-  background: #fff;
-  color: #8a6d1f;
-  font-size: 12.5px;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.caution-panel__btn:hover {
-  background: #fff6e5;
-}
-
-.caution-panel__hint {
-  margin: 0;
-  font-size: 11px;
-  color: var(--text-soft);
-}
-
-/* ---- 読み上げの長さ切替 (カード内) ---- */
-.flow-card__length {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  font-size: 12px;
-  color: var(--text-soft);
-}
-
-.flow-card__length-label {
-  flex: 0 0 auto;
-}
-
-.flow-card__length-btn {
-  padding: 3px 10px;
-  border: 1px solid #cfd9d2;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--text);
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-card__length-btn:hover {
-  background: var(--will-green-soft);
-}
-
-.flow-card__length-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.flow-card__length-btn--active {
-  background: var(--will-green);
-  border-color: var(--will-green);
-  color: #fff;
-}
-
-/* 初心者向け補足ボタン */
-.flow-card__btn--tip {
-  background: #fff6e5;
-  border-color: #f0d79a;
-  color: #8a6d1f;
-}
-
-.flow-card__btn--tip:hover {
-  background: #fceec3;
-}
-
-/* 前へ/次へ */
-.flow-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  background: #fff;
-  border: 1px solid #e2e8e4;
-  border-radius: 12px;
-  padding: 8px 10px;
-}
-
-.flow-nav__btn {
-  padding: 6px 12px;
-  border: 1px solid var(--will-green);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--will-green-dark);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-nav__btn:hover:not(:disabled) {
-  background: var(--will-green-soft);
-}
-
-.flow-nav__btn:disabled {
-  border-color: #d8e1da;
-  color: #b9c6bc;
-  cursor: not-allowed;
-}
-
-.flow-nav__current {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-/* ステップ一覧チップ */
-.flow-steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
-  gap: 6px;
-}
-
-.flow-step-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  border: 1px solid #d8e1da;
-  border-radius: 10px;
-  background: #fff;
-  color: var(--text);
-  font-size: 12px;
-  text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-step-chip:not(.flow-step-chip--active):hover {
-  background: var(--will-green-soft);
-}
-
-.flow-step-chip--active {
-  background: var(--will-green-soft);
-  border-color: var(--will-green);
-  color: var(--will-green-dark);
-}
-
-.flow-step-chip__num {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.08);
-  color: inherit;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.flow-step-chip--active .flow-step-chip__num {
-  background: rgba(95, 174, 110, 0.18);
-  color: var(--will-green-dark);
-}
-
-.flow-step-chip__label {
-  flex: 1 1 auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 現ステップカード */
-.flow-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: #fff;
-  border: 1px solid #e2e8e4;
-  border-radius: 14px;
-  padding: 14px 14px 12px;
-  box-shadow: var(--shadow);
-}
-
-.flow-card__head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.flow-card__step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--will-green-soft);
-  color: var(--will-green-dark);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.flow-card__title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.flow-card__audio-tag {
-  font-size: 10.5px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: #e8f5e9;
-  color: #2e7d32;
-  border: 1px solid #a5d6a7;
-}
-
-.flow-card__edited-tag {
-  font-size: 10.5px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: #fff6e5;
-  color: #8a6d1f;
-  border: 1px solid #f0d79a;
-}
-
-.flow-card__body {
-  font-size: 14.5px;
-  line-height: 1.7;
-  color: var(--text);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.flow-card__edit {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #cfd9d2;
-  border-radius: 10px;
-  background: #f9fbf9;
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.6;
-  font-family: inherit;
-  resize: vertical;
-}
-
-.flow-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.flow-card__btn {
-  padding: 7px 14px;
-  border: 1px solid #cfd9d2;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-card__btn:hover {
-  background: var(--will-green-soft);
-}
-
-.flow-card__btn--primary {
-  background: var(--will-green);
-  border-color: var(--will-green);
-  color: #fff;
-}
-
-.flow-card__btn--primary:hover {
-  background: var(--will-green-dark);
-}
-
-.flow-card__btn--stop {
-  background: #e74c3c;
-  border-color: #e74c3c;
-  color: #fff;
-}
-
-.flow-card__btn--stop:hover {
-  background: #c0392b;
-}
-
-.flow-card__btn--pause {
-  background: #f2b84b;
-  border-color: #f2b84b;
-  color: #4b3811;
-}
-
-.flow-card__btn--pause:hover {
-  background: #e8aa38;
-}
-
-.flow-card__btn--ghost {
-  background: transparent;
-  border-color: #d8e1da;
-  color: var(--text-soft);
-}
-
-.flow-card__hint {
-  margin: 0;
-  font-size: 11px;
-  color: var(--text-soft);
-}
-
-/* 読み上げ確認(折りたたみ) */
-.flow-card__inspect {
-  border: 1px dashed #cdd8d1;
-  border-radius: 10px;
-  background: #f8faf9;
-  padding: 6px 10px;
-}
-
-.flow-card__inspect-summary {
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-soft);
-  list-style: revert;
-  user-select: none;
-}
-
-.flow-card__inspect-summary:hover {
-  color: #2f3e36;
-}
-
-.flow-card__inspect-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.flow-card__inspect-block {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.flow-card__inspect-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-soft);
-}
-
-.flow-card__inspect-text {
-  margin: 0;
-  padding: 6px 8px;
-  font-size: 11px;
-  line-height: 1.5;
-  color: #2f3e36;
-  background: #fff;
-  border: 1px solid #e2e8e4;
-  border-radius: 8px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  font-family: inherit;
-}
-
-.flow-card__inspect-text--final {
-  background: #eef6f0;
-  border-color: #bfe0cb;
-}
-
-/* タイマー */
-.flow-timer {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  background: #fff;
-  border: 1px solid #e2e8e4;
-  border-radius: 14px;
-  padding: 12px 14px;
-}
-
-.flow-timer__head {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.flow-timer__label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.flow-timer__time {
-  margin-left: auto;
-  font-variant-numeric: tabular-nums;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.flow-timer__time--running {
-  color: var(--will-green-dark);
-}
-
-.flow-timer__time--done {
-  color: #c0392b;
-}
-
-.flow-timer__preset {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-.flow-timer__btn {
-  padding: 6px 12px;
-  border: 1px solid #cfd9d2;
-  border-radius: 999px;
-  background: #fff;
-  color: var(--text);
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.flow-timer__btn:hover:not(:disabled) {
-  background: var(--will-green-soft);
-}
-
-.flow-timer__btn:disabled {
-  color: #b9c6bc;
-  background: #f4f6f4;
-  cursor: not-allowed;
-}
-
-.flow-timer__btn--warn {
-  background: #fff6e5;
-  border-color: #f0d79a;
-  color: #8a6d1f;
-}
-
-.flow-timer__custom {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.flow-timer__input {
-  width: 56px;
-  padding: 5px 8px;
-  border: 1px solid #cfd9d2;
-  border-radius: 8px;
-  background: #fff;
-  color: var(--text);
-  font-size: 13px;
-}
-
-.flow-timer__hint {
-  margin: 0;
-  font-size: 11px;
-  color: var(--text-soft);
-}
-
-.footer--slim {
-  padding: 6px 16px calc(10px + env(safe-area-inset-bottom));
-}
-
-/* ------------------------------------------------------------
    非対応ブラウザ向けの注意
    ------------------------------------------------------------ */
 .notice {
@@ -1858,7 +857,10 @@ body {
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .voicevox-tuning__preset-btn:hover {
@@ -1892,4 +894,10 @@ body {
 .voicevox-tuning__test-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+.header__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }

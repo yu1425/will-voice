@@ -1,3 +1,4 @@
+import { FLOW_RECORDED_CUES } from "./flowCues";
 /**
  * やさしい注意喚起セリフ集
  * ============================================================
@@ -26,43 +27,9 @@ export const VOICE_TEST_TEXT =
  * 当日モード用の「クイック注意喚起」。
  * 通常の注意喚起より、当日のコート上で即使えるよう短めにしています。
  */
-export const FLOW_QUICK_CAUTIONS: FlowCaution[] = [
-  {
-    id: "q-rotate",
-    label: "交代お願いします",
-    voiceText:
-      "皆さん、交代をお願いします。待っている方が長くなりすぎないように、短めに交代していきましょう。",
-  },
-  {
-    id: "q-no-strong",
-    label: "強打は控えめに",
-    voiceText:
-      "皆さん、無理な強打は控えめに、相手が返しやすいボールでラリーをつないでいきましょう。",
-  },
-  {
-    id: "q-health",
-    label: "体調無理しないで",
-    voiceText:
-      "皆さん、暑い日や、体調が優れないときは、無理せず、休憩や水分補給をしてくださいね。",
-  },
-  {
-    id: "q-welcome",
-    label: "初参加の方にも声かけ",
-    voiceText:
-      "皆さん、初参加の方が緊張しないように、近くの方からお名前を呼んだり、声をかけていただけると嬉しいです。",
-  },
-  {
-    id: "q-next-menu",
-    label: "次のメニューに移ります",
-    voiceText: "皆さん、お疲れ様でした。次のメニューに移ります。",
-  },
-  {
-    id: "q-gather",
-    label: "集合お願いします",
-    voiceText:
-      "皆さん、すみません、少しだけ集合をお願いします。",
-  },
-];
+export const FLOW_QUICK_CAUTIONS = FLOW_RECORDED_CUES.filter(
+  (cue) => cue.id !== "timer-ended",
+);
 
 export const FLOW_CAUTIONS: FlowCaution[] = [
   {

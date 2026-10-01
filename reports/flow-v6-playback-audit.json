@@ -1,0 +1,115 @@
+{
+  "auditedAt": "2026-10-01T01:22:27.062Z",
+  "base": "http://127.0.0.1:3002",
+  "checks": [
+    {
+      "name": "CASE 1: manual stop preserves clock and next natural chime/WAV",
+      "pass": true,
+      "evidence": {
+        "chimes": [
+          6495.299999999814,
+          6495.299999999814,
+          6495.299999999814,
+          6495.299999999814,
+          6495.4000000003725,
+          6495.5,
+          6495.5,
+          6495.5,
+          6495.5
+        ],
+        "plays": [
+          {
+            "src": "http://127.0.0.1:3002/audio/flow/v2/00-opening.wav",
+            "volume": 0.3,
+            "at": 503.6000000005588
+          },
+          {
+            "src": "http://127.0.0.1:3002/audio/flow/v2/05-volley.wav",
+            "volume": 0.3,
+            "at": 10057.299999999814
+          }
+        ],
+        "session": {
+          "version": 3,
+          "status": "running",
+          "startedAt": 1790817694739,
+          "pausedAt": null,
+          "accumulatedPausedMs": 0,
+          "firedEventIds": [
+            "opening",
+            "volley"
+          ],
+          "courts": 1
+        }
+      }
+    },
+    {
+      "name": "CASE 2: pause freezes all progress for 10 seconds; resume starts only clock",
+      "pass": true,
+      "evidence": [
+        "00:05:04 / 02:00:00",
+        "4%完了\n残り 1:54:56",
+        "次のメニュー\nあと 4:56\n00:10\nロングラリー"
+      ]
+    },
+    {
+      "name": "CASE 3: stop and replay starts current WAV from beginning at volume 0.3",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/v2/05-volley.wav",
+        "volume": 0.3,
+        "currentTime": 0
+      }
+    },
+    {
+      "name": "paused clock permits explicit replay without resuming progress",
+      "pass": true
+    },
+    {
+      "name": "CASE 2: manual stop → pause → replay → stop → resume permits future chime/WAV",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/v2/10-long-rally.wav",
+        "volume": 0.3,
+        "currentTime": 0
+      }
+    },
+    {
+      "name": "CASE 4: seek after stop plays the new event at volume 0.3",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/v2/20-cross-rally-single.wav",
+        "volume": 0.3,
+        "currentTime": 0.000106
+      }
+    },
+    {
+      "name": "stop cancels pending chime/WAV, but the following natural event still plays",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/v2/43-game-rules.wav",
+        "volume": 0.3,
+        "currentTime": 0
+      }
+    },
+    {
+      "name": "callback replacement after current stop cannot silently consume the future event",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/v2/05-volley.wav",
+        "volume": 0.3,
+        "currentTime": 0,
+        "fired": [
+          "opening",
+          "volley"
+        ]
+      }
+    },
+    {
+      "name": "zero SpeechSynthesis fallback and zero runtime errors",
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "method": "Real Chromium with default autoplay policy, real WAV and AudioContext; Date.now offsets only for multi-minute boundaries; actual React panel fixture tests callback replacement independently of app settings"
+}

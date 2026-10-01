@@ -1,0 +1,93 @@
+{
+  "auditedAt": "2026-09-30T14:16:16.861791+00:00",
+  "startingHead": "8be99328e3cd038094c9fa254efbeecd0e9f0a1d",
+  "startingPreview": {
+    "url": "https://will-voice-dc4c3f4u5-yu1425dx-5422s-projects.vercel.app/flow",
+    "state": "READY",
+    "commit": "8be99328e3cd038094c9fa254efbeecd0e9f0a1d"
+  },
+  "sourceSha256": {
+    "README.md": "9c8ceb1e7e6194af15289ca7d01638895b1431ca74bbbffddcf944bbb139c214",
+    "app/flow.css": "86130d39c235a4fc6036021d33f5b57ba8fe6b2d6af276b913cd099a4bf6481d",
+    "app/guide/page.tsx": "d60aacb180835ca7b0aab4ef8e1d78d32666ccbf73bc4e3dfc732f79176f3ca3",
+    "components/AutoFlowPanel.tsx": "ade3121f4398774121577ec37dbbb92bee334800c94c39d9b6d914fa449f3bfa",
+    "components/FlowLiveMode.tsx": "83816c8df4a8a78069ac7247e0e39af12abda32fabf63f148e453fef9a823418",
+    "components/FlowMode.tsx": "e6a9256c36e3f1a908d25915dac0ccabf43dca1f3813b8e2761089c64497bc70",
+    "components/WillVoiceApp.tsx": "b3baa9f3a83f41030b0707969ed2fc621784b3720683cf3b8e2d353eba1a7982",
+    "lib/recordedAudio.ts": "3a94d6e8d02672105853db2f5c697f132b01d50946bbbd6e84e7a28272a63b59",
+    "lib/speech.ts": "40766c41d2351840375191f1e0a3a311875d06f0522ff05440482864099a5bd9",
+    "lib/transitionCue.ts": "13136401950b5a213e053f3b1f5e8f73ea7a9e10785047c48d65c211bacc790d",
+    "lib/voicevox.ts": "27d519373a1193882476218e0cc72891e5e8a509eb65ddaaae39bd5fed94bd66",
+    "scripts/audit-flow-browser.mjs": "ce3bc8f8551a29db9d598d72a6e6c695e56c650630ece54d5bbfaf693c0d4b02",
+    "scripts/audit-flow-cancellation.mjs": "f8bd42ad317af178672021af2bf6035903689ac952a2186fecfc359e3c8e7acf",
+    "lib/audioVolume.ts": "69d809c56aa0d290f5f447e8abd6eced558b69b5220320c08e1a7ed51f040eb2",
+    "scripts/audit-flow-ux.mjs": "72cb6d3fcdb8afa06afbab1609425b6fde117909ab30a2114728a8cc64bc841d"
+  },
+  "checks": {
+    "browser": 53,
+    "cancellation": 5,
+    "ux": 27
+  },
+  "totalBrowserChecks": 85,
+  "requiredChecks": {
+    "node scripts/test-flow.mjs": "PASS",
+    "npx tsc --noEmit": "PASS",
+    "npm run build": "PASS",
+    "git diff --check": "PASS"
+  },
+  "volumeRootCause": [
+    "Existing slider only changed React state and localStorage; active HTMLAudioElement was never updated",
+    "Changing recordedVolume recreated speak/onSpeak/announce/advance callbacks and restarted timer effects",
+    "Live VOICEVOX and SpeechSynthesis did not use the recording volume"
+  ],
+  "volumeFix": [
+    "Single common 0–100% slider with previous storage key retained",
+    "Current recording and live VOICEVOX audio.volume updated immediately without cancel or replacement",
+    "Latest shared volume read at new playback, including pending synthesis",
+    "Chime master GainNode uses the same volume",
+    "SpeechSynthesisUtterance.volume uses the same value for next playback; UI explains timing"
+  ],
+  "visualAudit": {
+    "viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        480,
+        920
+      ]
+    ],
+    "states": [
+      "idle",
+      "running",
+      "paused",
+      "playing",
+      "stopped",
+      "timeline",
+      "manual",
+      "volume",
+      "guide"
+    ],
+    "result": "PASS: no horizontal overflow or navigation overlap; current, next, next-after and principal auto controls fit in normal top view"
+  },
+  "manual390InteractiveAudit": "PASS via authenticated in-app browser: start, pause, resume, replay, slider, audio stop, timeline seek, manual mode, end and reload",
+  "chime": {
+    "restoredFrom": "4c7a9b5",
+    "fundamentalsHz": [
+      659.25,
+      830.61,
+      987.77
+    ],
+    "glide": false,
+    "bellPartialsAndTiming": "Original values retained",
+    "gapBeforeVoiceMs": 600
+  },
+  "mainHead": "7658997d3cd35323107ebfbc6b5f77017f48dddd",
+  "mainMerges": 0,
+  "productionChanges": 0,
+  "protectedUntrackedAudio": "Not modified, moved, deleted or staged",
+  "remaining": [
+    "Actual iPhone Safari / Bluetooth speaker and screen-lock behavior remains a device check; browser background restrictions are explained in guide"
+  ]
+}

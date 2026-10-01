@@ -1,0 +1,57 @@
+{
+  "validatedAt": "2026-09-30T23:38:38.856Z",
+  "startingHead": "a695d5fde6c52809fead1c6d3bb5f6ec68755cd6",
+  "branch": "codex/standard-two-hour-auto-flow",
+  "canonicalSource": "lib/flowScripts.json",
+  "removedSentence": "これからWILL.tennisを始めます。",
+  "openingDisplayText": "本日はご参加ありがとうございます。\n\nまずは近くの方とペアを作って、ショートラリーから始めてください。\n\n初参加の方もいると思うので、ペアになった方とは、名前だけ軽く共有してもらえれば大丈夫です。\n\n全体の自己紹介は、ゲーム前に行います。\n\nそれでは5分間、ゆっくり体を温めていきましょう。",
+  "voicevox": {
+    "speaker": "ずんだもん",
+    "style": "ノーマル",
+    "styleId": 3,
+    "durationSec": 26.048,
+    "readingChecks": [
+      {
+        "text": "ちかくのかた",
+        "kana": "チカクノカタ",
+        "pass": true
+      },
+      {
+        "text": "はじめて参加されるかた",
+        "kana": "ハジメテサンカサレルカタ",
+        "pass": true
+      },
+      {
+        "text": "ペアになったかた",
+        "kana": "ペアニナッタカタ",
+        "pass": true
+      },
+      {
+        "text": "ごふん",
+        "kana": "ゴフン",
+        "pass": true
+      }
+    ]
+  },
+  "generationCommand": "node scripts/generate-flow-audio.mjs --replace --only=opening",
+  "changedWavFiles": [
+    "public/audio/flow/v2/00-opening.wav"
+  ],
+  "openingSha256": "6cd01aa1a135b25fb41694da92fc807b5e6b2f98f66223e836a1e1ee487f6ed1",
+  "other15WavsAndAuditEntriesUnchanged": true,
+  "requiredChecks": {
+    "node scripts/test-flow.mjs": "PASS",
+    "npx tsc --noEmit": "PASS",
+    "npm run build": "PASS",
+    "git diff --check": "PASS"
+  },
+  "browser": {
+    "report": "reports/flow-opening-browser-audit.json",
+    "checksPassed": 7,
+    "fallbacks": 0,
+    "runtimeErrors": 0
+  },
+  "protectedUntrackedAudio": "Not read, modified, moved, deleted or staged",
+  "mainMerges": 0,
+  "productionChanges": 0
+}

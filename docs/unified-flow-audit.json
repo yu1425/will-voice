@@ -1,0 +1,389 @@
+{
+  "base": "http://127.0.0.1:53559",
+  "auditedAt": "2026-10-01T05:24:43.282Z",
+  "checks": [
+    {
+      "name": "HOME is the parent character hub for flow, chat, settings and guide",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "fixed parent-brand header links HOME and page title is separated below it",
+      "pass": true,
+      "evidence": {
+        "position": "sticky",
+        "top": "0px"
+      }
+    },
+    {
+      "name": "automatic mode has no detached audio controls or practice timer; setup precedes start",
+      "pass": true,
+      "evidence": {
+        "setup": 346.625,
+        "start": 535.6875
+      }
+    },
+    {
+      "name": "idle-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "menu-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "touch menu order and Escape",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "automatic progress menu is compact 3x4",
+      "pass": true,
+      "evidence": {
+        "count": 12,
+        "columns": 3,
+        "height": 325
+      }
+    },
+    {
+      "name": "one pause freezes clock and saves native WAV position",
+      "pass": true,
+      "evidence": {
+        "eventId": "opening",
+        "positionSec": 1.260375,
+        "chime": false
+      }
+    },
+    {
+      "name": "paused-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "one resume restarts both clock and interrupted native WAV",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:53559/audio/flow/v2/00-opening.wav",
+        "position": 1.260375,
+        "volume": 1,
+        "index": 3
+      }
+    },
+    {
+      "name": "settings-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "settings menu and 100/50/20/30 volume do not interrupt active session",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "paused navigation offers a selectable previous item and no next-next row",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "pause during chime cancels pending voice; resume plays complete chime and selected two-court cue",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:53559/audio/flow/v2/20-cross-rally-double.wav",
+        "position": 0,
+        "volume": 0.3,
+        "index": 7
+      }
+    },
+    {
+      "name": "running-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "running seek cancels obsolete pending cue and plays only selected item",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "natural future boundary still plays after pause, resume and backward navigation",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "guide-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": []
+      }
+    },
+    {
+      "name": "actual route changes pause complete session; return requires explicit resume",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "manual mode shows the selected script only once",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "manual mode is select + one play/pause control; selection cancels prior playback",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:53559/audio/flow/v2/00-opening.wav",
+        "position": 1.19474,
+        "volume": 0.3,
+        "index": 14
+      }
+    },
+    {
+      "name": "manual-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "manual cues toggle on same button; timer ends with Zundamon at shared volume",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "extras-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "reload is paused and quiet, with no announcement burst",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "complete and reset stop everything and clear saved session",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "session end confirmation clears clock and media together",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "failed audio pauses session; explicit resume retries with zero browser voice fallback",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "paused-480",
+      "pass": true,
+      "evidence": {
+        "viewport": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "paused-320",
+      "pass": true,
+      "evidence": {
+        "viewport": 320,
+        "document": 320,
+        "app": 320,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "paused-1440",
+      "pass": true,
+      "evidence": {
+        "viewport": 1440,
+        "document": 1440,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "manual-480",
+      "pass": true,
+      "evidence": {
+        "viewport": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no browser runtime errors",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "name": "chat-480",
+      "pass": true,
+      "evidence": {
+        "viewport": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "unframed": []
+      }
+    },
+    {
+      "name": "browser Back/Forward captures and resumes playhead even without header-link callback",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:53559/audio/flow/v2/00-opening.wav",
+        "position": 1.120224,
+        "volume": 0.3,
+        "index": 8
+      }
+    },
+    {
+      "name": "simulated visibility event pauses whole session; foreground does not silently restart",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "already-completed announcement is not repeated on normal flow resume",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "desktop hover enters menu, keyboard opens, tabs links and Escape closes",
+      "pass": true,
+      "evidence": null
+    }
+  ],
+  "errors": [],
+  "physicalDeviceChecks": false
+}

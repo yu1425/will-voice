@@ -1,0 +1,141 @@
+{
+  "auditedAt": "2026-10-01T00:39:40.327Z",
+  "startingSha": "272370b5483096ef3049a919e3c90add231cf363",
+  "branch": "codex/standard-two-hour-auto-flow",
+  "checks": {
+    "flowTests": "PASS",
+    "typecheck": "PASS",
+    "build": "PASS",
+    "diffCheck": "PASS"
+  },
+  "browser": {
+    "passed": 120,
+    "audits": [
+      {
+        "path": "reports/flow-v5-browser-audit.json",
+        "passed": 53,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v5-cancellation-audit.json",
+        "passed": 5,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v5-ux-audit.json",
+        "passed": 27,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v5-playback-audit.json",
+        "passed": 9,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v5-extras-audit.json",
+        "passed": 18,
+        "errors": []
+      },
+      {
+        "path": "reports/flow-v5-design-audit.json",
+        "passed": 8,
+        "errors": []
+      }
+    ],
+    "method": "Actual optimized Next.js app and native Chromium Audio/AudioContext; Date.now acceleration only for long event/timer boundaries. Delayed cancellation/404 cases use controlled network routes; callback regression uses the real React panel in a temporary bundle."
+  },
+  "baseline": {
+    "sha": "272370b5483096ef3049a919e3c90add231cf363",
+    "observations": "Normal stop/pause/replay/resume continued to allow future events in targeted baseline checks. Permanent mute was not reproduced. The prior callback-dependent activation effect defect was already fixed in a695d5f. The UI still failed to distinguish current audio stop from paused/waiting audio; the new state machine and brief feedback clarify this. This report does not assert the entire temporary baseline audit passed."
+  },
+  "fixes": [
+    "Explicit current cue lifecycle independent of future event eligibility",
+    "Stop cancels current WAV, chime and pending cue ticket only; pause cancels audio and freezes clock; resume starts clock without replaying interrupted audio",
+    "Shared cue selection cancels an auto chime and its delayed WAV before replacing audio; future events continue"
+  ],
+  "opening": {
+    "path": "public/audio/flow/v2/00-opening.wav",
+    "sha256": "6cd01aa1a135b25fb41694da92fc807b5e6b2f98f66223e836a1e1ee487f6ed1",
+    "source": "lib/flowScripts.json",
+    "formalFirstSentences": "本日はご参加ありがとうございます。まずは近くの方とペアを作って、ショートラリーから始めてください。",
+    "unchangedInThisUiUpdate": true
+  },
+  "generatedAudio": [
+    {
+      "id": "q-rotate",
+      "label": "交代お願いします",
+      "displayText": "交代をお願いします。",
+      "path": "public/audio/flow/extras/q-rotate.wav",
+      "sha256": "23e28fa63b4249b0ab4f5ff5bcc58d178c5304f11fce1c2b651c14a3ccb56e10"
+    },
+    {
+      "id": "q-no-strong",
+      "label": "強打は控えめに",
+      "displayText": "強打は控えめにお願いします。",
+      "path": "public/audio/flow/extras/q-no-strong.wav",
+      "sha256": "7c878190a11c24291c10a738d58334a41071e22841bd558132dfe971d26db0b1"
+    },
+    {
+      "id": "q-health",
+      "label": "無理せず休んで",
+      "displayText": "無理せず、体調に合わせて休憩してください。",
+      "path": "public/audio/flow/extras/q-health.wav",
+      "sha256": "32c8d43a9982fec8bbccddaaac7222d9081de30c0cf53d2b561dd1ab8c7ee0f7"
+    },
+    {
+      "id": "q-welcome",
+      "label": "初参加の方にも声かけ",
+      "displayText": "初参加のかたにも、ぜひ声をかけてください。",
+      "path": "public/audio/flow/extras/q-welcome.wav",
+      "sha256": "5571128bff441a6e20617971b1793a37b71fea21827d7a73c6f697cf6a52bf29"
+    },
+    {
+      "id": "q-next-menu",
+      "label": "次のメニューへ",
+      "displayText": "次のメニューに移ります。",
+      "path": "public/audio/flow/extras/q-next-menu.wav",
+      "sha256": "c28d9614cf6d339233df29b5557d15eb94f1f6062f2394285c8b7cbd1ba17e1a"
+    },
+    {
+      "id": "q-gather",
+      "label": "集合お願いします",
+      "displayText": "一度、集合をお願いします。",
+      "path": "public/audio/flow/extras/q-gather.wav",
+      "sha256": "d6edace7281f85fb17ae4df2beafcad805aed76c36ae2050c57901d94db38c18"
+    },
+    {
+      "id": "timer-ended",
+      "label": "タイマー終了",
+      "displayText": "時間になりました。次のメニューに移りましょう。",
+      "path": "public/audio/flow/extras/timer-ended.wav",
+      "sha256": "4bfbb0eff09abf0a05f0651bc01aa6cfe58a391822626e3dcffe2ad471194887"
+    }
+  ],
+  "readingAudit": "reports/flow-extras-audio-audit.json",
+  "volume": {
+    "recordedAudio": "Live 100 → 50 → 20 → 30% without replacing current WAV",
+    "voicevox": "Latest volume after delayed synthesis; live volume while playing",
+    "chime": "Shared gain updates and original three bell pitches",
+    "cuesAndTimer": "Actual native volume 0.3, cue replay/live 50/20/30%",
+    "speechSynthesis": "Applies on next playback, documented in settings; fixed cues never fall back to it"
+  },
+  "visualReview": {
+    "before": "reports/flow-v5-before-next-event-after-stop-390.png",
+    "after": "reports/flow-v5-next-event-after-stop-390.png",
+    "390x844": "Viewed before/after side by side. Current menu is the largest heading, next is a soft navy block with one countdown pill, later is a weaker bordered row. Progress primary and audio secondary controls all fit above navigation; no horizontal overflow or overlays.",
+    "480x920": "Viewed current/next/later, playing/paused, timeline, manual, tools and settings. Same hierarchy and readable sizes retained; bottom navigation occupies its own space.",
+    "example390": "reports/flow-v5-design-390.png",
+    "example480": "reports/flow-v5-design-480.png",
+    "manual390": "reports/flow-v5-design-manual-390.png",
+    "tools390": "reports/flow-v5-extras-390.png"
+  },
+  "endAction": "開催設定 bottom, one divider, muted red text, confirmation with cancel/終了する; absent from timeline",
+  "limitations": [
+    "Physical iPhone Safari, Bluetooth speaker, background/lock delivery not tested. Background gaps consume missed events without burst playback."
+  ],
+  "scope": {
+    "mainMerges": 0,
+    "productionChanges": 0,
+    "protectedUntrackedEntriesChangedOrStaged": 0
+  }
+}

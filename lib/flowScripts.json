@@ -1,0 +1,185 @@
+[
+  {
+    "id": "opening",
+    "offsetSec": 0,
+    "refStep": 1,
+    "title": "開始・ショートラリー",
+    "phaseId": "practice",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "本日はご参加ありがとうございます。\n\nまずは近くの方とペアを作って、ショートラリーから始めてください。\n\n初参加の方もいると思うので、ペアになった方とは、名前だけ軽く共有してもらえれば大丈夫です。\n\n全体の自己紹介は、ゲーム前に行います。\n\nそれでは5分間、ゆっくり体を温めていきましょう。",
+        "audioSrc": "/audio/flow/v2/00-opening.wav"
+      }
+    ]
+  },
+  {
+    "id": "volley",
+    "offsetSec": 300,
+    "refStep": 2,
+    "title": "ボレーボレー",
+    "phaseId": "practice",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "5分経ちました。ショートラリーはここまでです。\n\nペアはそのままで、ボレーボレーに切り替えてください。\n\nノーバウンドで、肩の力を抜いて、相手が返しやすいボールでゆっくり続けましょう。",
+        "audioSrc": "/audio/flow/v2/05-volley.wav"
+      }
+    ]
+  },
+  {
+    "id": "long-rally",
+    "offsetSec": 600,
+    "refStep": 3,
+    "title": "ロングラリー",
+    "phaseId": "practice",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "ボレーボレーはここまでです。次はロングラリーです。\n\n両サイドに分かれて、2人ずつ入ってラリーをしてください。\n\nある程度打ったら交代して、待っている方を見ながら入れ替わってください。\n\nなるべく同じ相手が続かないように、少しずつ組み合わせを変えていきましょう。",
+        "audioSrc": "/audio/flow/v2/10-long-rally.wav"
+      }
+    ]
+  },
+  {
+    "id": "cross-rally",
+    "offsetSec": 1200,
+    "refStep": 4,
+    "title": "クロスラリー",
+    "phaseId": "practice",
+    "variants": [
+      {
+        "courtMode": "single",
+        "displayText": "ロングラリーはここまでです。次はクロスラリーです。\n\nその前に、軽くメンバーをシャッフルしてください。\n\nなるべく同じ相手が続かないように調整して、準備ができたらクロスラリーを始めましょう。",
+        "audioSrc": "/audio/flow/v2/20-cross-rally-single.wav"
+      },
+      {
+        "courtMode": "double",
+        "displayText": "ロングラリーはここまでです。次はクロスラリーです。\n\nその前に、どちらか一つのコートから何人か、隣のコートへ移動してください。\n\n続いて、移動先のコートにもともといた人の中から、同じ人数だけ反対のコートへ移動してください。\n\nなるべく同じ相手が続かないように調整して、準備ができたらクロスラリーを始めましょう。",
+        "audioSrc": "/audio/flow/v2/20-cross-rally-double.wav"
+      }
+    ]
+  },
+  {
+    "id": "serve-return",
+    "offsetSec": 1800,
+    "refStep": 5,
+    "title": "サーブ・リターン",
+    "phaseId": "practice",
+    "variants": [
+      {
+        "courtMode": "single",
+        "displayText": "クロスラリーはここまでです。次はサーブ・リターンです。\n\nまず軽くメンバーを入れ替えてください。\n\n片側がサーブ、反対側がリターンです。\n\nサーブ側は順番に3球ほど打って、リターン側は返すところまでで大丈夫です。\n\nラリーは続けず、一度区切って次のサーブへ進んでください。",
+        "audioSrc": "/audio/flow/v2/30-serve-return-single.wav"
+      },
+      {
+        "courtMode": "double",
+        "displayText": "クロスラリーはここまでです。次はサーブ・リターンです。\n\nまずどちらか一つのコートから何人か、隣のコートへ移動してください。\n\n続いて、移動先のコートにもともといた人の中から、同じ人数だけ反対のコートへ移動してください。\n\n片側がサーブ、反対側がリターンです。\n\nサーブ側は順番に3球ほど打って、リターン側は返すところまでで大丈夫です。\n\nラリーは続けず、一度区切って次のサーブへ進んでください。",
+        "audioSrc": "/audio/flow/v2/30-serve-return-double.wav"
+      }
+    ]
+  },
+  {
+    "id": "serve-return-switch",
+    "offsetSec": 2100,
+    "refStep": 6,
+    "title": "サーブ・リターン交代",
+    "phaseId": "practice",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "5分経ちました。\n\nサーブ側とリターン側を交代してください。\n\n後半も同じ流れでお願いします。",
+        "audioSrc": "/audio/flow/v2/35-serve-return-switch.wav"
+      }
+    ]
+  },
+  {
+    "id": "random-table",
+    "offsetSec": 2400,
+    "refStep": 7,
+    "title": "乱数表の説明",
+    "phaseId": "preparation",
+    "variants": [
+      {
+        "courtMode": "single",
+        "displayText": "サーブ・リターンはここまでです。\n\nこのあとはゲーム形式に入ります。\n\nまず、乱数表を使ってゲームの組み合わせを決めます。\n\nこれから番号を振るので、自分の番号を確認してください。\n\n番号に合わせて、ペアと対戦相手を確認しながら、上から順番に進めていきます。",
+        "audioSrc": "/audio/flow/v2/40-random-table-single.wav"
+      },
+      {
+        "courtMode": "double",
+        "displayText": "サーブ・リターンはここまでです。\n\nこのあとはゲーム形式に入ります。\n\nまず、乱数表を使ってゲームの組み合わせを決めます。\n\nこれからコートごとに番号を振るので、自分のコートと番号を確認してください。\n\n番号に合わせて、ペアと対戦相手を確認しながら、上から順番に進めていきます。",
+        "audioSrc": "/audio/flow/v2/40-random-table-double.wav"
+      }
+    ]
+  },
+  {
+    "id": "game-rules",
+    "offsetSec": 2580,
+    "refStep": 8,
+    "title": "試合ルール",
+    "phaseId": "preparation",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "続いて、ゲームのルールをご案内します。\n\n試合はダブルスで、4ポイント先取、デュースなしです。\n\nサーブは基本2本ですが、初心者の方や久しぶりの方は、最大3本までで大丈夫です。\n\n経験者の方は、相手に合わせてサーブや強打を少し調整してください。\n\n安全第一で、声をかけ合いながら楽しく進めていきましょう。",
+        "audioSrc": "/audio/flow/v2/43-game-rules.wav"
+      }
+    ]
+  },
+  {
+    "id": "self-intro",
+    "offsetSec": 2760,
+    "refStep": 9,
+    "title": "自己紹介",
+    "phaseId": "preparation",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "それではゲームに入る前に、軽く自己紹介をお願いします。\n\nお名前、テニス歴、初参加かどうかくらいで大丈夫です。\n\nひとりずつ簡単にお願いします。",
+        "audioSrc": "/audio/flow/v2/46-self-intro.wav"
+      }
+    ]
+  },
+  {
+    "id": "game-start",
+    "offsetSec": 3000,
+    "refStep": 10,
+    "title": "ゲーム開始",
+    "phaseId": "game",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "自己紹介ありがとうございます。\n\nそれでは、乱数表の最初の組み合わせから、ゲームを始めていきましょう。",
+        "audioSrc": "/audio/flow/v2/50-game-start.wav"
+      }
+    ]
+  },
+  {
+    "id": "mini-game",
+    "offsetSec": 6300,
+    "refStep": 11,
+    "title": "ミニゲーム（リレーラリー）",
+    "phaseId": "mini-game",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "ゲームはここまでです。\n\n最後はミニゲームで、リレーラリーをやります。\n\nチームに分かれて1列に並び、先頭の方から1球ずつ打って、打った方はそのまま列の後ろへ回ってください。\n\n最初の球出しは数えず、返球から数えます。\n\n何回続くか、みんなで数えていきましょう。\n\n強く打つより、次の方が返しやすいボールを意識してください。",
+        "audioSrc": "/audio/flow/v2/105-mini-game.wav"
+      }
+    ]
+  },
+  {
+    "id": "closing",
+    "offsetSec": 7020,
+    "refStep": 12,
+    "title": "終了あいさつ・片付け",
+    "phaseId": "closing",
+    "variants": [
+      {
+        "courtMode": "both",
+        "displayText": "以上で、本日のテニス会は終了です。\n\nご参加いただき、ありがとうございました。\n\nまた予定が合いましたら、ぜひ気軽にご参加ください。\n\n最後に、ボールや忘れ物を確認して、片付けにご協力をお願いします。\n\n本日はありがとうございました。",
+        "audioSrc": "/audio/flow/v2/117-closing.wav"
+      }
+    ]
+  }
+]

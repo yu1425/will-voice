@@ -1,292 +1,108 @@
 "use client";
-
-/**
- * 進行モード - 当日モード
- * ============================================================
- *  テニス会の当日、コート上でスマホ片手で使う前提のシンプル画面。
- *
- *  - 大きい「読み上げ」「次へ」ボタン
- *  - 小さい「戻る」
- *  - 現在ステップを強く表示、次のステップを下に小さく
- *  - 6つのクイック注意喚起 + 音声テスト
- *  - タイマー(5分/10分/一時停止/リセット)
- *
- *  細かい設定(編集・コピー・条件入力・プラン)は準備モードに任せる。
- * ============================================================
- */
-
-import { FLOW_QUICK_CAUTIONS, VOICE_TEST_TEXT } from "@/lib/flowCautions";
-import { TENNIS_FLOW_SCRIPTS, type FlowScript } from "@/lib/tennisFlowScripts";
-
+import FlowTransportIcon from "./FlowTransportIcon";
+import type { FlowScript } from "@/lib/tennisFlowScripts";
 type Props = {
   currentScript: FlowScript;
-  nextScript: FlowScript | null;
-  /** 実際に読み上げる予定のテキスト */
-  previewText: string;
-  /** 次STEPで実際に読み上げる予定のテキスト */
-  nextPreviewText: string | null;
-  /** 現在STEPで録音音声と recordedText のセットを使うか */
-  usesRecordedAudio: boolean;
-  isSpeaking: boolean;
-  isSpeakingPaused: boolean;
-  totalSteps: number;
-  onSpeak: () => void;
-  onPauseSpeaking: () => void;
-  onResumeSpeaking: () => void;
-  onStop: () => void;
-  onPrev: () => void;
-  onNext: () => void;
-  onSpeakRaw: (text: string) => void;
   scriptsForCourt: FlowScript[];
+  totalSteps: number;
+  courts: 1 | 2;
+  previewText: string;
+  isSpeaking: boolean;
+  isPaused: boolean;
+  onToggle: () => void;
   onStepJump: (step: number) => void;
-  voiceMode: "standard" | "voicevox" | "recorded";
-  // Timer
-  timerRemaining: number;
-  timerRunning: boolean;
-  timerSec: number;
-  onStartTimer: (sec: number) => void;
-  onPauseTimer: () => void;
-  onResetTimer: () => void;
 };
-
-function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-/** 次ステップの中身を一目で把握できるよう、短い一言だけ抜き出す */
-function nextStepPreview(source: string): string {
-  const firstLine = source.split("\n").find((l) => l.trim().length > 0) ?? "";
-  return firstLine.length > 40 ? `${firstLine.slice(0, 40)}…` : firstLine;
-}
-
 export default function FlowLiveMode({
-  currentScript,
-  nextScript,
-  previewText,
-  nextPreviewText,
-  usesRecordedAudio,
-  isSpeaking,
-  isSpeakingPaused,
-  totalSteps,
-  onSpeak,
-  onPauseSpeaking,
-  onResumeSpeaking,
-  onStop,
-  onPrev,
-  onNext,
-  onSpeakRaw,
+  currentScript: s,
   scriptsForCourt,
+  totalSteps,
+  previewText,
+  isSpeaking,
+  isPaused,
+  onToggle,
   onStepJump,
-  voiceMode,
-  timerRemaining,
-  timerRunning,
-  timerSec,
-  onStartTimer,
-  onPauseTimer,
-  onResetTimer,
 }: Props) {
-  const isFirst = currentScript.step === 1;
-  const isLast = currentScript.step === totalSteps;
-
   return (
-    <div className="flow-live">
-      {/* 優先表示エリア: 現在ステップ・読み上げ・次へ/戻る */}
-      <div className="flow-live__top">
-        {/* 現在ステップの強調表示 */}
-        <div className="flow-live__hero">
-          <div className="flow-live__step-badge">
-            STEP {currentScript.step} / {totalSteps}
-          </div>
-          <h1 className="flow-live__title">{currentScript.title}</h1>
-          {nextScript ? (
-            <>
-              <p className="flow-live__next-hint">
-                次: <span className="flow-live__next-label">{nextScript.title}</span>
-              </p>
-              {nextPreviewText && (
-                <p className="flow-live__next-preview">
-                  {nextStepPreview(nextPreviewText)}
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="flow-live__next-hint">これが最後のステップです</p>
-          )}
-        </div>
-
-        {/* 読み上げ予定テキスト */}
-        <div className="flow-live__preview" aria-label="読み上げ予定">
-          {usesRecordedAudio && (
-            <span className="flow-live__recorded-label">録音音声</span>
-          )}
-          {previewText}
-        </div>
-
-        {/* メインの読み上げ/停止 */}
-        <div className="flow-live__main">
-          {isSpeaking ? (
-            <div className="flow-live__speaking-actions">
-              <button
-                type="button"
-                className="flow-live__big flow-live__big--pause"
-                onClick={isSpeakingPaused ? onResumeSpeaking : onPauseSpeaking}
-              >
-                {isSpeakingPaused ? "▶ 再開" : "Ⅱ 一時停止"}
-              </button>
-              <button
-                type="button"
-                className="flow-live__stop-btn"
-                onClick={onStop}
-              >
-                ■ 停止
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="flow-live__big flow-live__big--primary"
-              onClick={onSpeak}
-            >
-              ▶ 読み上げ
-            </button>
-          )}
-        </div>
-
-        {/* 次へ (大) / 戻る (小) */}
-        <div className="flow-live__nav">
-          <button
-            type="button"
-            className="flow-live__next-btn"
-            onClick={onNext}
-            disabled={isLast}
-          >
-            次へ →
-            {nextScript && (
-              <span className="flow-live__next-sub"> STEP {nextScript.step} {nextScript.shortLabel}</span>
-            )}
-          </button>
-          <button
-            type="button"
-            className="flow-live__back-btn"
-            onClick={onPrev}
-            disabled={isFirst}
-          >
-            ← 戻る
-          </button>
-        </div>
-      </div>
-
-      {/* 補助操作エリア: ステップ一覧・タイマー・クイック注意喚起 */}
-      <div className="flow-live__scroll">
-        {/* ステップ一覧チップ */}
-        <div className="flow-live__steps" role="tablist" aria-label="ステップ選択">
-          {Array.from({ length: totalSteps }, (_, i) => i + 1).map((n) => {
-            const matched =
-              scriptsForCourt.find((s) => s.step === n) ??
-              TENNIS_FLOW_SCRIPTS.find((s) => s.step === n);
-            const isActive = currentScript.step === n;
-            return (
-              <button
-                key={n}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                className={`flow-step-chip ${
-                  isActive ? "flow-step-chip--active" : ""
-                }`}
-                onClick={() => onStepJump(n)}
-                title={matched?.title}
-              >
-                <span className="flow-step-chip__num">{n}</span>
-                <span className="flow-step-chip__label">
-                  {matched?.shortLabel ?? ""}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* タイマー(コンパクト) */}
-        <div className="flow-live__timer">
-          <span
-            className={`flow-live__timer-time ${
-              timerRunning ? "flow-live__timer-time--running" : ""
-            } ${timerRemaining === 0 ? "flow-live__timer-time--done" : ""}`}
-          >
-            {formatTime(timerRemaining)}
+    <div className="flow-manual">
+      <section className="flow-surface" aria-label="個別の案内">
+        <header className="flow-header">
+          <span className="flow-eyebrow">
+            STEP {String(s.step).padStart(2, "0")} / {totalSteps}
           </span>
-          <div className="flow-live__timer-btns">
-            <button
-              type="button"
-              className="flow-live__timer-btn"
-              onClick={() => onStartTimer(5 * 60)}
-              disabled={timerRunning}
-            >
-              5分
-            </button>
-            <button
-              type="button"
-              className="flow-live__timer-btn"
-              onClick={() => onStartTimer(10 * 60)}
-              disabled={timerRunning}
-            >
-              10分
-            </button>
-            {timerRunning ? (
-              <button
-                type="button"
-                className="flow-live__timer-btn flow-live__timer-btn--warn"
-                onClick={onPauseTimer}
-              >
-                一時停止
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="flow-live__timer-btn"
-                onClick={onResetTimer}
-                disabled={timerRemaining === timerSec}
-              >
-                リセット
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* クイック注意喚起 */}
-        <div className="flow-live__quick">
-          <div className="flow-live__quick-head">
-            クイック注意喚起
-            {voiceMode === "recorded" && (
-              <span className="flow-live__quick-note">(標準音声で読み上げます)</span>
-            )}
-          </div>
-          <div className="flow-live__quick-grid">
-            {FLOW_QUICK_CAUTIONS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className="flow-live__quick-btn"
-                onClick={() => onSpeakRaw(c.voiceText)}
-                title={c.voiceText}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 音声テスト */}
-        <button
-          type="button"
-          className="flow-live__test-btn"
-          onClick={() => onSpeakRaw(VOICE_TEST_TEXT)}
+          <span className="flow-status">
+            {isSpeaking ? "案内中" : isPaused ? "一時停止中" : "選択中"}
+          </span>
+        </header>
+        <h1>{s.title}</h1>
+        <div
+          className="flow-manual-transport"
+          role="group"
+          aria-label="選択した案内の操作"
         >
-          🔊 音声テスト
-        </button>
-      </div>
+          <button
+            type="button"
+            className="flow-btn"
+            aria-label="前の項目へ"
+            disabled={s.step === 1}
+            onClick={() => onStepJump(s.step - 1)}
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            className="flow-btn flow-btn--primary"
+            onClick={onToggle}
+          >
+            <FlowTransportIcon kind={isSpeaking ? "pause" : "play"} />
+            {isSpeaking
+              ? "一時停止"
+              : isPaused
+                ? "続きから再生"
+                : "この案内を再生"}
+          </button>
+          <button
+            type="button"
+            className="flow-btn"
+            aria-label="次の項目へ"
+            disabled={s.step === totalSteps}
+            onClick={() => onStepJump(s.step + 1)}
+          >
+            →
+          </button>
+        </div>
+        <p className="flow-player-hint">
+          項目を選び、必要なタイミングで再生します。
+        </p>
+        <details key={s.id} className="flow-script">
+          <summary>このメニューの案内</summary>
+          <p>{previewText}</p>
+        </details>
+      </section>
+      <details className="flow-surface flow-overview" open>
+        <summary>
+          案内を選ぶ<span className="flow-summary-meta">{totalSteps}項目</span>
+        </summary>
+        <ol className="flow-menu-grid flow-menu-grid--manual">
+          {scriptsForCourt.map((script) => (
+            <li
+              key={script.id}
+              className={s.step === script.step ? "is-current" : ""}
+            >
+              <button
+                type="button"
+                aria-label={`${String(script.step).padStart(2, "0")} ${script.title}`}
+                aria-current={s.step === script.step ? "step" : undefined}
+                onClick={() => onStepJump(script.step)}
+              >
+                <span className="flow-menu-grid__number">
+                  {String(script.step).padStart(2, "0")}
+                </span>
+                <strong>{script.title}</strong>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </details>
     </div>
   );
 }

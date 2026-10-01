@@ -11,6 +11,7 @@
  *   差し替えてください。呼び出し側(app/page.tsx)は変更不要です。
  */
 
+import { getAudioVolume } from "./audioVolume";
 import { sanitizeForVoicevox } from "./voicevoxText";
 
 // ------------------------------------------------------------
@@ -184,6 +185,7 @@ export function speakText(text: string, options: SpeakOptions = {}): void {
 
   const utterance = new SpeechSynthesisUtterance(spoken);
   utterance.lang = options.lang ?? "ja-JP";
+  utterance.volume = getAudioVolume();
   utterance.rate = 1.0;
   utterance.pitch = 1.05; // ほんの少し明るく
 

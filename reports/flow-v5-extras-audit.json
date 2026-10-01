@@ -1,0 +1,185 @@
+{
+  "auditedAt": "2026-10-01T00:34:34.978Z",
+  "base": "http://127.0.0.1:3002",
+  "method": "Real Chromium with default autoplay policy, native WAV play/AudioContext decode; only Date.now shifted for timer boundaries",
+  "checks": [
+    {
+      "name": "CASE 4: Zundamon 交代お願いします plays at 30%",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/extras/q-rotate.wav",
+        "currentTime": 0.103412,
+        "duration": 1.962667,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "CASE 4: Zundamon 強打は控えめに plays at 30%",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/extras/q-no-strong.wav",
+        "currentTime": 0.101965,
+        "duration": 2.613333,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "CASE 4: Zundamon 無理せず休んで plays at 30%",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/extras/q-health.wav",
+        "currentTime": 0.106292,
+        "duration": 4.085333,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "CASE 4: Zundamon 初参加の方にも声かけ plays at 30%",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/extras/q-welcome.wav",
+        "currentTime": 0.106155,
+        "duration": 4.181333,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "CASE 4: Zundamon 次のメニューへ plays at 30%",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/extras/q-next-menu.wav",
+        "currentTime": 0.105729,
+        "duration": 2.144,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "CASE 4: Zundamon 集合お願いします plays at 30%",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/extras/q-gather.wav",
+        "currentTime": 0.105578,
+        "duration": 2.848,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "cue replay starts from beginning; live 50/20/30% volume updates without interruption",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/extras/q-health.wav",
+        "currentTime": 0.444044,
+        "duration": 4.085333,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "timer can pause immediately at 5:00 and resume from frozen remainder",
+      "pass": true,
+      "evidence": "5:00"
+    },
+    {
+      "name": "CASE 5: timer expiry plays one Zundamon WAV at shared 30% volume",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/extras/timer-ended.wav",
+        "currentTime": 0.107848,
+        "duration": 3.872,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "timer expiry announcement can be replayed and stopped",
+      "pass": true
+    },
+    {
+      "name": "stop current cue leaves the timer running",
+      "pass": true
+    },
+    {
+      "name": "expiry while the page is hidden is consumed silently, with no delayed voice on return",
+      "pass": true
+    },
+    {
+      "name": "390 timer/cue blocks and bottom navigation layout",
+      "pass": true,
+      "evidence": {
+        "documentWidth": 390,
+        "width": 390,
+        "contentBottom": 740.40625,
+        "navTop": 775,
+        "screenshot": "reports/flow-v5-extras-390.png"
+      }
+    },
+    {
+      "name": "480 timer/cue blocks and bottom navigation layout",
+      "pass": true,
+      "evidence": {
+        "documentWidth": 480,
+        "width": 480,
+        "contentBottom": 816.40625,
+        "navTop": 851,
+        "screenshot": "reports/flow-v5-extras-480.png"
+      }
+    },
+    {
+      "name": "all seven new WAVs decode at the audited duration",
+      "pass": true,
+      "evidence": [
+        {
+          "id": "q-rotate",
+          "duration": 1.9626666666666666
+        },
+        {
+          "id": "q-no-strong",
+          "duration": 2.6133333333333333
+        },
+        {
+          "id": "q-health",
+          "duration": 4.085333333333334
+        },
+        {
+          "id": "q-welcome",
+          "duration": 4.181333333333333
+        },
+        {
+          "id": "q-next-menu",
+          "duration": 2.144
+        },
+        {
+          "id": "q-gather",
+          "duration": 2.848
+        },
+        {
+          "id": "timer-ended",
+          "duration": 3.872
+        }
+      ]
+    },
+    {
+      "name": "shared cue during auto chime cancels only that queued WAV; no overlap or overwrite",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/extras/q-welcome.wav",
+        "currentTime": 1.907792,
+        "duration": 4.181333,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "future auto chime/WAV still plays after a shared cue replaced the preceding event",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:3002/audio/flow/v2/10-long-rally.wav",
+        "currentTime": 0.104704,
+        "duration": 20.544,
+        "volume": 0.3
+      }
+    },
+    {
+      "name": "recording failure shows a notice; zero standard speech fallback or runtime errors",
+      "pass": true
+    }
+  ],
+  "errors": []
+}
