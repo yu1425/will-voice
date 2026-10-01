@@ -102,14 +102,14 @@
     "variants": [
       {
         "courtMode": "both",
-        "displayText": "サーブ・リターンはここまでです。\n\nみなさん、一度コートから上がって集合してください。\n\nここで全員、2分間の休憩です。必ず水分補給をして、少し体を休めてください。\n\n2分後にこのまま乱数表の説明を始めますので、近くでお待ちください。",
+        "displayText": "サーブ・リターンはここまでです。\n\nみなさん、一度コートから上がって集合してください。\n\nここから3分ほど、休憩と水分補給の時間です。必ず水分補給をして、少し体を休めてください。\n\n3分後にこのまま乱数表の説明を始めますので、近くでお待ちください。",
         "audioSrc": "/audio/flow/v2/40-gather-break.wav"
       }
     ]
   },
   {
     "id": "random-table",
-    "offsetSec": 2520,
+    "offsetSec": 2580,
     "refStep": 7,
     "title": "乱数表の説明",
     "phaseId": "preparation",
@@ -117,21 +117,22 @@
       {
         "courtMode": "single",
         "displayText": "休憩はここまでです。\n\nこのまま集合した状態で、乱数表の説明をします。\n\nこのあとはゲーム形式に入ります。\n\nまず、乱数表を使ってゲームの組み合わせを決めます。\n\nこれから番号を振るので、自分の番号を確認してください。\n\n番号に合わせて、ペアと対戦相手を確認しながら、上から順番に進めていきます。",
-        "audioSrc": "/audio/flow/v2/42-random-table-single.wav"
+        "audioSrc": "/audio/flow/v2/43-random-table-single.wav"
       },
       {
         "courtMode": "double",
         "displayText": "休憩はここまでです。\n\nこのまま集合した状態で、乱数表の説明をします。\n\nこのあとはゲーム形式に入ります。\n\nまず、乱数表を使ってゲームの組み合わせを決めます。\n\nこれからコートごとに番号を振るので、自分のコートと番号を確認してください。\n\n番号に合わせて、ペアと対戦相手を確認しながら、上から順番に進めていきます。",
-        "audioSrc": "/audio/flow/v2/42-random-table-double.wav"
+        "audioSrc": "/audio/flow/v2/43-random-table-double.wav"
       }
     ]
   },
   {
     "id": "game-rules",
-    "offsetSec": 2700,
+    "offsetSec": 2613,
     "refStep": 8,
     "title": "試合ルール",
     "phaseId": "preparation",
+    "chime": false,
     "variants": [
       {
         "courtMode": "both",
@@ -142,36 +143,23 @@
   },
   {
     "id": "self-intro",
-    "offsetSec": 2880,
+    "offsetSec": 2642,
     "refStep": 9,
     "title": "自己紹介",
     "phaseId": "preparation",
+    "chime": false,
     "variants": [
       {
         "courtMode": "both",
         "displayText": "それではゲームに入る前に、軽く自己紹介をお願いします。\n\nお名前、テニス歴、初参加かどうかくらいで大丈夫です。\n\nひとりずつ簡単にお願いします。",
-        "audioSrc": "/audio/flow/v2/46-self-intro.wav"
-      }
-    ]
-  },
-  {
-    "id": "game-start",
-    "offsetSec": 3120,
-    "refStep": 10,
-    "title": "ゲーム開始",
-    "phaseId": "game",
-    "variants": [
-      {
-        "courtMode": "both",
-        "displayText": "自己紹介ありがとうございます。\n\nそれでは、乱数表の最初の組み合わせから、ゲームを始めていきましょう。",
-        "audioSrc": "/audio/flow/v2/50-game-start.wav"
+        "audioSrc": "/audio/flow/v2/44-self-intro.wav"
       }
     ]
   },
   {
     "id": "mini-game",
     "offsetSec": 6300,
-    "refStep": 11,
+    "refStep": 10,
     "title": "ミニゲーム（リレーラリー）",
     "phaseId": "mini-game",
     "variants": [
@@ -185,7 +173,7 @@
   {
     "id": "closing",
     "offsetSec": 7020,
-    "refStep": 12,
+    "refStep": 11,
     "title": "終了あいさつ・片付け",
     "phaseId": "closing",
     "variants": [
