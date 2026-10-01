@@ -1,53 +1,180 @@
+"use client";
 import Link from "next/link";
-const pages = [
-  {
-    href: "/flow",
-    label: "進行",
-    path: "M5 5h14M5 12h14M5 19h14M8 3v4M16 10v4M10 17v4",
-  },
-  {
-    href: "/guide",
-    label: "使い方",
-    path: "M4 4h6l2 2 2-2h6v15h-6l-2 2-2-2H4V4ZM12 6v15",
-  },
-  {
-    href: "/chat",
-    label: "うぃるに聞く",
-    path: "M4 4h16v13H9l-5 4V4ZM8 8h8M8 12h5",
-  },
-];
+import { useEffect, useRef, useState } from "react";
+
+type Props = {
+  current: "flow" | "guide" | "chat";
+  onNavigate?: () => void;
+  onSettings?: () => void;
+};
+/** Site navigation, not an application tab bar. Touch, pointer and keyboard share one menu. */
 export default function PageNavigation({
   current,
   onNavigate,
-}: {
-  current: "flow" | "guide" | "chat";
-  onNavigate?: () => void;
-}) {
+  onSettings,
+}: Props) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const hoverOpened = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clear = () => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+  };
+  const close = () => {
+    clear();
+    setOpen(false);
+    hoverOpened.current = false;
+  };
+  useEffect(() => {
+    if (!open) return;
+    const outside = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) {
+        setOpen(false);
+        hoverOpened.current = false;
+      }
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      if (timer.current) clearTimeout(timer.current);
+      setOpen(false);
+      hoverOpened.current = false;
+      trigger.current?.focus();
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [open]);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+  const visit = (page: string, event: React.MouseEvent<HTMLAnchorElement>) => {
+    close();
+    if (page === current) event.preventDefault();
+    else onNavigate?.();
+  };
   return (
-    <nav className="page-navigation" aria-label="ページ移動">
-      {pages.map((p) => (
-        <Link
-          key={p.href}
-          href={p.href}
-          aria-current={p.href === `/${current}` ? "page" : undefined}
-          onClick={onNavigate}
+    <nav
+      className="page-menu"
+      aria-label="ページメニュー"
+      ref={root}
+      onPointerEnter={(event) => {
+        clear();
+        if (
+          event.pointerType === "mouse" &&
+          window.matchMedia("(hover: hover)").matches &&
+          !open
+        ) {
+          hoverOpened.current = true;
+          setOpen(true);
+        }
+      }}
+      onPointerLeave={() => {
+        clear();
+        if (hoverOpened.current)
+          timer.current = setTimeout(() => {
+            setOpen(false);
+            hoverOpened.current = false;
+          }, 220);
+      }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node)) close();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          close();
+          trigger.current?.focus();
+        }
+      }}
+    >
+      <button
+        ref={trigger}
+        type="button"
+        className="page-menu-trigger"
+        aria-label="メニューを開く"
+        aria-expanded={open}
+        aria-controls="app-page-menu"
+        onClick={() => {
+          clear();
+          if (hoverOpened.current) {
+            hoverOpened.current = false;
+            setOpen(true);
+          } else setOpen((value) => !value);
+        }}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          aria-hidden="true"
         >
-          <svg
-            viewBox="0 0 24 24"
-            width="21"
-            height="21"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        <span>メニュー</span>
+      </button>
+      {open && (
+        <div className="page-menu-panel" id="app-page-menu">
+          <p className="page-menu-title">WILL voice</p>
+          <Link
+            href="/flow"
+            aria-current={current === "flow" ? "page" : undefined}
+            onClick={(event) => visit("flow", event)}
           >
-            <path d={p.path} />
-          </svg>
-          <span>{p.label}</span>
-        </Link>
-      ))}
+            <span aria-hidden="true">▷</span>進行
+          </Link>
+          <Link
+            href="/chat"
+            aria-current={current === "chat" ? "page" : undefined}
+            onClick={(event) => visit("chat", event)}
+          >
+            <span aria-hidden="true">◇</span>うぃるに聞く
+          </Link>
+          <div className="page-menu-divider" />
+          {onSettings ? (
+            <button
+              type="button"
+              onClick={() => {
+                close();
+                onSettings();
+              }}
+            >
+              <span aria-hidden="true">⚙</span>設定
+            </button>
+          ) : (
+            <Link
+              href="/flow?settings=1"
+              onClick={() => {
+                close();
+                onNavigate?.();
+              }}
+            >
+              <span aria-hidden="true">⚙</span>設定
+            </Link>
+          )}
+          <Link
+            href="/guide"
+            aria-current={current === "guide" ? "page" : undefined}
+            onClick={(event) => visit("guide", event)}
+          >
+            <span aria-hidden="true">?</span>使い方
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }

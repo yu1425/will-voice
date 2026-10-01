@@ -54,13 +54,29 @@ export default function FlowExtras({
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [endAt]);
+  useEffect(() => {
+    if (active || deadline.current === null) return;
+    setRemaining(
+      Math.max(0, Math.ceil((deadline.current - Date.now()) / 1000)),
+    );
+    deadline.current = null;
+    setEndAt(null);
+    setTimerStatus("paused");
+  }, [active]);
   const say = (cue: typeof FLOW_TIMER_ENDED) => {
+    if (isCueSpeaking && lastCue?.id === cue.id) {
+      stopSpeaking();
+      return;
+    }
     setLastCue(cue);
     speakRecorded(cue.voiceText, cue.audioSrc);
   };
   return (
     <details className="flow-surface flow-extras">
-      <summary>タイマー・声かけ</summary>
+      <summary>
+        個別進行の補助ツール
+        <span className="flow-summary-meta">タイマー・声かけ</span>
+      </summary>
       <section className="flow-extras__timer" aria-label="タイマー操作">
         <h2 className="flow-list-title">タイマー</h2>
         <div className="flow-timer-display">
@@ -153,7 +169,9 @@ export default function FlowExtras({
           <h2 className="flow-list-title">声かけ</h2>
           <span className="flow-muted">ずんだもん</span>
         </div>
-        <p className="flow-muted">タップすると、ずんだもんが読み上げます。</p>
+        <p className="flow-muted">
+          選んだ声かけを再生します。同じボタンで止められます。
+        </p>
         <div className="flow-actions">
           {FLOW_QUICK_CAUTIONS.map((cue) => (
             <button
@@ -168,38 +186,6 @@ export default function FlowExtras({
               {isCueSpeaking && lastCue?.id === cue.id && <small>再生中</small>}
             </button>
           ))}
-        </div>
-        <div
-          className="flow-extras__audio"
-          role="group"
-          aria-label="声かけ音声操作"
-        >
-          <div className="flow-audio-heading">
-            <span>音声</span>
-            <span className="flow-audio-state" role="status">
-              {isCueSpeaking ? "再生中" : "待機中"}
-            </span>
-          </div>
-          <div className="flow-actions">
-            <button
-              type="button"
-              className="flow-btn"
-              disabled={!lastCue}
-              onClick={() => lastCue && say(lastCue)}
-            >
-              <FlowTransportIcon kind="replay" />
-              もう一度聞く
-            </button>
-            <button
-              type="button"
-              className="flow-btn"
-              disabled={!isSpeaking}
-              onClick={stopSpeaking}
-            >
-              <FlowTransportIcon kind="stop" />
-              今の音声を止める
-            </button>
-          </div>
         </div>
       </section>
     </details>

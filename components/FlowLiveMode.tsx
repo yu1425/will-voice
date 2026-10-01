@@ -1,6 +1,5 @@
 "use client";
 import FlowTransportIcon from "./FlowTransportIcon";
-import { useEffect, useState } from "react";
 import type { FlowScript } from "@/lib/tennisFlowScripts";
 type Props = {
   currentScript: FlowScript;
@@ -9,116 +8,100 @@ type Props = {
   courts: 1 | 2;
   previewText: string;
   isSpeaking: boolean;
-  onSpeak: () => void;
-  onStop: () => void;
+  isPaused: boolean;
+  onToggle: () => void;
   onStepJump: (step: number) => void;
 };
 export default function FlowLiveMode({
   currentScript: s,
   scriptsForCourt,
   totalSteps,
-  courts,
   previewText,
   isSpeaking,
-  onSpeak,
-  onStop,
+  isPaused,
+  onToggle,
   onStepJump,
 }: Props) {
-  const [scriptExpanded, setScriptExpanded] = useState(false);
-  const [hasPlayed, setHasPlayed] = useState(false);
-  useEffect(() => {
-    setScriptExpanded(false);
-    setHasPlayed(false);
-  }, [s.id, previewText]);
   return (
     <div className="flow-manual">
-      <section className="flow-surface">
-        <p className="flow-eyebrow">個別進行 · {courts}面</p>
-        <p className="flow-step-position">
-          STEP {String(s.step).padStart(2, "0")} / {totalSteps}
-        </p>
-        <h1>{s.title}</h1>
-        <div className="flow-manual__script">
-          <h2>案内</h2>
-          <p
-            className={`flow-script-text${scriptExpanded ? "" : " flow-script-text--preview"}`}
-          >
-            {previewText}
-          </p>
-          <button
-            type="button"
-            className="flow-text-button flow-disclosure-button"
-            aria-expanded={scriptExpanded}
-            onClick={() => setScriptExpanded(!scriptExpanded)}
-          >
-            全文を見る
-          </button>
-        </div>
-        <div className="flow-audio-heading">
-          <span>音声</span>
-          <span className="flow-audio-state" role="status">
-            {isSpeaking ? "再生中" : "待機中"}
+      <section className="flow-surface" aria-label="個別の案内">
+        <header className="flow-header">
+          <span className="flow-eyebrow">
+            STEP {String(s.step).padStart(2, "0")} / {totalSteps}
           </span>
-        </div>
-        <div className="flow-actions">
+          <span className="flow-status">
+            {isSpeaking ? "案内中" : isPaused ? "一時停止中" : "選択中"}
+          </span>
+        </header>
+        <h1>{s.title}</h1>
+        <p className="flow-script-text flow-script-text--preview">
+          {previewText}
+        </p>
+        <div
+          className="flow-manual-transport"
+          role="group"
+          aria-label="選択した案内の操作"
+        >
           <button
             type="button"
             className="flow-btn"
-            onClick={() => {
-              setHasPlayed(true);
-              onSpeak();
-            }}
-          >
-            <FlowTransportIcon kind={hasPlayed ? "replay" : "play"} />
-            {hasPlayed ? "もう一度聞く" : "案内を聞く"}
-          </button>
-          <button
-            type="button"
-            className="flow-btn"
-            onClick={onStop}
-            disabled={!isSpeaking}
-          >
-            <FlowTransportIcon kind="stop" />
-            今の音声を止める
-          </button>
-        </div>
-        <div className="flow-manual__nav">
-          <button
-            type="button"
-            className="flow-btn"
+            aria-label="前の項目へ"
             disabled={s.step === 1}
             onClick={() => onStepJump(s.step - 1)}
           >
-            ← 前へ
+            ←
+          </button>
+          <button
+            type="button"
+            className="flow-btn flow-btn--primary"
+            onClick={onToggle}
+          >
+            <FlowTransportIcon kind={isSpeaking ? "pause" : "play"} />
+            {isSpeaking
+              ? "一時停止"
+              : isPaused
+                ? "続きから再生"
+                : "この案内を再生"}
           </button>
           <button
             type="button"
             className="flow-btn"
+            aria-label="次の項目へ"
             disabled={s.step === totalSteps}
             onClick={() => onStepJump(s.step + 1)}
           >
-            次へ →
+            →
           </button>
         </div>
+        <p className="flow-player-hint">
+          項目を選び、必要なタイミングで再生します。
+        </p>
+        <details key={s.id} className="flow-script">
+          <summary>このメニューの案内</summary>
+          <p>{previewText}</p>
+        </details>
       </section>
-      <section className="flow-surface">
-        <h2 className="flow-list-title">STEP一覧</h2>
+      <details className="flow-surface flow-overview" open>
+        <summary>
+          案内を選ぶ<span className="flow-summary-meta">{totalSteps}項目</span>
+        </summary>
         <ol className="flow-step-list">
           {scriptsForCourt.map((script) => (
             <li key={script.id}>
               <button
                 type="button"
+                aria-label={`${String(script.step).padStart(2, "0")} ${script.title}`}
                 aria-current={s.step === script.step ? "step" : undefined}
                 onClick={() => onStepJump(script.step)}
               >
                 <span>{String(script.step).padStart(2, "0")}</span>
                 <strong>{script.title}</strong>
-                {s.step === script.step && <small>現在</small>}
+                {s.step === script.step && <small>選択中</small>}
               </button>
             </li>
           ))}
         </ol>
-      </section>
+      </details>
     </div>
   );
 }

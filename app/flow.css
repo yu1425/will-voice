@@ -32,30 +32,91 @@ a {
 .app:not(.app--settings-open) .voicevox-panel {
   display: none;
 }
-.page-navigation {
+/* Header disclosure menu: pointer hover, click/tap, focus and Escape. */
+.page-menu {
+  position: relative;
+  margin-left: auto;
   flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  padding: 6px 12px calc(6px + env(safe-area-inset-bottom));
-  background: #fff;
-  border-top: 1px solid var(--flow-border);
 }
-.page-navigation a {
-  min-height: 56px;
+.page-menu-trigger {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 3px;
-  color: var(--text-soft);
-  font-size: 12px;
-  text-decoration: none;
-  border-radius: 8px;
-}
-.page-navigation a[aria-current="page"] {
+  gap: 7px;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid var(--flow-border);
+  border-radius: 10px;
+  background: #fff;
   color: var(--flow-accent);
-  font-weight: 700;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.page-menu-trigger[aria-expanded="true"] {
   background: var(--flow-soft);
+}
+.page-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 224px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid var(--flow-border);
+  border-radius: 14px;
+  box-shadow: 0 14px 35px #23334a20;
+  z-index: 50;
+}
+.page-menu-panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 10px;
+  top: -10px;
+}
+.page-menu-title {
+  padding: 6px 12px;
+  margin: 0 0 4px;
+  color: var(--text-soft);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.page-menu-panel a,
+.page-menu-panel button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+.page-menu-panel a > span,
+.page-menu-panel button > span {
+  width: 20px;
+  text-align: center;
+  color: var(--flow-accent);
+  font-size: 17px;
+}
+.page-menu-panel [aria-current="page"],
+.page-menu-panel a:hover,
+.page-menu-panel button:hover {
+  background: var(--flow-soft);
+  color: var(--flow-accent);
+}
+.page-menu-divider {
+  height: 1px;
+  margin: 6px 10px;
+  background: var(--flow-border);
 }
 .flow-scroll,
 .guide-scroll {
@@ -66,7 +127,12 @@ a {
 }
 .flow-page,
 .guide-page {
-  padding: 20px 16px 28px;
+  padding: 16px 16px 28px;
+}
+.flow-page,
+.flow-manual-workspace {
+  display: grid;
+  gap: 14px;
 }
 .flow-mode-switch {
   display: grid;
@@ -75,7 +141,7 @@ a {
   background: #e9ebee;
   padding: 4px;
   border-radius: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 .flow-mode-switch button,
 .flow-choice button {
@@ -98,8 +164,8 @@ a {
 .flow-surface {
   padding: 20px;
   background: #fff;
-  border: 0;
-  border-radius: 14px;
+  border: 1px solid #e6e9ed;
+  border-radius: 16px;
   min-width: 0;
 }
 .flow-header {
@@ -315,12 +381,24 @@ a {
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
 }
-.flow-progress__next {
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 10px;
-  background: #f3f5f8;
-  box-shadow: inset 3px 0 var(--flow-accent);
+.flow-next-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  border: 1px solid #e1e7ef;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f0f3f8;
+  cursor: pointer;
+}
+.flow-next-card:hover {
+  background: #e7edf5;
+}
+.flow-next-menu > :last-child {
+  margin-left: auto;
 }
 .flow-next-heading {
   display: flex;
@@ -328,8 +406,7 @@ a {
   justify-content: space-between;
   gap: 8px;
 }
-.flow-next-heading h2,
-.flow-progress__later h2 {
+.flow-next-heading > :first-child {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
@@ -367,9 +444,6 @@ a {
   font-size: 12px;
   min-height: 20px;
 }
-.flow-audio-controls {
-  margin-top: 10px;
-}
 .flow-audio-heading {
   display: flex;
   justify-content: space-between;
@@ -390,18 +464,6 @@ a {
   margin: 0 6px 2px 0;
   border-radius: 50%;
   background: var(--flow-accent);
-}
-.flow-audio-controls .flow-btn {
-  min-height: 44px;
-  padding: 8px;
-  font-size: 13px;
-  font-weight: 500;
-}
-.flow-audio-notice {
-  margin: 8px 0 0;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--text-soft);
 }
 .flow-transport-icon {
   flex: 0 0 auto;
@@ -501,30 +563,9 @@ a {
 .flow-timeline .is-current .flow-timeline__dot {
   border: 4px solid var(--flow-accent);
 }
-.flow-timeline .is-complete {
-  opacity: 0.55;
-}
 .flow-timeline__label {
   font-size: 12px;
   flex-shrink: 0;
-}
-.flow-seek-confirm {
-  background: var(--flow-soft);
-  border-radius: 10px;
-  padding: 14px;
-  font-size: 14px;
-  margin-bottom: 14px;
-}
-.flow-seek-confirm p {
-  margin: 0 0 12px;
-}
-.flow-manual__nav {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  border-top: 1px solid var(--flow-border);
-  padding-top: 16px;
-  margin-top: 16px;
 }
 .flow-step-list {
   list-style: none;
@@ -569,8 +610,9 @@ a {
   flex-shrink: 0;
 }
 .flow-extras {
-  margin-top: 14px;
-  background: transparent;
+  margin-top: 0;
+  padding: 12px 16px;
+  background: #fff;
 }
 .flow-extras__timer,
 .flow-extras__cues {
@@ -597,26 +639,14 @@ a {
   font-size: 12px;
   color: var(--flow-accent);
 }
-.flow-extras__audio {
-  margin-top: 14px;
-}
-.flow-extras__audio .flow-audio-state {
-  margin-bottom: 8px;
-}
-.flow-extras__audio .flow-btn {
-  min-height: 44px;
-  padding: 8px;
-  font-size: 12px;
-}
 .flow-extra-time {
   font-size: 26px;
   font-variant-numeric: tabular-nums;
 }
 .flow-session-settings {
-  margin-top: 14px;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  background: transparent;
+  margin-top: 0;
+  padding: 12px 16px;
+  background: #fff;
 }
 .flow-session-settings textarea {
   width: 100%;
@@ -636,14 +666,6 @@ a {
 .flow-muted {
   font-size: 13px;
   color: var(--text-soft);
-}
-.flow-background-status {
-  border: 0;
-  background: var(--flow-soft);
-  border-radius: 10px;
-  padding: 8px 12px;
-  margin-bottom: 14px;
-  font-size: 13px;
 }
 .flow-background-status p {
   margin: 0 0 8px;
@@ -736,30 +758,24 @@ a {
   }
 }
 /* The main controls share the progress surface; no second card or bottom overlay. */
-.flow-controls {
-  margin-top: 16px;
-}
 .flow-progress__later {
-  display: grid;
-  gap: 5px;
-  margin-top: 6px;
-  border: 1px solid #edf0f3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin-top: 8px;
+  border: 1px solid #e8ecf1;
   border-radius: 10px;
-  padding: 8px 10px;
+  padding: 9px 12px;
+  font-size: 12px;
 }
-.flow-progress__later h2 {
-  flex-shrink: 0;
+.flow-progress__later > span {
   color: var(--text-soft);
 }
 .flow-progress__later strong {
   font-size: 13px;
-  color: #60666d;
-  font-weight: 400;
-}
-.flow-later-menu {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
+  font-weight: 500;
+  color: #57616c;
 }
 .flow-text-button--danger {
   color: var(--flow-danger);
@@ -782,7 +798,11 @@ a {
   background: #fff;
 }
 .flow-overview {
-  padding: 0 4px;
+  padding: 12px 16px;
+  background: #fff;
+}
+.flow-overview > summary {
+  padding: 2px 0;
 }
 .flow-manual__script {
   margin: 14px 0 16px;
@@ -848,10 +868,7 @@ a {
 .flow-session-settings[open] {
   background: #fff;
 }
-details.flow-extras:not([open]),
-details.flow-session-settings:not([open]) {
-  padding-block: 0;
-}
+
 .flow-extras__cues .flow-btn {
   flex-wrap: wrap;
   font-size: 13px;
@@ -905,4 +922,140 @@ details[open].flow-script > summary::before,
 details[open].flow-session-settings > summary::before,
 details[open].flow-extras > summary::before {
   transform: rotate(45deg);
+}
+
+/* Unified player controls: no separate automatic audio toolbar. */
+.flow-player-controls {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  margin-top: 18px;
+}
+.flow-player-controls > :only-child {
+  grid-column: 1 / -1;
+}
+.flow-end-trigger {
+  color: #7e4d50;
+  background: #fff;
+  min-width: 78px;
+}
+.flow-player-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.flow-summary-meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-soft);
+  font-weight: 400;
+}
+.flow-setup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.flow-setup h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.flow-setup p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.flow-setup-courts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.flow-setup-courts > span {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+.flow-setup-courts .flow-choice {
+  width: 116px;
+}
+.flow-setup--locked {
+  padding-block: 10px;
+  background: #fdfdfd;
+}
+.flow-setup--locked .flow-setup-courts {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 12px;
+}
+.flow-setup--locked p {
+  display: none;
+}
+.flow-manual-transport {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  gap: 8px;
+  margin-top: 18px;
+}
+.flow-manual-transport .flow-btn {
+  padding-inline: 8px;
+}
+.flow-background-status {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--flow-soft);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  border: 1px solid #e1e7ef;
+}
+.flow-timeline button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.flow-timeline .is-complete {
+  opacity: 0.72;
+}
+.flow-end-confirm h2 {
+  font-size: 15px;
+  margin: 0 0 8px;
+}
+.settings-dialog-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.settings-close {
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: var(--flow-soft);
+  border-radius: 10px;
+  color: var(--flow-accent);
+  font-size: 24px;
+  cursor: pointer;
+}
+.settings-scrim {
+  position: absolute;
+  inset: 0;
+  background: #23334a36;
+  z-index: 30;
+}
+@media (max-width: 360px) {
+  .header__subtitle {
+    display: none;
+  }
+  .page-menu-trigger {
+    padding-inline: 8px;
+  }
+  .flow-summary-meta {
+    font-size: 11px;
+  }
+  .flow-background-status {
+    flex-wrap: wrap;
+  }
 }

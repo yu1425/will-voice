@@ -1,47 +1,50 @@
 "use client";
 
-import Link from "next/link";
-import FlowTransportIcon from "./FlowTransportIcon";
 import {
+  forwardRef,
   useCallback,
   useEffect,
-  useMemo,
-  useReducer,
-  forwardRef,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from "react";
-import { flowCueState } from "@/lib/flowCueState";
+import FlowTransportIcon from "./FlowTransportIcon";
 import type { FlowConditions } from "@/lib/flowPlan";
 import { FLOW_VOICE_TEST } from "@/lib/flowScripts";
-import { preloadRecordedAudio } from "@/lib/recordedAudio";
+import {
+  getRecordedAudioPosition,
+  preloadRecordedAudio,
+} from "@/lib/recordedAudio";
 import {
   buildStandardTwoHourEvents,
   eventAtElapsed,
-  getAutoFlowElapsedSec,
   getAutoFlowProgress,
   nextEventAtElapsed,
   type AutoFlowEvent,
 } from "@/lib/standardTwoHourFlow";
 import {
+  createSession,
+  pauseSession,
+  resumeSession,
+  restoreSession,
+  seekSession,
+  sessionElapsed,
+  SESSION_KEY,
+  SESSION_SECONDS,
+  type AutoSession,
+  type AutoStatus,
+  type PendingCue,
+} from "@/lib/autoFlowSession";
+import {
   playTransitionCue,
   stopTransitionCue,
   unlockTransitionCue,
 } from "@/lib/transitionCue";
+export type { AutoStatus } from "@/lib/autoFlowSession";
 
-const STATE_KEY = "will-standard-two-hour-auto-flow";
-export type AutoStatus = "idle" | "running" | "paused" | "completed";
-type Session = {
-  version: 3;
-  status: Exclude<AutoStatus, "idle">;
-  startedAt: number;
-  pausedAt: number | null;
-  accumulatedPausedMs: number;
-  firedEventIds: string[];
-  courts: 1 | 2;
-};
 export type AutoFlowHandle = {
+  pauseForNavigation: () => void;
   stopCurrentAudio: () => void;
   endSession: () => void;
   playChimeTest: () => Promise<void>;
@@ -51,671 +54,531 @@ type Props = {
   active: boolean;
   conditions: FlowConditions;
   onConditionsChange: (c: FlowConditions) => void;
-  onSpeak: (text: string, audioSrc?: string) => void;
+  onSpeak: (text: string, audioSrc?: string, startAtSec?: number) => void;
   onStopSpeaking: () => void;
-  isSpeaking: boolean;
-  onSyncStep: (step: number) => void;
   onStatusChange: (status: AutoStatus) => void;
   chimeEnabled: boolean;
   onChimePlayingChange?: (playing: boolean) => void;
 };
 export function formatClock(seconds: number) {
-  const safe = Math.max(0, Math.floor(seconds));
-  return [Math.floor(safe / 3600), Math.floor((safe % 3600) / 60), safe % 60]
+  const value = Math.max(0, Math.floor(seconds));
+  return [Math.floor(value / 3600), Math.floor((value % 3600) / 60), value % 60]
     .map((n) => String(n).padStart(2, "0"))
     .join(":");
 }
-function formatOffset(seconds: number) {
-  return formatClock(seconds).slice(0, 5);
-}
-function timeOfDay(time: number) {
-  return new Date(time).toLocaleTimeString("ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-function showProgress() {
+const offset = (seconds: number) => formatClock(seconds).slice(0, 5);
+const showPlayer = () =>
   document.querySelector(".flow-scroll")?.scrollTo({ top: 0 });
-}
-function restore(): Session | null {
-  try {
-    const s = JSON.parse(localStorage.getItem(STATE_KEY) ?? "null");
-    if (
-      !s ||
-      ![1, 2, 3].includes(s.version) ||
-      !["running", "paused", "completed"].includes(s.status) ||
-      !Number.isFinite(s.startedAt) ||
-      !Number.isFinite(s.accumulatedPausedMs) ||
-      s.accumulatedPausedMs < 0 ||
-      !Array.isArray(s.firedEventIds) ||
-      (s.status === "paused" &&
-        (!Number.isFinite(s.pausedAt) || s.pausedAt < s.startedAt))
-    )
-      return null;
-    return { ...s, version: 3, courts: s.courts === 2 ? 2 : 1 };
-  } catch {
-    return null;
-  }
-}
 
-const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
-  {
-    active,
-    conditions,
-    onConditionsChange,
-    onSpeak,
-    onStopSpeaking,
-    isSpeaking,
-    onSyncStep,
-    onStatusChange,
-    chimeEnabled,
-    onChimePlayingChange,
-  }: Props,
-  ref,
-) {
-  const [session, setSession] = useState<Session | null>(null);
-  const sessionRef = useRef<Session | null>(null);
-  const [elapsedSec, setElapsedSec] = useState(0);
-  const [cuePlaying, setCuePlaying] = useState(false);
-  const [pendingSeek, setPendingSeek] = useState<AutoFlowEvent | null>(null);
-  const [audioState, dispatchAudio] = useReducer(flowCueState, "waiting");
-  const [stopNotice, setStopNotice] = useState(false);
-  // Playback callbacks may change without changing the session or subscribing to a new clock.
-  const callbacks = useRef({ onSpeak, onStopSpeaking, onSyncStep });
-  callbacks.current = { onSpeak, onStopSpeaking, onSyncStep };
-  const chimeEnabledRef = useRef(chimeEnabled);
-  chimeEnabledRef.current = chimeEnabled;
-  const activeRef = useRef(active);
-  activeRef.current = active;
-  const playbackGeneration = useRef(0);
-  const mounted = useRef(true);
-  const observed = useRef(Date.now());
-  const events = useMemo(
-    () => buildStandardTwoHourEvents(session?.courts ?? conditions.courts),
-    [session?.courts, conditions.courts],
-  );
-  const eventsRef = useRef(events);
-  eventsRef.current = events;
-  const current = eventAtElapsed(events, elapsedSec);
-  const next = nextEventAtElapsed(events, elapsedSec);
-  const status = session?.status ?? "idle";
-  const save = useCallback((s: Session | null) => {
-    sessionRef.current = s;
-    setSession(s);
-    try {
-      if (s) localStorage.setItem(STATE_KEY, JSON.stringify(s));
-      else localStorage.removeItem(STATE_KEY);
-    } catch {
-      /* storage may be unavailable */
-    }
-  }, []);
-  // Invalidate only the in-flight cue/WAV. New events get a fresh ticket; clock state is untouched.
-  const cancelCurrentPlayback = useCallback(() => {
-    playbackGeneration.current++;
-    stopTransitionCue();
-    setCuePlaying(false);
-  }, []);
-  const stopCurrentPlayback = useCallback(() => {
-    cancelCurrentPlayback();
-    callbacks.current.onStopSpeaking();
-    dispatchAudio("wait");
-    setStopNotice(false);
-  }, [cancelCurrentPlayback]);
-  const stopAudioByUser = () => {
-    stopCurrentPlayback();
-    dispatchAudio("stop-current");
-    setStopNotice(true);
-  };
-  const announce = useCallback(
-    async (e: AutoFlowEvent, cue: boolean) => {
-      cancelCurrentPlayback();
+const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
+  function AutoFlowPanel(props, ref) {
+    const [session, setSession] = useState<AutoSession | null>(null);
+    const sessionRef = useRef<AutoSession | null>(null);
+    const [elapsed, setElapsed] = useState(0);
+    const [cuePlaying, setCuePlaying] = useState(false);
+    const [confirmEnd, setConfirmEnd] = useState(false);
+    const [starting, setStarting] = useState(false);
+    const callbacks = useRef(props);
+    callbacks.current = props;
+    const mounted = useRef(false);
+    const generation = useRef(0);
+    const inFlight = useRef<{
+      eventId: string;
+      stage: "chime" | "voice";
+    } | null>(null);
+    const events = useMemo(
+      () =>
+        buildStandardTwoHourEvents(session?.courts ?? props.conditions.courts),
+      [session?.courts, props.conditions.courts],
+    );
+    const eventsRef = useRef(events);
+    eventsRef.current = events;
+    const current = eventAtElapsed(events, elapsed);
+    const next = nextEventAtElapsed(events, elapsed);
+    const later = next ? nextEventAtElapsed(events, next.offsetSec) : null;
+    const status = session?.status ?? "idle";
+    const progress = getAutoFlowProgress(elapsed);
+
+    const save = useCallback((s: AutoSession | null) => {
+      sessionRef.current = s;
+      if (mounted.current) setSession(s);
+      try {
+        if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+        else localStorage.removeItem(SESSION_KEY);
+      } catch {
+        /* Keep the active session usable when storage is unavailable. */
+      }
+    }, []);
+    const cancelPlayback = useCallback(() => {
+      generation.current++;
+      inFlight.current = null;
+      stopTransitionCue();
       callbacks.current.onStopSpeaking();
-      setStopNotice(false);
-      if (!e.audioSrc || !activeRef.current) {
-        dispatchAudio(e.offsetSec === 7200 ? "end" : "wait");
-        return;
+      if (mounted.current) {
+        setCuePlaying(false);
+        setStarting(false);
       }
-      dispatchAudio("play");
-      const ticket = playbackGeneration.current;
-      if (cue && chimeEnabledRef.current) {
-        setCuePlaying(true);
-        await playTransitionCue();
-        if (ticket !== playbackGeneration.current || !mounted.current) return;
-        await new Promise<void>((resolve) => setTimeout(resolve, 600));
-      }
-      if (
-        ticket !== playbackGeneration.current ||
-        !mounted.current ||
-        !activeRef.current
-      )
-        return;
-      setCuePlaying(false);
-      callbacks.current.onSpeak(e.voiceText, e.audioSrc);
-    },
-    [cancelCurrentPlayback],
-  );
-  const advance = useCallback(
-    (allowAudio: boolean) => {
+    }, []);
+    const announce = useCallback(
+      async (event: AutoFlowEvent, chime: boolean, startAtSec = 0) => {
+        cancelPlayback();
+        if (
+          !event.audioSrc ||
+          !callbacks.current.active ||
+          sessionRef.current?.status !== "running"
+        )
+          return;
+        const ticket = generation.current;
+        inFlight.current = {
+          eventId: event.id,
+          stage: chime && callbacks.current.chimeEnabled ? "chime" : "voice",
+        };
+        if (chime && callbacks.current.chimeEnabled) {
+          setCuePlaying(true);
+          await playTransitionCue();
+          if (ticket !== generation.current || !mounted.current) return;
+          await new Promise<void>((resolve) => setTimeout(resolve, 600));
+        }
+        if (
+          ticket !== generation.current ||
+          !mounted.current ||
+          !callbacks.current.active ||
+          sessionRef.current?.status !== "running"
+        )
+          return;
+        setCuePlaying(false);
+        inFlight.current = { eventId: event.id, stage: "voice" };
+        callbacks.current.onSpeak(event.voiceText, event.audioSrc, startAtSec);
+      },
+      [cancelPlayback],
+    );
+
+    const pauseAll = useCallback(() => {
       const s = sessionRef.current;
-      if (!s || s.status !== "running") return;
-      const elapsed = Math.min(
-        7200,
-        getAutoFlowElapsedSec(s.startedAt, s.accumulatedPausedMs, Date.now()),
-      );
-      const currentEvents = eventsRef.current;
-      const due = currentEvents.filter(
-        (e) => e.offsetSec <= elapsed && !s.firedEventIds.includes(e.id),
-      );
-      setElapsedSec(elapsed);
-      if (activeRef.current) {
-        const e = eventAtElapsed(currentEvents, elapsed);
-        if (e.refStep) callbacks.current.onSyncStep(e.refStep);
+      if (s?.status === "running") {
+        const now = Date.now();
+        const at = sessionElapsed(s, now);
+        const event = eventAtElapsed(eventsRef.current, at);
+        const audio = getRecordedAudioPosition();
+        let pending: PendingCue | null = null;
+        if (event.audioSrc) {
+          if (
+            inFlight.current?.eventId === event.id &&
+            inFlight.current.stage === "chime"
+          ) {
+            pending = { eventId: event.id, positionSec: 0, chime: true };
+          } else if (
+            audio &&
+            new URL(audio.src, window.location.href).pathname === event.audioSrc
+          ) {
+            pending = {
+              eventId: event.id,
+              positionSec: audio.positionSec,
+              chime: false,
+            };
+          } else if (!s.firedEventIds.includes(event.id)) {
+            pending = { eventId: event.id, positionSec: 0, chime: true };
+          }
+        }
+        const paused = pauseSession(s, now, pending);
+        paused.firedEventIds = eventsRef.current
+          .filter((e) => e.offsetSec <= at)
+          .map((e) => e.id);
+        save(
+          at >= SESSION_SECONDS
+            ? { ...paused, status: "completed", pendingCue: null }
+            : paused,
+        );
+        if (mounted.current) setElapsed(at);
       }
-      if (due.length || elapsed === 7200)
+      cancelPlayback();
+    }, [save, cancelPlayback]);
+
+    const advance = useCallback(
+      (allowAudio: boolean) => {
+        const s = sessionRef.current;
+        if (!s || s.status !== "running") return;
+        const now = Date.now();
+        const at = sessionElapsed(s, now);
+        const due = eventsRef.current.filter(
+          (e) => e.offsetSec <= at && !s.firedEventIds.includes(e.id),
+        );
+        setElapsed(at);
         save({
           ...s,
-          status: elapsed === 7200 ? "completed" : "running",
+          lastActiveAt: now,
+          status: at >= SESSION_SECONDS ? "completed" : "running",
           firedEventIds: [...s.firedEventIds, ...due.map((e) => e.id)],
         });
-      if (elapsed === 7200) {
-        stopCurrentPlayback();
-        dispatchAudio("end");
-        return;
-      }
-      // Missed announcements are consumed, never queued after a background gap.
-      if (activeRef.current && allowAudio && due.length === 1)
-        void announce(due[0], true);
-    },
-    [save, announce, stopCurrentPlayback],
-  );
-
-  useEffect(() => {
-    mounted.current = true;
-    const stored = restore();
-    if (stored) {
-      const elapsed =
-        stored.status === "completed"
-          ? 7200
-          : Math.min(
-              7200,
-              getAutoFlowElapsedSec(
-                stored.startedAt,
-                stored.accumulatedPausedMs,
-                Date.now(),
-                stored.status === "paused" ? stored.pausedAt : null,
-              ),
-            );
-      const restoredEvents = buildStandardTwoHourEvents(stored.courts);
-      save({
-        ...stored,
-        status: elapsed === 7200 ? "completed" : stored.status,
-        firedEventIds: restoredEvents
-          .filter((e) => e.offsetSec <= elapsed)
-          .map((e) => e.id),
-      });
-      setElapsedSec(elapsed);
-      dispatchAudio(
-        elapsed === 7200
-          ? "end"
-          : stored.status === "paused"
-            ? "pause-flow"
-            : "wait",
-      );
-    }
-    return () => {
-      mounted.current = false;
-      playbackGeneration.current++;
-      stopTransitionCue();
-    };
-  }, [save]);
-  useEffect(() => {
-    if (!isSpeaking && !cuePlaying)
-      dispatchAudio(
-        sessionRef.current?.status === "paused" ? "settled-paused" : "settled",
-      );
-  }, [isSpeaking, cuePlaying]);
-  useEffect(() => {
-    if (!stopNotice) return;
-    const id = setTimeout(() => setStopNotice(false), 2500);
-    return () => clearTimeout(id);
-  }, [stopNotice]);
-  useEffect(() => {
-    const leave = () => {
-      activeRef.current = false;
-      stopCurrentPlayback();
-    };
-    window.addEventListener("will-flow-leave", leave);
-    return () => window.removeEventListener("will-flow-leave", leave);
-  }, [stopCurrentPlayback]);
-  useEffect(() => onStatusChange(status), [onStatusChange, status]);
-  useEffect(() => {
-    onChimePlayingChange?.(cuePlaying);
-  }, [cuePlaying, onChimePlayingChange]);
-  useEffect(() => {
-    if (active && status !== "idle" && current.refStep)
-      onSyncStep(current.refStep);
-  }, [active, status, current.refStep, onSyncStep]);
-  useEffect(() => {
-    if (pendingSeek)
-      document
-        .querySelector(".flow-seek-confirm")
-        ?.scrollIntoView({ block: "center" });
-  }, [pendingSeek]);
-  useEffect(() => {
-    if (
-      session &&
-      status !== "completed" &&
-      conditions.courts !== session.courts
-    )
-      onConditionsChange({ ...conditions, courts: session.courts });
-  }, [session, conditions, onConditionsChange, status]);
-  useEffect(() => {
-    preloadRecordedAudio(current.audioSrc);
-    preloadRecordedAudio(next?.audioSrc);
-  }, [current.audioSrc, next?.audioSrc]);
-  useEffect(() => {
-    setPendingSeek(null);
-    if (!active) stopCurrentPlayback();
-    else advance(false);
-  }, [active, advance, stopCurrentPlayback]);
-  useEffect(() => {
-    if (status !== "running") return;
-    observed.current = Date.now();
-    const tick = () => {
-      const now = Date.now();
-      const gap = now - observed.current;
-      observed.current = now;
-      advance(gap < 2500 && document.visibilityState === "visible");
-    };
-    const visibility = () => {
-      observed.current = Date.now();
-      if (document.visibilityState === "visible") advance(false);
-      else stopCurrentPlayback();
-    };
-    const id = setInterval(tick, 1000);
-    document.addEventListener("visibilitychange", visibility);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", visibility);
-    };
-  }, [status, advance, stopCurrentPlayback]);
-
-  const start = async () => {
-    stopCurrentPlayback();
-    const ticket = playbackGeneration.current;
-    await unlockTransitionCue();
-    if (
-      ticket !== playbackGeneration.current ||
-      !mounted.current ||
-      !activeRef.current
-    )
-      return;
-    const first = buildStandardTwoHourEvents(conditions.courts)[0];
-    save({
-      version: 3,
-      status: "running",
-      startedAt: Date.now(),
-      pausedAt: null,
-      accumulatedPausedMs: 0,
-      firedEventIds: [first.id],
-      courts: conditions.courts,
-    });
-    setElapsedSec(0);
-    showProgress();
-    onSyncStep(first.refStep!);
-    dispatchAudio("play");
-    callbacks.current.onSpeak(first.voiceText, first.audioSrc);
-  };
-  const pauseResume = () => {
-    const s = sessionRef.current;
-    if (!s || s.status === "completed") return;
-    if (s.status === "running") {
-      stopCurrentPlayback();
-      dispatchAudio("pause-flow");
-      const now = Date.now();
-      setElapsedSec(
-        Math.min(
-          7200,
-          getAutoFlowElapsedSec(s.startedAt, s.accumulatedPausedMs, now),
-        ),
-      );
-      save({ ...s, status: "paused", pausedAt: now });
-    } else if (s.pausedAt !== null) {
-      dispatchAudio("resume-flow");
-      save({
-        ...s,
-        status: "running",
-        pausedAt: null,
-        accumulatedPausedMs: s.accumulatedPausedMs + Date.now() - s.pausedAt,
-      });
-    }
-  };
-  const seek = (e: AutoFlowEvent) => {
-    stopCurrentPlayback();
-    const now = Date.now();
-    const nextStatus =
-      e.offsetSec === 7200
-        ? "completed"
-        : sessionRef.current?.status === "paused"
-          ? "paused"
-          : "running";
-    save({
-      version: 3,
-      status: nextStatus,
-      startedAt: now - e.offsetSec * 1000,
-      pausedAt: nextStatus === "paused" ? now : null,
-      accumulatedPausedMs: 0,
-      courts: session?.courts ?? conditions.courts,
-      firedEventIds: events
-        .filter((x) => x.offsetSec <= e.offsetSec)
-        .map((x) => x.id),
-    });
-    setElapsedSec(e.offsetSec);
-    showProgress();
-    setPendingSeek(null);
-    if (e.refStep) onSyncStep(e.refStep);
-    void announce(e, true);
-  };
-  const testCue = useCallback(async () => {
-    stopCurrentPlayback();
-    const ticket = playbackGeneration.current;
-    await unlockTransitionCue();
-    if (ticket !== playbackGeneration.current || !mounted.current) return;
-    dispatchAudio("play");
-    setCuePlaying(true);
-    await playTransitionCue();
-    if (ticket === playbackGeneration.current && mounted.current)
-      setCuePlaying(false);
-  }, [stopCurrentPlayback]);
-  const testVoice = useCallback(() => {
-    stopCurrentPlayback();
-    dispatchAudio("play");
-    callbacks.current.onSpeak(
-      FLOW_VOICE_TEST.displayText,
-      FLOW_VOICE_TEST.audioSrc,
+        if (at >= SESSION_SECONDS) {
+          cancelPlayback();
+          return;
+        }
+        // Long gaps consume old cues, not a queue of announcements.
+        if (allowAudio && callbacks.current.active && due.length === 1)
+          void announce(due[0], true);
+      },
+      [save, announce, cancelPlayback],
     );
-  }, [stopCurrentPlayback]);
-  const afterNext = next
-    ? events.find((event) => event.offsetSec > next.offsetSec)
-    : null;
-  const progress = getAutoFlowProgress(elapsedSec);
-  const finishSession = useCallback(() => {
-    stopCurrentPlayback();
-    save(null);
-    dispatchAudio("wait");
-    setElapsedSec(0);
-    setPendingSeek(null);
-    showProgress();
-  }, [save, stopCurrentPlayback]);
-  useImperativeHandle(
-    ref,
-    () => ({
-      stopCurrentAudio: stopCurrentPlayback,
-      endSession: finishSession,
-      playChimeTest: testCue,
-      playVoiceTest: testVoice,
-    }),
-    [stopCurrentPlayback, finishSession, testCue, testVoice],
-  );
 
-  if (status === "idle")
+    useEffect(() => {
+      mounted.current = true;
+      try {
+        const raw = JSON.parse(localStorage.getItem(SESSION_KEY) ?? "null");
+        const restored = restoreSession(
+          raw,
+          buildStandardTwoHourEvents(raw?.courts === 2 ? 2 : 1),
+          Date.now(),
+        );
+        save(restored);
+        if (restored) setElapsed(sessionElapsed(restored, Date.now()));
+      } catch {
+        save(null);
+      }
+      const leave = () => pauseAll();
+      const visibility = () => {
+        if (document.visibilityState === "hidden") pauseAll();
+      };
+      const error = () => {
+        const s = sessionRef.current;
+        if (!s || s.status !== "running") return;
+        const event = eventAtElapsed(
+          eventsRef.current,
+          sessionElapsed(s, Date.now()),
+        );
+        pauseAll();
+        if (sessionRef.current?.status === "paused" && event.audioSrc)
+          save({
+            ...sessionRef.current,
+            pendingCue: { eventId: event.id, positionSec: 0, chime: false },
+          });
+      };
+      window.addEventListener("will-flow-leave", leave);
+      window.addEventListener("pagehide", leave);
+      window.addEventListener("will-flow-audio-error", error);
+      document.addEventListener("visibilitychange", visibility);
+      return () => {
+        pauseAll();
+        mounted.current = false;
+        window.removeEventListener("will-flow-leave", leave);
+        window.removeEventListener("pagehide", leave);
+        window.removeEventListener("will-flow-audio-error", error);
+        document.removeEventListener("visibilitychange", visibility);
+      };
+    }, [save, pauseAll]);
+    useEffect(() => {
+      if (!props.active) pauseAll();
+    }, [props.active, pauseAll]);
+    useEffect(() => {
+      props.onStatusChange(status);
+    }, [status, props.onStatusChange]);
+    useEffect(() => {
+      props.onChimePlayingChange?.(cuePlaying);
+    }, [cuePlaying, props.onChimePlayingChange]);
+    useEffect(() => {
+      if (
+        session &&
+        status !== "completed" &&
+        props.conditions.courts !== session.courts
+      )
+        props.onConditionsChange({
+          ...props.conditions,
+          courts: session.courts,
+        });
+    }, [session, status, props.conditions, props.onConditionsChange]);
+    useEffect(() => {
+      preloadRecordedAudio(current.audioSrc);
+      preloadRecordedAudio(next?.audioSrc);
+    }, [current.audioSrc, next?.audioSrc]);
+    useEffect(() => {
+      if (status !== "running") return;
+      let last = Date.now();
+      const id = setInterval(() => {
+        const now = Date.now();
+        const uninterrupted = now - last < 2500;
+        last = now;
+        if (document.visibilityState !== "visible") {
+          pauseAll();
+          return;
+        }
+        advance(uninterrupted);
+      }, 1000);
+      return () => clearInterval(id);
+    }, [status, advance, pauseAll]);
+
+    const start = async () => {
+      if (starting) return;
+      cancelPlayback();
+      setStarting(true);
+      const ticket = generation.current;
+      await unlockTransitionCue();
+      if (
+        !mounted.current ||
+        ticket !== generation.current ||
+        !callbacks.current.active
+      )
+        return;
+      save(createSession(props.conditions.courts, Date.now()));
+      setElapsed(0);
+      setStarting(false);
+      setConfirmEnd(false);
+      showPlayer();
+      void announce(eventsRef.current[0], false);
+    };
+    const resume = () => {
+      const s = sessionRef.current;
+      if (!s || s.status !== "paused") return;
+      const pending = s.pendingCue;
+      cancelPlayback();
+      save(resumeSession(s, Date.now()));
+      if (pending) {
+        const event = eventsRef.current.find((e) => e.id === pending.eventId);
+        if (event) void announce(event, pending.chime, pending.positionSec);
+      }
+    };
+    const seek = (event: AutoFlowEvent) => {
+      const s = sessionRef.current;
+      if (!s) return;
+      cancelPlayback();
+      const moved = seekSession(s, event, eventsRef.current, Date.now());
+      save(moved);
+      setElapsed(event.offsetSec);
+      setConfirmEnd(false);
+      showPlayer();
+      if (moved.status === "running") void announce(event, true);
+    };
+    const finish = useCallback(() => {
+      cancelPlayback();
+      save(null);
+      setElapsed(0);
+      setConfirmEnd(false);
+      showPlayer();
+    }, [cancelPlayback, save]);
+    const testVoice = useCallback(() => {
+      pauseAll();
+      callbacks.current.onSpeak(
+        FLOW_VOICE_TEST.displayText,
+        FLOW_VOICE_TEST.audioSrc,
+      );
+    }, [pauseAll]);
+    const testChime = useCallback(async () => {
+      pauseAll();
+      const ticket = generation.current;
+      await unlockTransitionCue();
+      if (ticket !== generation.current || !mounted.current) return;
+      setCuePlaying(true);
+      await playTransitionCue();
+      if (ticket === generation.current && mounted.current)
+        setCuePlaying(false);
+    }, [pauseAll]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        pauseForNavigation: pauseAll,
+        stopCurrentAudio: pauseAll,
+        endSession: finish,
+        playChimeTest: testChime,
+        playVoiceTest: testVoice,
+      }),
+      [pauseAll, finish, testChime, testVoice],
+    );
+
     return (
-      <section className="flow-surface auto-flow" aria-label="自動進行">
-        <header className="flow-header">
-          <div>
-            <p className="flow-eyebrow">自動進行 · {conditions.courts}面</p>
-            <h1>開始・ショートラリー</h1>
+      <section className="auto-flow" aria-label="自動進行">
+        <section className="flow-surface flow-progress">
+          <header className="flow-header">
+            <span className="flow-eyebrow">
+              標準2時間 · {session?.courts ?? props.conditions.courts}面
+            </span>
+            <span
+              className={`flow-status flow-status--${status}`}
+              role="status"
+            >
+              {status === "idle"
+                ? "開始前"
+                : status === "paused"
+                  ? "一時停止中"
+                  : status === "completed"
+                    ? "完了"
+                    : "進行中"}
+            </span>
+          </header>
+          <h1>{current.title}</h1>
+          {status === "idle" ? (
+            <p className="flow-lead">
+              開始すると、時間に合わせて案内が流れます。途中の切り替えはメニューを選ぶだけ。
+            </p>
+          ) : (
+            <>
+              <div className="flow-progress__clock">
+                <strong>{formatClock(elapsed)}</strong>
+                <span> / 02:00:00</span>
+              </div>
+              <div
+                className="flow-progress__bar"
+                role="progressbar"
+                aria-label="開催全体の進捗"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress.percentage}
+              >
+                <span
+                  style={{ width: `${(elapsed / SESSION_SECONDS) * 100}%` }}
+                />
+              </div>
+              <div className="flow-progress__numbers">
+                <span>{progress.percentage}%完了</span>
+                <span>残り {formatClock(progress.remainingSec)}</span>
+              </div>
+              {next && (
+                <button
+                  type="button"
+                  className="flow-next-card"
+                  aria-label={`${next.title}へ移動`}
+                  onClick={() => seek(next)}
+                >
+                  <span className="flow-next-heading">
+                    <span>次のメニュー</span>
+                    <span className="flow-countdown">
+                      あと {Math.floor((next.offsetSec - elapsed) / 60)}:
+                      {String((next.offsetSec - elapsed) % 60).padStart(2, "0")}
+                    </span>
+                  </span>
+                  <span className="flow-next-menu">
+                    <time>{offset(next.offsetSec)}</time>
+                    <strong>{next.title}</strong>
+                    <span aria-hidden="true">→</span>
+                  </span>
+                </button>
+              )}
+              {later && (
+                <div className="flow-progress__later">
+                  <span>その次</span>
+                  <time>{offset(later.offsetSec)}</time>
+                  <strong>{later.title}</strong>
+                </div>
+              )}
+            </>
+          )}
+          <div
+            className="flow-player-controls"
+            role="group"
+            aria-label="自動進行全体の操作"
+          >
+            <button
+              type="button"
+              className="flow-btn flow-btn--primary"
+              disabled={starting}
+              onClick={() => {
+                if (status === "idle") void start();
+                else if (status === "completed") finish();
+                else if (status === "running") pauseAll();
+                else resume();
+              }}
+            >
+              <FlowTransportIcon
+                kind={status === "running" ? "pause" : "play"}
+              />
+              {starting
+                ? "準備中…"
+                : status === "idle"
+                  ? "自動進行を開始"
+                  : status === "paused"
+                    ? "再開"
+                    : status === "completed"
+                      ? "開始画面へ"
+                      : "一時停止"}
+            </button>
+            {status !== "idle" && status !== "completed" && (
+              <button
+                type="button"
+                className="flow-btn flow-end-trigger"
+                onClick={() => setConfirmEnd((v) => !v)}
+                aria-expanded={confirmEnd}
+              >
+                <FlowTransportIcon kind="stop" />
+                終了
+              </button>
+            )}
           </div>
-          <span className="flow-status">標準2時間</span>
-        </header>
-        <p className="flow-lead">
-          開始すると、標準2時間メニューに沿ってチャイムと音声案内が自動で流れます。
-        </p>
-        <div className="flow-actions">
-          <button
-            type="button"
-            className="flow-btn flow-btn--primary flow-btn--full"
-            onClick={() => void start()}
-          >
-            自動進行を開始
-          </button>
-        </div>
-        <p className="flow-help">
-          <Link
-            href="/guide"
-            onClick={() => {
-              activeRef.current = false;
-              stopCurrentPlayback();
-            }}
-          >
-            初めて使う方へ → 使い方
-          </Link>
-          <span>全体の自己紹介は、ゲーム前に行います。</span>
-        </p>
-        <details className="flow-overview">
-          <summary>全体の進行</summary>
-          <p className="flow-muted">開始からの経過時間 · 標準2時間</p>
-          <Timeline events={events} currentId={null} elapsedSec={0} />
+          <p className="flow-player-hint">
+            {status === "paused"
+              ? "再開すると、時計と中断した案内が続きます。"
+              : "時計と音声をまとめて操作します。"}
+          </p>
+          {confirmEnd && (
+            <div className="flow-end-confirm" role="alert">
+              <h2>自動進行を終了しますか？</h2>
+              <p>時計と音声を止め、開始前に戻ります。</p>
+              <div className="flow-actions">
+                <button
+                  type="button"
+                  className="flow-btn"
+                  onClick={() => setConfirmEnd(false)}
+                >
+                  戻る
+                </button>
+                <button
+                  type="button"
+                  className="flow-btn flow-btn--danger"
+                  onClick={finish}
+                >
+                  終了する
+                </button>
+              </div>
+            </div>
+          )}
+          <details className="flow-script">
+            <summary>このメニューの案内</summary>
+            <p>{current.displayText}</p>
+          </details>
+        </section>
+        <details className="flow-surface flow-overview">
+          <summary>
+            <span>進行メニュー</span>
+            <span className="flow-summary-meta">12項目 · 2時間</span>
+          </summary>
+          <p className="flow-muted">
+            {status === "idle"
+              ? "開始前に順番を確認できます。"
+              : "項目を選ぶと、その開始時刻へ移動します。"}
+          </p>
+          <ol className="flow-timeline" aria-label="進行メニュー一覧">
+            {events.map((event) => (
+              <li
+                key={event.id}
+                className={
+                  event.id === current.id && status !== "idle"
+                    ? "is-current"
+                    : event.offsetSec < elapsed
+                      ? "is-complete"
+                      : ""
+                }
+              >
+                <button
+                  type="button"
+                  disabled={status === "idle"}
+                  aria-label={`${offset(event.offsetSec)} ${event.title}`}
+                  aria-current={
+                    event.id === current.id && status !== "idle"
+                      ? "step"
+                      : undefined
+                  }
+                  onClick={() => seek(event)}
+                >
+                  <span className="flow-timeline__dot" aria-hidden="true" />
+                  <time>{offset(event.offsetSec)}</time>
+                  <span className="flow-timeline__title">{event.title}</span>
+                  {event.id === current.id && status !== "idle" && (
+                    <span className="flow-timeline__label">現在</span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ol>
         </details>
       </section>
     );
-  return (
-    <section className="auto-flow" aria-label="自動進行">
-      <div className="flow-surface flow-progress">
-        <header className="flow-header">
-          <span className="flow-eyebrow">自動進行 · {session?.courts}面</span>
-          <span className={`flow-status flow-status--${status}`} role="status">
-            {status === "paused"
-              ? "一時停止中"
-              : status === "completed"
-                ? "進行完了"
-                : "進行中"}
-          </span>
-        </header>
-        <h1>{current.title}</h1>
-        <div className="flow-progress__clock">
-          <strong>{formatClock(elapsedSec)}</strong>
-          <span> / 02:00:00</span>
-        </div>
-        <div
-          className="flow-progress__bar"
-          role="progressbar"
-          aria-label="2時間の進捗"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={progress.percentage}
-        >
-          <span style={{ width: `${(elapsedSec / 7200) * 100}%` }} />
-        </div>
-        <div className="flow-progress__numbers">
-          <span>
-            <strong>{progress.percentage}%完了</strong>
-          </span>
-          <span>
-            残り {formatClock(progress.remainingSec).replace(/^0(?=\d:)/, "")}
-          </span>
-        </div>
-        {next && (
-          <section className="flow-progress__next" aria-label="次のメニュー">
-            <div className="flow-next-heading">
-              <h2>次のメニュー</h2>
-              <span className="flow-countdown">
-                あと {Math.floor((next.offsetSec - elapsedSec) / 60)}:
-                {String((next.offsetSec - elapsedSec) % 60).padStart(2, "0")}
-              </span>
-            </div>
-            <div className="flow-next-menu">
-              <time>{formatOffset(next.offsetSec)}</time>
-              <strong>{next.title}</strong>
-            </div>
-          </section>
-        )}
-        {afterNext && (
-          <section
-            className="flow-progress__later"
-            aria-label="その次のメニュー"
-          >
-            <h2>その次</h2>
-            <div className="flow-later-menu">
-              <time>{formatOffset(afterNext.offsetSec)}</time>
-              <strong>{afterNext.title}</strong>
-            </div>
-          </section>
-        )}
-        <div className="flow-controls" role="group" aria-label="進行操作">
-          <button
-            type="button"
-            className="flow-btn flow-btn--primary flow-btn--full"
-            disabled={status === "completed"}
-            onClick={pauseResume}
-          >
-            <FlowTransportIcon kind={status === "paused" ? "play" : "pause"} />
-            {status === "paused" ? "進行を再開" : "進行を一時停止"}
-          </button>
-        </div>
-        <div className="flow-controls-details">
-          <div
-            className="flow-audio-controls"
-            role="group"
-            aria-label="音声操作"
-          >
-            <div className="flow-audio-heading">
-              <span>音声</span>
-              <span
-                className={`flow-audio-state${isSpeaking || cuePlaying ? " is-playing" : ""}`}
-                role="status"
-                data-cue-state={audioState}
-              >
-                {isSpeaking || cuePlaying ? "再生中" : "待機中"}
-              </span>
-            </div>
-            <div className="flow-actions">
-              <button
-                type="button"
-                className="flow-btn"
-                onClick={() => void announce(current, false)}
-                disabled={!current.audioSrc}
-              >
-                <FlowTransportIcon kind="replay" />
-                もう一度聞く
-              </button>
-              <button
-                type="button"
-                className="flow-btn"
-                onClick={stopAudioByUser}
-                disabled={!isSpeaking && !cuePlaying}
-              >
-                <FlowTransportIcon kind="stop" />
-                今の音声を止める
-              </button>
-            </div>
-            {stopNotice && (
-              <p className="flow-audio-notice" role="status">
-                今の音声を停止しました
-                <br />
-                次の案内は自動で再生されます
-              </p>
-            )}
-          </div>
-          <p className="flow-progress__times">
-            {timeOfDay(session!.startedAt)}開始 ·{" "}
-            {timeOfDay(
-              session!.startedAt +
-                session!.accumulatedPausedMs +
-                (session!.pausedAt ? Date.now() - session!.pausedAt : 0) +
-                7200000,
-            )}
-            終了予定
-          </p>
-          <details className="flow-script">
-            <summary>この案内の内容</summary>
-            <p>{current.displayText}</p>
-          </details>
-        </div>
-      </div>
-      <details className="flow-overview">
-        <summary>全体の進行</summary>
-        <p className="flow-muted">時刻をタップすると、その時点へ移動できます</p>
-        {pendingSeek && (
-          <div className="flow-seek-confirm" role="alert">
-            <p>
-              {formatOffset(pendingSeek.offsetSec)} {pendingSeek.title}
-              へ移動しますか？
-            </p>
-            <div className="flow-actions">
-              <button
-                type="button"
-                className="flow-btn flow-btn--primary"
-                onClick={() => seek(pendingSeek)}
-              >
-                移動して案内
-              </button>
-              <button
-                type="button"
-                className="flow-btn"
-                onClick={() => setPendingSeek(null)}
-              >
-                キャンセル
-              </button>
-            </div>
-          </div>
-        )}
-        <Timeline
-          events={events}
-          currentId={current.id}
-          elapsedSec={elapsedSec}
-          onSeek={(e) => (status === "running" ? setPendingSeek(e) : seek(e))}
-        />
-      </details>
-    </section>
-  );
-});
+  },
+);
 export default AutoFlowPanel;
-function Timeline({
-  events,
-  currentId,
-  elapsedSec,
-  onSeek,
-}: {
-  events: AutoFlowEvent[];
-  currentId: string | null;
-  elapsedSec: number;
-  onSeek?: (e: AutoFlowEvent) => void;
-}) {
-  return (
-    <ol className="flow-timeline" aria-label="自動進行タイムライン">
-      {events.map((e) => {
-        const isCurrent = e.id === currentId;
-        const complete = !!currentId && e.offsetSec < elapsedSec && !isCurrent;
-        const content = (
-          <>
-            <span className="flow-timeline__dot" aria-hidden="true">
-              {complete ? "✓" : ""}
-            </span>
-            <time>{formatOffset(e.offsetSec)}</time>
-            <span className="flow-timeline__title">{e.title}</span>
-            {isCurrent && <span className="flow-timeline__label">現在</span>}
-          </>
-        );
-        return (
-          <li
-            key={e.id}
-            className={`${isCurrent ? "is-current" : ""} ${complete ? "is-complete" : ""}`}
-          >
-            {onSeek ? (
-              <button
-                type="button"
-                aria-current={isCurrent ? "step" : undefined}
-                onClick={() => onSeek(e)}
-              >
-                {content}
-              </button>
-            ) : (
-              <div>{content}</div>
-            )}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}

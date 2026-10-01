@@ -164,6 +164,41 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   const appMountedRef = useRef(true);
   const logRef = useRef<HTMLDivElement | null>(null);
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("settings") === "1")
+      setSettingsOpen(true);
+  }, []);
+  useEffect(() => {
+    if (!settingsOpen || mode !== "flow") return;
+    const panel = document.getElementById("audio-volume-settings");
+    panel?.querySelector<HTMLButtonElement>(".settings-close")?.focus();
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSettingsOpen(false);
+        document
+          .querySelector<HTMLButtonElement>(".page-menu-trigger")
+          ?.focus();
+      }
+      if (event.key !== "Tab" || !panel) return;
+      const nodes = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          "button:not(:disabled),input:not(:disabled),a[href]",
+        ),
+      );
+      if (!nodes.length) return;
+      if (event.shiftKey && document.activeElement === nodes[0]) {
+        event.preventDefault();
+        nodes.at(-1)?.focus();
+      } else if (!event.shiftKey && document.activeElement === nodes.at(-1)) {
+        event.preventDefault();
+        nodes[0].focus();
+      }
+    };
+    document.addEventListener("keydown", key);
+    return () => document.removeEventListener("keydown", key);
+  }, [settingsOpen, mode]);
+
   // 初期化(クライアントのみ)
   useEffect(() => {
     setRecognitionOk(isSpeechRecognitionSupported());
@@ -436,6 +471,8 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     appMountedRef.current = true;
     return () => {
       appMountedRef.current = false;
+      // Browser Back/Forward may bypass the header links. Capture the session playhead before releasing its audio.
+      window.dispatchEvent(new Event("will-flow-leave"));
       stopAllSpeaking();
       listeningRef.current?.stop();
     };
@@ -447,7 +484,12 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
    * VOICEVOX 失敗時は内部で SpeechSynthesis にフォールバックする。
    */
   const speak = useCallback(
-    async (text: string, audioSrc?: string, requireRecording = false) => {
+    async (
+      text: string,
+      audioSrc?: string,
+      requireRecording = false,
+      startAtSec = 0,
+    ) => {
       if (requireRecording) setNotice(null);
       // 旧セッションを完全停止してから、新しい再生だけを現行セッションにする。
       stopAllSpeaking();
@@ -470,13 +512,15 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       if ((requireRecording || voiceMode === "recorded") && audioSrc) {
         playRecordedAudio(audioSrc, {
           volume: getAudioVolume(),
+          startAtSec,
           onEnd: finishIfCurrent,
           onError: requireRecording
             ? () => {
                 if (!isCurrent()) return;
                 finishIfCurrent();
+                window.dispatchEvent(new Event("will-flow-audio-error"));
                 setNotice(
-                  "案内音声を再生できませんでした。音量と接続を確認して、「もう一度聞く」を押してください。",
+                  "案内を再生できませんでした。接続を確認して、再生または再開ボタンでやり直してください。",
                 );
               }
             : fallbackToStandard,
@@ -531,12 +575,13 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   );
 
   const speakRecorded = useCallback(
-    (text: string, audioSrc?: string) => {
-      void speak(text, audioSrc, true);
+    (text: string, audioSrc?: string, startAtSec = 0) => {
+      void speak(text, audioSrc, true, startAtSec);
     },
     [speak],
   );
   const leavePage = useCallback(() => {
+    flowModeRef.current?.pauseForNavigation();
     listeningRef.current?.stop();
     window.dispatchEvent(new Event("will-flow-leave"));
     stopAllSpeaking();
@@ -649,38 +694,39 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
               : "WILL.tennis マスコット"}
           </span>
         </div>
-        <div className="header__actions">
-          <button
-            type="button"
-            className="settings-toggle"
-            onClick={() => setSettingsOpen((open) => !open)}
-            aria-expanded={settingsOpen}
-            aria-controls="audio-volume-settings"
-            aria-label="設定を開く"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              aria-hidden="true"
-            >
-              <path d="m9.5 3-.5 2-2 1-2-.5-2.5 4 1.5 1.5v2L2.5 15 5 19l2-.5 2 1 .5 2h5l.5-2 2-1 2 .5 2.5-4-1.5-2v-2L21.5 10 19 5.5l-2 .5-2-1-.5-2Z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          </button>
-        </div>
+        <PageNavigation
+          current={mode}
+          onNavigate={leavePage}
+          onSettings={() => setSettingsOpen(true)}
+        />
       </header>
 
+      {settingsOpen && mode === "flow" && (
+        <div
+          className="settings-scrim"
+          aria-hidden="true"
+          onClick={() => setSettingsOpen(false)}
+        />
+      )}
       {settingsOpen && (
         <section
           id="audio-volume-settings"
           className="settings-panel"
           aria-label={mode === "flow" ? "設定" : "音量設定"}
+          role={mode === "flow" ? "dialog" : undefined}
+          aria-modal={mode === "flow" ? true : undefined}
         >
-          {mode === "flow" && <h2 className="settings-panel__heading">設定</h2>}
+          <div className="settings-dialog-heading">
+            <h2 className="settings-panel__heading">設定</h2>
+            <button
+              type="button"
+              className="settings-close"
+              aria-label="設定を閉じる"
+              onClick={() => setSettingsOpen(false)}
+            >
+              ×
+            </button>
+          </div>
           <div className="settings-panel__volume">
             <label htmlFor="audio-volume">
               音声音量 <output>{Math.round(recordedVolume * 100)}%</output>
@@ -749,7 +795,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
                     onClick={() => flowModeRef.current?.stopCurrentAudio()}
                   >
                     <FlowTransportIcon kind="stop" />
-                    今の音声を止める
+                    試聴を停止
                   </button>
                 </div>
               </div>
@@ -1103,7 +1149,6 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           </footer>
         </>
       )}
-      <PageNavigation current={mode} onNavigate={leavePage} />
     </div>
   );
 }

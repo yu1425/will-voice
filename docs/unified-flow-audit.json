@@ -1,0 +1,493 @@
+{
+  "base": "http://127.0.0.1:53556",
+  "auditedAt": "2026-10-01T03:50:18.558Z",
+  "checks": [
+    {
+      "name": "automatic mode has no detached audio controls or practice timer; setup precedes start",
+      "pass": true,
+      "evidence": {
+        "setup": 254.1875,
+        "start": 443.25
+      }
+    },
+    {
+      "name": "idle-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "menu-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "touch menu order and Escape",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "one pause freezes clock and saves native WAV position",
+      "pass": true,
+      "evidence": {
+        "eventId": "opening",
+        "positionSec": 1.292896,
+        "chime": false
+      }
+    },
+    {
+      "name": "paused-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "one resume restarts both clock and interrupted native WAV",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:53556/audio/flow/v2/00-opening.wav",
+        "position": 1.292896,
+        "volume": 1,
+        "index": 3
+      }
+    },
+    {
+      "name": "settings-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "settings menu and 100/50/20/30 volume do not interrupt active session",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "paused navigation moves only; no unsolicited audio",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "pause during chime cancels pending voice; resume plays complete chime and selected two-court cue",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:53556/audio/flow/v2/20-cross-rally-double.wav",
+        "position": 0.003067,
+        "volume": 0.3,
+        "index": 6
+      }
+    },
+    {
+      "name": "running-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "running seek cancels obsolete pending cue and plays only selected item",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "natural future boundary still plays after pause, resume and backward navigation",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "guide-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": []
+      }
+    },
+    {
+      "name": "actual route changes pause complete session; return requires explicit resume",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "manual mode is select + one play/pause control; selection cancels prior playback",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:53556/audio/flow/v2/00-opening.wav",
+        "position": 1.212611,
+        "volume": 0.3,
+        "index": 14
+      }
+    },
+    {
+      "name": "manual-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "manual cues toggle on same button; timer ends with Zundamon at shared volume",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "extras-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "reload is paused and quiet, with no announcement burst",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "complete and reset stop everything and clear saved session",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "session end confirmation clears clock and media together",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "failed audio pauses session; explicit resume retries with zero browser voice fallback",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "paused-480",
+      "pass": true,
+      "evidence": {
+        "viewport": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "paused-320",
+      "pass": true,
+      "evidence": {
+        "viewport": 320,
+        "document": 320,
+        "app": 320,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "paused-1440",
+      "pass": true,
+      "evidence": {
+        "viewport": 1440,
+        "document": 1440,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "manual-480",
+      "pass": true,
+      "evidence": {
+        "viewport": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          },
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "no browser runtime errors",
+      "pass": true,
+      "evidence": []
+    },
+    {
+      "name": "chat-480",
+      "pass": true,
+      "evidence": {
+        "viewport": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "unframed": []
+      }
+    },
+    {
+      "name": "browser Back/Forward captures and resumes playhead even without header-link callback",
+      "pass": true,
+      "evidence": {
+        "src": "http://127.0.0.1:53556/audio/flow/v2/00-opening.wav",
+        "position": 1.138772,
+        "volume": 0.3,
+        "index": 7
+      }
+    },
+    {
+      "name": "simulated visibility event pauses whole session; foreground does not silently restart",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "already-completed announcement is not repeated on normal flow resume",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "desktop hover enters menu, keyboard opens, tabs links and Escape closes",
+      "pass": true,
+      "evidence": null
+    }
+  ],
+  "errors": [],
+  "physicalDeviceChecks": false,
+  "startingSha": "6e09391f0bf9e62340c8ccead9520a8ba67607bd",
+  "method": "Production-build app in isolated Chrome; native WAV and AudioContext; Date.now offset only for long boundaries; simulated visibility event explicitly marked.",
+  "commandChecks": {
+    "node scripts/test-flow.mjs": "PASS",
+    "node scripts/test-unified-flow.mjs": "PASS",
+    "npx tsc --noEmit": "PASS",
+    "npm run build": "PASS",
+    "git diff --check": "PASS"
+  },
+  "preservedAudio": [
+    {
+      "file": "public/audio/flow/extras/q-gather.wav",
+      "sha256": "d6edace7281f85fb17ae4df2beafcad805aed76c36ae2050c57901d94db38c18",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/extras/q-health.wav",
+      "sha256": "32c8d43a9982fec8bbccddaaac7222d9081de30c0cf53d2b561dd1ab8c7ee0f7",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/extras/q-next-menu.wav",
+      "sha256": "c28d9614cf6d339233df29b5557d15eb94f1f6062f2394285c8b7cbd1ba17e1a",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/extras/q-no-strong.wav",
+      "sha256": "7c878190a11c24291c10a738d58334a41071e22841bd558132dfe971d26db0b1",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/extras/q-rotate.wav",
+      "sha256": "23e28fa63b4249b0ab4f5ff5bcc58d178c5304f11fce1c2b651c14a3ccb56e10",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/extras/q-welcome.wav",
+      "sha256": "5571128bff441a6e20617971b1793a37b71fea21827d7a73c6f697cf6a52bf29",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/extras/timer-ended.wav",
+      "sha256": "4bfbb0eff09abf0a05f0651bc01aa6cfe58a391822626e3dcffe2ad471194887",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/00-opening.wav",
+      "sha256": "6cd01aa1a135b25fb41694da92fc807b5e6b2f98f66223e836a1e1ee487f6ed1",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/05-volley.wav",
+      "sha256": "7d54dfa0f9c4f946e6ba625ab14c556166a8aef1ee1c39cfeb014386ab467350",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/10-long-rally.wav",
+      "sha256": "ab15c9add690a8ebcf8874c34a3eb764c9bb28082655ac46f8c3ae29dd323554",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/105-mini-game.wav",
+      "sha256": "083f18d961d6f15f99aa10f8e01cbac3bc3fa21f010f34b278714b3ab4be0785",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/117-closing.wav",
+      "sha256": "dc8533c67812d572f51b51e15131e5d6ba8d8d52c18f45e09dbf626aa7580e57",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/20-cross-rally-double.wav",
+      "sha256": "8eddb7909b301686d751e7723905d8d7b12fbf93d22c51ed9b0863bca8e67931",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/20-cross-rally-single.wav",
+      "sha256": "a388885faf26e8d35f0efe53826efb0a03332de24f47cd9b8f4015fac10b0fa7",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/30-serve-return-double.wav",
+      "sha256": "31d0e072a842f48356bf07634dd0d8b7194a2c3906ec35effb3ecb6b80ac1ce4",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/30-serve-return-single.wav",
+      "sha256": "73618da4732e9f3d0f4424bca2d30d709075470fe4205bb655710c325050de42",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/35-serve-return-switch.wav",
+      "sha256": "c0c281428518e5e176decc7c2df39084dd2317b686119f003ca03ffa762ebc9a",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/40-random-table-double.wav",
+      "sha256": "c5751db9ed726396395ed83442ba0211ed2b6d06d1339f2a0e2eb5eff8f659bc",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/40-random-table-single.wav",
+      "sha256": "76473d637261f840a61d7b8f427a31cad8d4b67ea880c6ee052640f70a21190e",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/43-game-rules.wav",
+      "sha256": "0851d62948b91c60b15079684dc2880ae30a4da549ff2740fcee85b175bdfb5d",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/46-self-intro.wav",
+      "sha256": "c59bb234555182174d0e728252b3f0233459b025385564ca526559b84e298f6b",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/50-game-start.wav",
+      "sha256": "063d3f87f9d87c0f429cd2a196e8cb0e454c4949037702dfad46bfc31c4bdd43",
+      "unchanged": true
+    },
+    {
+      "file": "public/audio/flow/v2/voice-test.wav",
+      "sha256": "a16542a7fde1d2f3a55de6c562e555fdaa07c34ff5336933ee09ab5f2a8180fe",
+      "unchanged": true
+    }
+  ],
+  "preservedChimeSha256": "2e719afce8373c6a0afbe5b36117114f8726109d8e55c4a56c256d8ea1889c31",
+  "limitations": [
+    "No physical iPad Safari, Bluetooth speaker audibility, or real device screen-lock certification.",
+    "Old audit-flow scripts describe the superseded separate audio/clock UI; use audit-unified-flow.mjs for this revision."
+  ]
+}

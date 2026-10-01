@@ -67,7 +67,8 @@ body {
   align-items: center;
   gap: 12px;
   box-shadow: none;
-  z-index: 2;
+  position: relative;
+  z-index: 20;
 }
 
 .header__avatar {
@@ -86,6 +87,8 @@ body {
 }
 
 .header__titles {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   line-height: 1.25;
@@ -156,7 +159,15 @@ body {
 }
 
 .app--flow .settings-panel {
-  max-height: calc(100dvh - 180px);
+  position: absolute;
+  top: 76px;
+  left: 12px;
+  right: 12px;
+  z-index: 40;
+  max-height: calc(100dvh - 92px);
+  border: 1px solid #e3e6ea;
+  border-radius: 16px;
+  box-shadow: 0 14px 36px #23334a24;
   overflow-y: auto;
   padding: 16px 20px;
   gap: 18px;

@@ -24,13 +24,29 @@ export function preloadRecordedAudio(src: string | undefined): void {
  */
 export function playRecordedAudio(
   src: string,
-  options?: { onEnd?: () => void; onError?: () => void; volume?: number },
+  options?: {
+    onEnd?: () => void;
+    onError?: () => void;
+    volume?: number;
+    startAtSec?: number;
+  },
 ): void {
   stopRecordedAudio();
 
   const audio = new Audio(src);
   audio.volume = clampAudioVolume(options?.volume ?? getAudioVolume());
   currentAudio = audio;
+  const seekToSavedPosition = () => {
+    if (currentAudio !== audio || !options?.startAtSec) return;
+    const maximum = Number.isFinite(audio.duration)
+      ? Math.max(0, audio.duration - 0.01)
+      : options.startAtSec;
+    audio.currentTime = Math.min(Math.max(0, options.startAtSec), maximum);
+  };
+  if (options?.startAtSec)
+    audio.addEventListener("loadedmetadata", seekToSavedPosition, {
+      once: true,
+    });
 
   // play() の reject と error イベントは同時に発火しうるため、
   // 終了/エラーのコールバックは最大1回だけ呼ぶようにガードする。
@@ -38,10 +54,13 @@ export function playRecordedAudio(
   const finish = (cb?: () => void) => {
     if (settled) return;
     settled = true;
-    if (currentAudio === audio) currentAudio = null;
+    const ownsPlayback = currentAudio === audio;
+    if (ownsPlayback) currentAudio = null;
     audio.onended = null;
     audio.onerror = null;
-    cb?.();
+    // A rejected play() may leave paused=false despite a media error. Explicitly release that element.
+    audio.pause();
+    if (ownsPlayback) cb?.();
   };
 
   audio.onended = () => finish(options?.onEnd);
@@ -74,4 +93,18 @@ export function resumeRecordedAudio(): void {
 /** 再生位置を変えず、現在の録音へ即座に反映する。 */
 export function setRecordedAudioVolume(volume: number): void {
   if (currentAudio) currentAudio.volume = clampAudioVolume(volume);
+}
+
+/** Capture before cancelling; one session control owns both clock and this playhead. */
+export function getRecordedAudioPosition(): {
+  src: string;
+  positionSec: number;
+} | null {
+  if (!currentAudio || currentAudio.ended) return null;
+  return {
+    src: currentAudio.src,
+    positionSec: Number.isFinite(currentAudio.currentTime)
+      ? currentAudio.currentTime
+      : 0,
+  };
 }
