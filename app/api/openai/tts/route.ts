@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const MODEL = process.env.OPENAI_TTS_MODEL ?? "gpt-4o-mini-tts";
-const VOICE = process.env.OPENAI_TTS_VOICE ?? "marin";
+const VOICE = process.env.OPENAI_TTS_VOICE ?? "ash";
+const SPEED = Number(process.env.OPENAI_TTS_SPEED ?? "1.06");
 const MAX_TEXT_LENGTH = 1800;
 const DEFAULT_INSTRUCTIONS =
-  "Speak in natural Japanese as WILL.tennis official character うぃる. " +
-  "Bright, friendly, gentle, clear, and slightly energetic for guiding a tennis group. " +
-  "Do not sound childish or exaggerated. Keep pauses natural and concise. " +
+  "Speak in natural Japanese as うぃる, the official WILL.tennis mascot character. " +
+  "Use a bright, catchy, youthful male character voice with the impression of a late-teen to early-20s boy. " +
+  "Keep the register light and clear, with friendly playful energy, a slight smile in the voice, crisp articulation, and a slightly brisk rhythm. " +
+  "Sound approachable and lively for a casual tennis group. " +
+  "Avoid sounding mature, middle-aged, feminine, deep, husky, announcer-like, formal, or overly theatrical. " +
+  "Character-like but natural, not exaggerated anime acting. Keep pauses short and natural. " +
   "Pronounce WILL.tennis as ウィルテニス.";
 
 function isSameOrigin(req: NextRequest) {
@@ -76,6 +80,7 @@ export async function POST(req: NextRequest) {
         voice,
         input: text,
         instructions,
+        speed: Number.isFinite(SPEED) ? Math.min(4, Math.max(0.25, SPEED)) : 1.06,
         response_format: "wav",
       }),
       cache: "no-store",
