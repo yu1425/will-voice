@@ -60,10 +60,15 @@ await context.addInitScript(() => {
     speak(u);
   };
 });
-const b = (name) => page.getByRole("button", { name, exact: true });
+const b = (name) =>
+  page.getByRole("button", {
+    name: name === "もう一度聞く" ? /^(案内を聞く|もう一度聞く)$/ : name,
+    exact: true,
+  });
 const openSessionSettings = async () => {
   const settings = page.locator(".flow-session-settings");
-  if (await settings.getAttribute("open") === null) await settings.locator("summary").click();
+  if ((await settings.getAttribute("open")) === null)
+    await settings.locator("summary").click();
 };
 const endFlow = async () => {
   await openSessionSettings();
@@ -113,7 +118,7 @@ const shot = async (state, width) => {
   assert.equal(layout.width, layout.documentWidth);
   assert.ok(layout.appWidth <= 480);
   assert.ok(layout.contentBottom <= layout.navTop);
-  const path = `reports/flow-v5-ux-${state}-${width}.png`;
+  const path = `reports/flow-v6-ux-${state}-${width}.png`;
   await page.screenshot({ path });
   pass(`${width} ${state} layout`, { ...layout, screenshot: path });
 };
@@ -215,8 +220,7 @@ try {
   await endFlow();
   await b("設定を開く").click();
   await setVolume(50);
-  await b("設定を開く").click();
-  await b("試聴").click();
+  await b("チャイムを試聴").click();
   const master = await page.evaluate(() => window.__gain[0].gain.value);
   assert.equal(master, 0.5);
   const frequencies = await page.evaluate(() => window.__frequency.slice(0, 9));
@@ -226,13 +230,12 @@ try {
   assert.equal(frequencies.length, 9);
   assert.deepEqual(await page.evaluate(() => window.__frequencyRamps), []);
   frequencies.forEach((f, i) => assert.ok(Math.abs(f - expected[i]) < 0.001));
-  await b("設定を開く").click();
   await setVolume(20);
   await page.waitForFunction(
     () => Math.abs(window.__gain[0].gain.value - 0.2) < 0.00001,
   );
-  await b("設定を開く").click();
   await b("今の音声を止める").click();
+  await b("設定を開く").click();
   pass("restored original three bell pitches and live common chime gain", {
     frequencies,
     masterBefore: 0.5,
@@ -302,8 +305,8 @@ try {
   await b("設定を開く").click();
   await setVolume(20);
   assert.ok(
-    (await page.getByRole("region", { name: "音量設定" }).innerText()).includes(
-      "標準音声は次の再生から反映",
+    (await page.locator(".flow-session-settings").innerText()).includes(
+      "音量の変更は次の再生から反映",
     ),
   );
   await b("設定を開く").click();
@@ -318,7 +321,7 @@ try {
   assert.deepEqual(errors, []);
   pass("no runtime errors");
   writeFileSync(
-    "reports/flow-v5-ux-audit.json",
+    "reports/flow-v6-ux-audit.json",
     JSON.stringify(
       {
         auditedAt: new Date().toISOString(),

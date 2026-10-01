@@ -45,7 +45,7 @@ await context.addInitScript(() => {
     speak(u);
   };
 });
-const b = (name) => page.getByRole("button", { name, exact: true });
+const b = (name) => page.getByRole("button", { name: name === "もう一度聞く" ? /^(案内を聞く|もう一度聞く)$/ : name, exact: true });
 const endFlow = async () => {
   const settings = page.locator(".flow-session-settings");
   if (await settings.getAttribute("open") === null) await settings.locator("summary").click();
@@ -193,12 +193,12 @@ try {
     await page
       .locator(".flow-timeline")
       .evaluate((el) => el.scrollIntoView({ block: "start" }));
-    await page.screenshot({ path: `reports/flow-v5-timeline-${width}.png` });
+    await page.screenshot({ path: `reports/flow-v6-timeline-${width}.png` });
     await b("個別進行").click();
     await page
       .locator(".flow-step-list")
       .evaluate((el) => el.scrollIntoView({ block: "start" }));
-    await page.screenshot({ path: `reports/flow-v5-steps-${width}.png` });
+    await page.screenshot({ path: `reports/flow-v6-steps-${width}.png` });
     await b("自動進行").click();
     await endFlow();
   }
@@ -207,9 +207,9 @@ try {
   assert.equal(rect.width, 480);
   assert.equal(rect.x, 480);
   pass("desktop preserves centered 480px app");
-  await page.screenshot({ path: "reports/flow-v5-desktop.png" });
+  await page.screenshot({ path: "reports/flow-v6-desktop.png" });
   writeFileSync(
-    "reports/flow-v5-cancellation-audit.json",
+    "reports/flow-v6-cancellation-audit.json",
     JSON.stringify(
       { auditedAt: new Date().toISOString(), base, checks },
       null,

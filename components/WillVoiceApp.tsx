@@ -6,7 +6,8 @@ import PageNavigation from "./PageNavigation";
 import { getAudioVolume, setAudioVolume } from "@/lib/audioVolume";
 import { setTransitionCueVolume, stopTransitionCue } from "@/lib/transitionCue";
 import ChatMessage, { ChatMessageData } from "@/components/ChatMessage";
-import FlowMode from "@/components/FlowMode";
+import FlowMode, { type FlowModeHandle } from "@/components/FlowMode";
+import FlowTransportIcon from "./FlowTransportIcon";
 import { generateWillReply } from "@/lib/generateWillReply";
 import { WILL_GREETING } from "@/lib/willPrompt";
 import {
@@ -16,25 +17,19 @@ import {
   speakText,
   startListening,
   stopSpeaking,
-  pauseSpeaking,
-  resumeSpeaking,
   type ListeningHandle,
 } from "@/lib/speech";
 import {
   speakWithVoicevox,
   stopVoicevox,
   setVoicevoxVolume,
-  pauseVoicevox,
-  resumeVoicevox,
   fetchVoicevoxSpeakers,
   pickZundamonStyles,
   type VoicevoxHandle,
   type ZundamonStyle,
 } from "@/lib/voicevox";
 import {
-  pauseRecordedAudio,
   playRecordedAudio,
-  resumeRecordedAudio,
   stopRecordedAudio,
   setRecordedAudioVolume,
 } from "@/lib/recordedAudio";
@@ -65,6 +60,7 @@ const VOICEVOX_PARAMS_STORAGE_KEY = "will-voicevox-params";
 const STANDARD_VOICE_STORAGE_KEY = "will-standard-voice-uri";
 const RECORDED_VOLUME_STORAGE_KEY = "will-recorded-volume";
 const OPTIONAL_VOICE_MODES_STORAGE_KEY = "will-optional-voice-modes";
+const FLOW_SETTINGS_STORAGE_KEY = "will-standard-two-hour-auto-flow-settings";
 
 type VoicevoxPresetName = "標準" | "明るめ" | "聞き取りやすさ重視" | "ゆっくり";
 
@@ -128,7 +124,6 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   ]);
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isSpeakingPaused, setIsSpeakingPaused] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [textInput, setTextInput] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -158,12 +153,14 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       voicevox: false,
     });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [chimeEnabled, setChimeEnabled] = useState(true);
+  const [isChimePlaying, setIsChimePlaying] = useState(false);
+  const flowModeRef = useRef<FlowModeHandle>(null);
 
   const listeningRef = useRef<ListeningHandle | null>(null);
   const voicevoxHandleRef = useRef<VoicevoxHandle | null>(null);
   const voicevoxAbortRef = useRef<AbortController | null>(null);
   const speechGenerationRef = useRef(0);
-  const pauseRequestedRef = useRef(false);
   const appMountedRef = useRef(true);
   const logRef = useRef<HTMLDivElement | null>(null);
 
@@ -182,6 +179,15 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     const local = isLocalhost();
     setIsLocal(local);
 
+    try {
+      const flowSettings = JSON.parse(
+        window.localStorage.getItem(FLOW_SETTINGS_STORAGE_KEY) ?? "{}",
+      );
+      if (typeof flowSettings.chimeEnabled === "boolean")
+        setChimeEnabled(flowSettings.chimeEnabled);
+    } catch {
+      /* Ignore invalid chime preferences without blocking other saved settings. */
+    }
     try {
       let savedOptionalVoiceModes: OptionalVoiceModes = {
         standard: false,
@@ -400,6 +406,17 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       /* no-op */
     }
   }, []);
+  const handleChimeChange = useCallback((enabled: boolean) => {
+    setChimeEnabled(enabled);
+    try {
+      window.localStorage.setItem(
+        FLOW_SETTINGS_STORAGE_KEY,
+        JSON.stringify({ chimeEnabled: enabled }),
+      );
+    } catch {
+      /* storage may be unavailable */
+    }
+  }, []);
 
   /** 全方式の読み上げ停止 */
   const stopAllSpeaking = useCallback(() => {
@@ -408,12 +425,10 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     speechGenerationRef.current += 1;
     voicevoxAbortRef.current?.abort();
     voicevoxAbortRef.current = null;
-    pauseRequestedRef.current = false;
     stopSpeaking();
     stopVoicevox();
     stopRecordedAudio();
     voicevoxHandleRef.current = null;
-    setIsSpeakingPaused(false);
     setIsSpeaking(false);
   }, []);
 
@@ -425,27 +440,6 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       listeningRef.current?.stop();
     };
   }, [stopAllSpeaking]);
-
-  /** 全方式の読み上げを現在位置で一時停止 */
-  const pauseAllSpeaking = useCallback(() => {
-    if (!isSpeaking) return;
-    // VOICEVOXの音声生成中でも、生成完了後に一時停止できるよう記録する。
-    pauseRequestedRef.current = true;
-    pauseSpeaking();
-    pauseVoicevox();
-    pauseRecordedAudio();
-    setIsSpeakingPaused(true);
-  }, [isSpeaking]);
-
-  /** 一時停止中の読み上げを現在位置から再開 */
-  const resumeAllSpeaking = useCallback(() => {
-    if (!isSpeaking) return;
-    pauseRequestedRef.current = false;
-    resumeSpeaking();
-    resumeVoicevox();
-    resumeRecordedAudio();
-    setIsSpeakingPaused(false);
-  }, [isSpeaking]);
 
   /**
    * 任意のテキストを現在の音声モードで読み上げる(進行モードからも利用)。
@@ -461,7 +455,6 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       const isCurrent = () => generation === speechGenerationRef.current;
       const finishIfCurrent = () => {
         if (!isCurrent()) return;
-        setIsSpeakingPaused(false);
         setIsSpeaking(false);
       };
       const fallbackToStandard = () => {
@@ -519,13 +512,6 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
 
         voicevoxAbortRef.current = null;
         voicevoxHandleRef.current = result.handle ?? null;
-        if (pauseRequestedRef.current) {
-          if (result.usedFallback) {
-            pauseSpeaking();
-          } else {
-            pauseVoicevox();
-          }
-        }
 
         if (result.usedFallback) {
           setVoicevoxStatus("fallback");
@@ -692,25 +678,87 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
         <section
           id="audio-volume-settings"
           className="settings-panel"
-          aria-label="音量設定"
+          aria-label={mode === "flow" ? "設定" : "音量設定"}
         >
-          <label htmlFor="audio-volume">
-            音声音量 <output>{Math.round(recordedVolume * 100)}%</output>
-          </label>
-          <input
-            id="audio-volume"
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={Math.round(recordedVolume * 100)}
-            onChange={(e) =>
-              handleRecordedVolumeChange(Number(e.target.value) / 100)
-            }
-          />
-          <p className="flow-muted">
-            録音・VOICEVOX・チャイムは再生中にも反映します。標準音声は次の再生から反映します。
-          </p>
+          {mode === "flow" && <h2 className="settings-panel__heading">設定</h2>}
+          <div className="settings-panel__volume">
+            <label htmlFor="audio-volume">
+              音声音量 <output>{Math.round(recordedVolume * 100)}%</output>
+            </label>
+            <input
+              id="audio-volume"
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={Math.round(recordedVolume * 100)}
+              onChange={(e) =>
+                handleRecordedVolumeChange(Number(e.target.value) / 100)
+              }
+            />
+            <p className="flow-muted">
+              {mode === "flow"
+                ? "自動進行・個別進行・声かけに共通です"
+                : "録音・VOICEVOX・チャイムは再生中にも反映します。標準音声は次の再生から反映します。"}
+            </p>
+          </div>
+          {mode === "flow" && (
+            <>
+              <div className="settings-panel__section">
+                <div className="settings-panel__row">
+                  <label htmlFor="flow-chime">チャイム</label>
+                  <label className="settings-panel__switch">
+                    <input
+                      id="flow-chime"
+                      type="checkbox"
+                      role="switch"
+                      aria-label="チャイム"
+                      checked={chimeEnabled}
+                      onChange={(e) => handleChimeChange(e.target.checked)}
+                    />
+                    <span aria-hidden="true">
+                      {chimeEnabled ? "ON" : "OFF"}
+                    </span>
+                  </label>
+                </div>
+                <p className="flow-muted">メニュー切替時に再生します</p>
+                <button
+                  type="button"
+                  className="flow-btn"
+                  onClick={() => void flowModeRef.current?.playChimeTest()}
+                >
+                  <FlowTransportIcon kind="play" />
+                  チャイムを試聴
+                </button>
+              </div>
+              <div className="settings-panel__section">
+                <h3>音声テスト</h3>
+                <div className="flow-actions">
+                  <button
+                    type="button"
+                    className="flow-btn"
+                    onClick={() => flowModeRef.current?.playVoiceTest()}
+                  >
+                    <FlowTransportIcon kind="play" />
+                    テスト再生
+                  </button>
+                  <button
+                    type="button"
+                    className="flow-btn"
+                    disabled={!isSpeaking && !isChimePlaying}
+                    onClick={() => flowModeRef.current?.stopCurrentAudio()}
+                  >
+                    <FlowTransportIcon kind="stop" />
+                    今の音声を止める
+                  </button>
+                </div>
+              </div>
+              <div className="settings-panel__section settings-panel__about">
+                <h3>アプリについて</h3>
+                <p>VOICEVOX: ずんだもん</p>
+              </div>
+            </>
+          )}
         </section>
       )}
       <div hidden={mode === "flow"}>
@@ -1027,13 +1075,13 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
         <>
           <div className="flow-scroll">
             <FlowMode
+              ref={flowModeRef}
+              chimeEnabled={chimeEnabled}
+              onChimePlayingChange={setIsChimePlaying}
               speak={speak}
               speakRecorded={speakRecorded}
               stopSpeaking={stopAllSpeaking}
               isSpeaking={isSpeaking}
-              isSpeakingPaused={isSpeakingPaused}
-              onPauseSpeaking={pauseAllSpeaking}
-              onResumeSpeaking={resumeAllSpeaking}
               voiceMode={voiceMode}
             />
           </div>

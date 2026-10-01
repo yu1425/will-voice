@@ -35,7 +35,7 @@ await context.addInitScript(() => {
     return speak(...args);
   };
 });
-const button = (name) => page.getByRole("button", { name, exact: true });
+const button = (name) => page.getByRole("button", { name: name === "もう一度聞く" ? /^(案内を聞く|もう一度聞く)$/ : name, exact: true });
 const playing = () => page.waitForFunction(() => window.__media.some((audio) =>
   audio.src.endsWith("00-opening.wav") && !audio.paused && audio.currentTime > 0.5));
 const mediaState = () => page.evaluate(() => {

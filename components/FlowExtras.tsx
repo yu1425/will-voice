@@ -76,28 +76,34 @@ export default function FlowExtras({
                 : "停止中"}
           </span>
         </div>
-        <div
-          className="flow-choice flow-timer-choice"
-          role="group"
-          aria-label="タイマーの時間"
-        >
-          {[5, 10].map((minutes) => (
-            <button
-              key={minutes}
-              type="button"
-              disabled={timerStatus === "running"}
-              aria-pressed={selectedMinutes === minutes}
-              onClick={() => {
-                setSelectedMinutes(minutes);
-                setRemaining(minutes * 60);
-                setTimerStatus("idle");
-              }}
+        {(timerStatus === "idle" || timerStatus === "ended") && (
+          <>
+            <p className="flow-setting-label">時間</p>
+            <div
+              className="flow-choice flow-timer-choice"
+              role="group"
+              aria-label="タイマーの時間"
             >
-              {minutes}分
-            </button>
-          ))}
-        </div>
-        <div className="flow-actions">
+              {[5, 10].map((minutes) => (
+                <button
+                  key={minutes}
+                  type="button"
+                  aria-pressed={selectedMinutes === minutes}
+                  onClick={() => {
+                    setSelectedMinutes(minutes);
+                    setRemaining(minutes * 60);
+                    setTimerStatus("idle");
+                  }}
+                >
+                  {minutes}分
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        <div
+          className={`flow-actions${timerStatus === "idle" ? " flow-timer-actions--idle" : ""}`}
+        >
           <button
             type="button"
             className="flow-btn flow-btn--primary"
@@ -126,18 +132,20 @@ export default function FlowExtras({
                 ? "再開"
                 : "タイマー開始"}
           </button>
-          <button
-            type="button"
-            className="flow-btn"
-            onClick={() => {
-              deadline.current = null;
-              setEndAt(null);
-              setRemaining(selectedMinutes * 60);
-              setTimerStatus("idle");
-            }}
-          >
-            リセット
-          </button>
+          {timerStatus !== "idle" && (
+            <button
+              type="button"
+              className="flow-btn"
+              onClick={() => {
+                deadline.current = null;
+                setEndAt(null);
+                setRemaining(selectedMinutes * 60);
+                setTimerStatus("idle");
+              }}
+            >
+              リセット
+            </button>
+          )}
         </div>
       </section>
       <section className="flow-extras__cues" aria-label="声かけ操作">

@@ -91,7 +91,7 @@ await context.addInitScript(() => {
     return speak(u);
   };
 });
-const b = (name) => page.getByRole("button", { name, exact: true });
+const b = (name) => page.getByRole("button", { name: name === "もう一度聞く" ? /^(案内を聞く|もう一度聞く)$/ : name, exact: true });
 const openSessionSettings = async () => {
   const settings = page.locator(".flow-session-settings");
   if ((await settings.getAttribute("open")) === null)
@@ -191,7 +191,7 @@ try {
     eventEvidence,
   );
   await page.screenshot({
-    path: "reports/flow-v5-next-event-after-stop-390.png",
+    path: "reports/flow-v6-next-event-after-stop-390.png",
   });
   await b("進行を一時停止").click();
   await noAudio();
@@ -334,7 +334,7 @@ try {
   assert.deepEqual(errors, []);
   pass("zero SpeechSynthesis fallback and zero runtime errors");
   writeFileSync(
-    "reports/flow-v5-playback-audit.json",
+    "reports/flow-v6-playback-audit.json",
     JSON.stringify(
       {
         auditedAt: new Date().toISOString(),

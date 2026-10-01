@@ -1,0 +1,73 @@
+{
+  "auditedAt": "2026-10-01T01:21:52.600Z",
+  "base": "http://127.0.0.1:3002",
+  "checks": [
+    {
+      "name": "existing saved chime OFF is restored; concise shared volume wording",
+      "pass": true
+    },
+    {
+      "name": "settings test uses recorded Zundamon WAV and shared 30% volume; stop cancels it",
+      "pass": true
+    },
+    {
+      "name": "explicit chime preview works while automatic chime is OFF and is cancellable",
+      "pass": true
+    },
+    {
+      "name": "both tests work in manual mode and replace each other without overlap",
+      "pass": true
+    },
+    {
+      "name": "saved chime OFF suppresses only the bell; the next native WAV still plays",
+      "pass": true
+    },
+    {
+      "name": "changing chime ON during a session preserves the active WAV and enables the future bell/WAV",
+      "pass": true
+    },
+    {
+      "name": "settings test cancels a pending auto WAV without a delayed overwrite",
+      "pass": true
+    },
+    {
+      "name": "chime ON and volume 30% survive reload with the original storage keys",
+      "pass": true
+    },
+    {
+      "name": "390 consolidated settings remain readable without navigation overlap",
+      "pass": true,
+      "evidence": {
+        "width": 390,
+        "documentWidth": 390,
+        "panelBottom": 548.328125,
+        "navTop": 775,
+        "screenshot": "reports/flow-v6-settings-390.png"
+      }
+    },
+    {
+      "name": "480 consolidated settings remain readable without navigation overlap",
+      "pass": true,
+      "evidence": {
+        "width": 480,
+        "documentWidth": 480,
+        "panelBottom": 548.328125,
+        "navTop": 851,
+        "screenshot": "reports/flow-v6-settings-480.png"
+      }
+    },
+    {
+      "name": "manual initial listen becomes replay; disclosure wording stays fixed; only two audio buttons",
+      "pass": true
+    },
+    {
+      "name": "timer hides redundant controls, pauses/resumes and resets to the selected duration",
+      "pass": true
+    },
+    {
+      "name": "invalid chime preferences fall back safely without losing saved volume",
+      "pass": true
+    }
+  ],
+  "errors": []
+}

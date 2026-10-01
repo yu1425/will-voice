@@ -1,6 +1,14 @@
 "use client";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import AutoFlowPanel, {
   type AutoStatus,
   type AutoFlowHandle,
@@ -16,21 +24,26 @@ type Props = {
   speakRecorded: (text: string, audioSrc?: string) => void;
   stopSpeaking: () => void;
   isSpeaking: boolean;
-  isSpeakingPaused: boolean;
-  onPauseSpeaking: () => void;
-  onResumeSpeaking: () => void;
   voiceMode: "standard" | "voicevox" | "recorded";
+  chimeEnabled: boolean;
+  onChimePlayingChange: (playing: boolean) => void;
 };
-export default function FlowMode({
-  speak,
-  speakRecorded,
-  stopSpeaking,
-  isSpeaking,
-  isSpeakingPaused,
-  onPauseSpeaking,
-  onResumeSpeaking,
-  voiceMode,
-}: Props) {
+export type FlowModeHandle = Pick<
+  AutoFlowHandle,
+  "stopCurrentAudio" | "playChimeTest" | "playVoiceTest"
+>;
+const FlowMode = forwardRef<FlowModeHandle, Props>(function FlowMode(
+  {
+    speak,
+    speakRecorded,
+    stopSpeaking,
+    isSpeaking,
+    voiceMode,
+    chimeEnabled,
+    onChimePlayingChange,
+  },
+  ref,
+) {
   const [conditions, setConditions] =
     useState<FlowConditions>(DEFAULT_CONDITIONS);
   const [step, setStep] = useState(1);
@@ -42,6 +55,17 @@ export default function FlowMode({
     "step" | "extras" | "auto"
   >("step");
   const autoRef = useRef<AutoFlowHandle>(null);
+  useImperativeHandle(
+    ref,
+    () => ({
+      stopCurrentAudio: () => autoRef.current?.stopCurrentAudio(),
+      playChimeTest: async () => {
+        await autoRef.current?.playChimeTest();
+      },
+      playVoiceTest: () => autoRef.current?.playVoiceTest(),
+    }),
+    [],
+  );
   const [ending, setEnding] = useState(false);
   const speakAuto = useCallback(
     (text: string, audioSrc?: string) => {
@@ -135,6 +159,8 @@ export default function FlowMode({
           isSpeaking={isSpeaking}
           onSyncStep={syncStep}
           onStatusChange={setAutoStatus}
+          chimeEnabled={chimeEnabled}
+          onChimePlayingChange={onChimePlayingChange}
         />
       </div>
       <div hidden={mode !== "manual"}>
@@ -162,15 +188,12 @@ export default function FlowMode({
           totalSteps={TOTAL_STEPS}
           courts={conditions.courts}
           isSpeaking={isSpeaking}
-          isSpeakingPaused={isSpeakingPaused}
           onSpeak={() => {
             setPlaybackContext("step");
             return editedText === null
               ? speakRecorded(current.voiceText, current.audioSrc)
               : speak(editedText);
           }}
-          onPauseSpeaking={onPauseSpeaking}
-          onResumeSpeaking={onResumeSpeaking}
           onStop={stopSpeaking}
           onStepJump={jump}
           previewText={editedText ?? current.displayText}
@@ -185,9 +208,7 @@ export default function FlowMode({
         speakRecorded={speakExtra}
         stopSpeaking={() => autoRef.current?.stopCurrentAudio()}
         isSpeaking={isSpeaking}
-        isCueSpeaking={
-          isSpeaking && !isSpeakingPaused && playbackContext === "extras"
-        }
+        isCueSpeaking={isSpeaking && playbackContext === "extras"}
         active
       />
       <details className="flow-surface flow-session-settings">
@@ -218,6 +239,7 @@ export default function FlowMode({
         {autoOngoing && (
           <p className="flow-muted">進行中はコート数を変更できません</p>
         )}
+        <p className="flow-setting-label">案内文</p>
         <button
           type="button"
           className="flow-btn"
@@ -243,6 +265,8 @@ export default function FlowMode({
               編集した文は
               {voiceMode === "voicevox" ? "選択中の音声" : "ブラウザの音声"}
               で読み上げます。STEPを移動すると元に戻ります。
+              {voiceMode !== "voicevox" &&
+                "音量の変更は次の再生から反映します。"}
             </p>
             <button
               type="button"
@@ -303,4 +327,5 @@ export default function FlowMode({
       </details>
     </div>
   );
-}
+});
+export default FlowMode;

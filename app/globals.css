@@ -6,15 +6,15 @@
 
 :root {
   /* 旧チャット用の変数名も共通のスレート配色へ揃える */
-  --will-green: #44546A;
+  --will-green: #44546a;
   --will-green-dark: #344257;
-  --will-green-soft: #EEF1F5;
-  --user-bubble: #EEF1F5;
+  --will-green-soft: #eef1f5;
+  --user-bubble: #eef1f5;
   --user-bubble-text: #202326;
-  --bg: #F7F7F5;
+  --bg: #f7f7f5;
   --bubble-bg: #ffffff;
   --text: #202326;
-  --text-soft: #71767C;
+  --text-soft: #71767c;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
@@ -32,7 +32,8 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Hiragino Sans",
     "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
   -webkit-font-smoothing: antialiased;
   line-height: 1.6;
@@ -60,7 +61,7 @@ body {
   flex: 0 0 auto;
   background: #fff;
   color: var(--text);
-  border-bottom: 1px solid #E2E4E3;
+  border-bottom: 1px solid #e2e4e3;
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -109,7 +110,7 @@ body {
 }
 
 .settings-toggle:hover {
-  background: #EEF1F5;
+  background: #eef1f5;
 }
 
 .settings-panel {
@@ -152,6 +153,80 @@ body {
   width: 16px;
   height: 16px;
   accent-color: var(--will-green);
+}
+
+.app--flow .settings-panel {
+  max-height: calc(100dvh - 180px);
+  overflow-y: auto;
+  padding: 16px 20px;
+  gap: 18px;
+  border-color: #e3e6ea;
+}
+.settings-panel__heading,
+.settings-panel__section h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.settings-panel__heading {
+  font-size: 16px;
+}
+.settings-panel__volume,
+.settings-panel__section {
+  display: grid;
+  gap: 8px;
+}
+.settings-panel__volume > label,
+.settings-panel__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+.settings-panel .flow-muted,
+.settings-panel__about p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+.settings-panel__switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.settings-panel__switch input {
+  appearance: none;
+  position: relative;
+  width: 36px;
+  height: 22px;
+  margin: 0;
+  border-radius: 999px;
+  background: #d7dbe1;
+  cursor: pointer;
+}
+.settings-panel__switch input::before {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 3px;
+  left: 3px;
+  border-radius: 50%;
+  background: #fff;
+}
+.settings-panel__switch input:checked {
+  background: #455a73;
+}
+.settings-panel__switch input:checked::before {
+  transform: translateX(14px);
+}
+.settings-panel__switch input:focus-visible {
+  outline: 2px solid #455a73;
+  outline-offset: 3px;
 }
 
 .header__title {
@@ -383,7 +458,10 @@ body {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 3px 8px rgba(95, 174, 110, 0.4);
-  transition: transform 0.1s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.1s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
@@ -462,7 +540,9 @@ body {
   color: var(--text);
   outline: none;
   font-family: inherit;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .chat-input:focus {
@@ -561,7 +641,10 @@ body {
   color: var(--text);
   font-size: 12px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
   -webkit-tap-highlight-color: transparent;
   display: inline-flex;
   align-items: center;
@@ -763,7 +846,10 @@ body {
   font-weight: 600;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .voicevox-tuning__preset-btn:hover {

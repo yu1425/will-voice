@@ -75,7 +75,7 @@ a {
   background: #e9ebee;
   padding: 4px;
   border-radius: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .flow-mode-switch button,
 .flow-choice button {
@@ -119,7 +119,7 @@ a {
 .flow-surface h1,
 .guide-page > h1 {
   margin: 8px 0 12px;
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.45;
   letter-spacing: -0.035em;
   font-weight: 700;
@@ -280,7 +280,7 @@ a {
   font-variant-numeric: tabular-nums;
   font-size: 14px;
   color: var(--text-soft);
-  margin-top: 12px;
+  margin-top: 8px;
 }
 .flow-progress__clock strong {
   font-size: 18px;
@@ -291,7 +291,7 @@ a {
 .flow-progress__numbers {
   display: flex;
   justify-content: space-between;
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   font-size: 13px;
   color: #60666d;
   font-variant-numeric: tabular-nums;
@@ -310,13 +310,13 @@ a {
   background: var(--flow-accent);
 }
 .flow-progress__times {
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   font-size: 11px;
   color: var(--text-soft);
   font-variant-numeric: tabular-nums;
 }
 .flow-progress__next {
-  margin-top: 14px;
+  margin-top: 12px;
   padding: 12px;
   border-radius: 10px;
   background: #f3f5f8;
@@ -368,7 +368,7 @@ a {
   min-height: 20px;
 }
 .flow-audio-controls {
-  margin-top: 12px;
+  margin-top: 10px;
 }
 .flow-audio-heading {
   display: flex;
@@ -407,7 +407,7 @@ a {
   flex: 0 0 auto;
 }
 .flow-script {
-  margin-top: 12px;
+  margin-top: 10px;
   border-top: 1px solid var(--flow-border);
   font-size: 14px;
 }
@@ -570,6 +570,7 @@ a {
 }
 .flow-extras {
   margin-top: 14px;
+  background: transparent;
 }
 .flow-extras__timer,
 .flow-extras__cues {
@@ -615,6 +616,7 @@ a {
   margin-top: 14px;
   padding-top: 8px;
   padding-bottom: 8px;
+  background: transparent;
 }
 .flow-session-settings textarea {
   width: 100%;
@@ -738,9 +740,8 @@ a {
   margin-top: 16px;
 }
 .flow-progress__later {
-  display: flex;
-  align-items: baseline;
-  gap: 9px;
+  display: grid;
+  gap: 5px;
   margin-top: 6px;
   border: 1px solid #edf0f3;
   border-radius: 10px;
@@ -754,6 +755,11 @@ a {
   font-size: 13px;
   color: #60666d;
   font-weight: 400;
+}
+.flow-later-menu {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
 }
 .flow-text-button--danger {
   color: var(--flow-danger);
@@ -830,6 +836,22 @@ a {
 .flow-timer-choice {
   margin-bottom: 12px;
 }
+.flow-timer-actions--idle {
+  grid-template-columns: 1fr;
+}
+.flow-setting-label {
+  margin: 12px 0 8px;
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.flow-extras[open],
+.flow-session-settings[open] {
+  background: #fff;
+}
+details.flow-extras:not([open]),
+details.flow-session-settings:not([open]) {
+  padding-block: 0;
+}
 .flow-extras__cues .flow-btn {
   flex-wrap: wrap;
   font-size: 13px;
@@ -861,6 +883,22 @@ a {
   border-bottom: 1.5px solid currentColor;
   transform: rotate(-45deg);
   flex-shrink: 0;
+}
+.flow-disclosure-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.flow-disclosure-button::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+.flow-disclosure-button[aria-expanded="true"]::before {
+  transform: rotate(45deg);
 }
 details[open].flow-overview > summary::before,
 details[open].flow-script > summary::before,

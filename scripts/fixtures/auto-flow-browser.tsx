@@ -35,6 +35,7 @@ function Harness() {
         isSpeaking={speaking}
         onSyncStep={() => {}}
         onStatusChange={() => {}}
+        chimeEnabled
       />
     </>
   );

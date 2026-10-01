@@ -31,7 +31,6 @@ import {
 } from "@/lib/transitionCue";
 
 const STATE_KEY = "will-standard-two-hour-auto-flow";
-const SETTINGS_KEY = "will-standard-two-hour-auto-flow-settings";
 export type AutoStatus = "idle" | "running" | "paused" | "completed";
 type Session = {
   version: 3;
@@ -45,6 +44,8 @@ type Session = {
 export type AutoFlowHandle = {
   stopCurrentAudio: () => void;
   endSession: () => void;
+  playChimeTest: () => Promise<void>;
+  playVoiceTest: () => void;
 };
 type Props = {
   active: boolean;
@@ -55,6 +56,8 @@ type Props = {
   isSpeaking: boolean;
   onSyncStep: (step: number) => void;
   onStatusChange: (status: AutoStatus) => void;
+  chimeEnabled: boolean;
+  onChimePlayingChange?: (playing: boolean) => void;
 };
 export function formatClock(seconds: number) {
   const safe = Math.max(0, Math.floor(seconds));
@@ -105,13 +108,14 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
     isSpeaking,
     onSyncStep,
     onStatusChange,
+    chimeEnabled,
+    onChimePlayingChange,
   }: Props,
   ref,
 ) {
   const [session, setSession] = useState<Session | null>(null);
   const sessionRef = useRef<Session | null>(null);
   const [elapsedSec, setElapsedSec] = useState(0);
-  const [chimeEnabled, setChimeEnabled] = useState(true);
   const [cuePlaying, setCuePlaying] = useState(false);
   const [pendingSeek, setPendingSeek] = useState<AutoFlowEvent | null>(null);
   const [audioState, dispatchAudio] = useReducer(flowCueState, "waiting");
@@ -227,13 +231,6 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
 
   useEffect(() => {
     mounted.current = true;
-    try {
-      const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}");
-      if (typeof settings.chimeEnabled === "boolean")
-        setChimeEnabled(settings.chimeEnabled);
-    } catch {
-      /* no-op */
-    }
     const stored = restore();
     if (stored) {
       const elapsed =
@@ -291,6 +288,9 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
     return () => window.removeEventListener("will-flow-leave", leave);
   }, [stopCurrentPlayback]);
   useEffect(() => onStatusChange(status), [onStatusChange, status]);
+  useEffect(() => {
+    onChimePlayingChange?.(cuePlaying);
+  }, [cuePlaying, onChimePlayingChange]);
   useEffect(() => {
     if (active && status !== "idle" && current.refStep)
       onSyncStep(current.refStep);
@@ -416,22 +416,25 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
     if (e.refStep) onSyncStep(e.refStep);
     void announce(e, true);
   };
-  const testCue = async () => {
+  const testCue = useCallback(async () => {
     stopCurrentPlayback();
     const ticket = playbackGeneration.current;
     await unlockTransitionCue();
-    if (
-      ticket !== playbackGeneration.current ||
-      !mounted.current ||
-      !activeRef.current
-    )
-      return;
+    if (ticket !== playbackGeneration.current || !mounted.current) return;
     dispatchAudio("play");
     setCuePlaying(true);
     await playTransitionCue();
     if (ticket === playbackGeneration.current && mounted.current)
       setCuePlaying(false);
-  };
+  }, [stopCurrentPlayback]);
+  const testVoice = useCallback(() => {
+    stopCurrentPlayback();
+    dispatchAudio("play");
+    callbacks.current.onSpeak(
+      FLOW_VOICE_TEST.displayText,
+      FLOW_VOICE_TEST.audioSrc,
+    );
+  }, [stopCurrentPlayback]);
   const afterNext = next
     ? events.find((event) => event.offsetSec > next.offsetSec)
     : null;
@@ -449,8 +452,10 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
     () => ({
       stopCurrentAudio: stopCurrentPlayback,
       endSession: finishSession,
+      playChimeTest: testCue,
+      playVoiceTest: testVoice,
     }),
-    [stopCurrentPlayback, finishSession],
+    [stopCurrentPlayback, finishSession, testCue, testVoice],
   );
 
   if (status === "idle")
@@ -458,79 +463,15 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
       <section className="flow-surface auto-flow" aria-label="自動進行">
         <header className="flow-header">
           <div>
-            <p className="flow-eyebrow">STANDARD SESSION</p>
-            <h1>自動進行</h1>
+            <p className="flow-eyebrow">自動進行 · {conditions.courts}面</p>
+            <h1>開始・ショートラリー</h1>
           </div>
           <span className="flow-status">標準2時間</span>
         </header>
         <p className="flow-lead">
           開始すると、標準2時間メニューに沿ってチャイムと音声案内が自動で流れます。
         </p>
-        <div className="flow-setting">
-          <span>コート数</span>
-          <div className="flow-choice" aria-label="コート数">
-            {([1, 2] as const).map((c) => (
-              <button
-                key={c}
-                type="button"
-                aria-pressed={conditions.courts === c}
-                onClick={() => onConditionsChange({ ...conditions, courts: c })}
-              >
-                {c}面
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flow-setting">
-          <label>
-            <input
-              type="checkbox"
-              checked={chimeEnabled}
-              onChange={(e) => {
-                setChimeEnabled(e.target.checked);
-                try {
-                  localStorage.setItem(
-                    SETTINGS_KEY,
-                    JSON.stringify({ chimeEnabled: e.target.checked }),
-                  );
-                } catch {
-                  /* no-op */
-                }
-              }}
-            />{" "}
-            チャイム {chimeEnabled ? "ON" : "OFF"}
-          </label>
-          <button
-            type="button"
-            className="flow-btn"
-            onClick={() => void testCue()}
-          >
-            試聴
-          </button>
-        </div>
         <div className="flow-actions">
-          <button
-            type="button"
-            className="flow-btn"
-            onClick={() => {
-              cancelCurrentPlayback();
-              dispatchAudio("play");
-              callbacks.current.onSpeak(
-                FLOW_VOICE_TEST.displayText,
-                FLOW_VOICE_TEST.audioSrc,
-              );
-            }}
-          >
-            音声テスト
-          </button>
-          <button
-            type="button"
-            className="flow-btn"
-            onClick={stopAudioByUser}
-            disabled={!isSpeaking && !cuePlaying}
-          >
-            今の音声を止める
-          </button>
           <button
             type="button"
             className="flow-btn flow-btn--primary flow-btn--full"
@@ -552,7 +493,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
           <span>全体の自己紹介は、ゲーム前に行います。</span>
         </p>
         <details className="flow-overview">
-          <summary>全体の進行を見る</summary>
+          <summary>全体の進行</summary>
           <p className="flow-muted">開始からの経過時間 · 標準2時間</p>
           <Timeline events={events} currentId={null} elapsedSec={0} />
         </details>
@@ -590,7 +531,9 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
           <span>
             <strong>{progress.percentage}%完了</strong>
           </span>
-          <span>残り {formatClock(progress.remainingSec)}</span>
+          <span>
+            残り {formatClock(progress.remainingSec).replace(/^0(?=\d:)/, "")}
+          </span>
         </div>
         {next && (
           <section className="flow-progress__next" aria-label="次のメニュー">
@@ -613,8 +556,10 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
             aria-label="その次のメニュー"
           >
             <h2>その次</h2>
-            <time>{formatOffset(afterNext.offsetSec)}</time>
-            <strong>{afterNext.title}</strong>
+            <div className="flow-later-menu">
+              <time>{formatOffset(afterNext.offsetSec)}</time>
+              <strong>{afterNext.title}</strong>
+            </div>
           </section>
         )}
         <div className="flow-controls" role="group" aria-label="進行操作">
@@ -689,7 +634,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(function AutoFlowPanel(
         </div>
       </div>
       <details className="flow-overview">
-        <summary>全体の進行を見る</summary>
+        <summary>全体の進行</summary>
         <p className="flow-muted">時刻をタップすると、その時点へ移動できます</p>
         {pendingSeek && (
           <div className="flow-seek-confirm" role="alert">

@@ -65,7 +65,7 @@ await context.addInitScript(() => {
     return speak(...args);
   };
 });
-const b = (name) => page.getByRole("button", { name, exact: true });
+const b = (name) => page.getByRole("button", { name: name === "もう一度聞く" ? /^(案内を聞く|もう一度聞く)$/ : name, exact: true });
 const extras = page.locator(".flow-extras");
 const extraButton = (name) => extras.getByRole("button", { name, exact: true });
 const playing = (file) =>
@@ -234,7 +234,7 @@ try {
     }));
     assert.equal(layout.documentWidth, width);
     assert.ok(layout.contentBottom <= layout.navTop);
-    const screenshot = `reports/flow-v5-extras-${width}.png`;
+    const screenshot = `reports/flow-v6-extras-${width}.png`;
     await page.screenshot({ path: screenshot });
     pass(`${width} timer/cue blocks and bottom navigation layout`, {
       ...layout,
@@ -304,7 +304,7 @@ try {
     "recording failure shows a notice; zero standard speech fallback or runtime errors",
   );
   writeFileSync(
-    "reports/flow-v5-extras-audit.json",
+    "reports/flow-v6-extras-audit.json",
     JSON.stringify(
       {
         auditedAt: new Date().toISOString(),
