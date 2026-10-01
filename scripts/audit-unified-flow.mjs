@@ -292,6 +292,14 @@ try {
   assert.ok(replay.position < paused.pendingCue.positionSec + 1);
   pass("one resume restarts both clock and interrupted native WAV", replay);
   await settings();
+  const ttsStatus = await page.evaluate(() =>
+    fetch("/api/openai/tts").then((response) => response.json()),
+  );
+  const aiVoice = page
+    .getByRole("dialog", { name: "設定" })
+    .getByRole("radio", { name: "AI音声", exact: true });
+  assert.equal(await aiVoice.isDisabled(), !ttsStatus.configured);
+  pass("OpenAI TTS availability matches the server-side configuration", ttsStatus);
   for (const value of [100, 50, 20, 30]) {
     await setVolume(value);
     assert.equal(

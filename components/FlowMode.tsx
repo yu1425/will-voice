@@ -23,7 +23,7 @@ type Props = {
   speakRecorded: (text: string, audioSrc?: string, startAtSec?: number) => void;
   stopSpeaking: () => void;
   isSpeaking: boolean;
-  voiceMode: "standard" | "voicevox" | "recorded";
+  voiceMode: "standard" | "voicevox" | "recorded" | "openai";
   chimeEnabled: boolean;
   onChimePlayingChange: (playing: boolean) => void;
 };
@@ -171,7 +171,7 @@ const FlowMode = forwardRef<FlowModeHandle, Props>(function FlowMode(
           <h2>{autoOngoing ? "開催情報" : "開催準備"}</h2>
           <p>
             {mode === "auto"
-              ? "標準2時間 · ずんだもん"
+              ? `標準2時間 · ${voiceMode === "openai" ? "AI音声" : "ずんだもん"}`
               : "必要な項目を選んで案内"}
           </p>
         </div>
@@ -262,7 +262,11 @@ const FlowMode = forwardRef<FlowModeHandle, Props>(function FlowMode(
           />
           <p className="flow-muted">
             編集文は
-            {voiceMode === "voicevox" ? "選択中の音声" : "ブラウザの音声"}
+            {voiceMode === "openai"
+              ? "AI音声"
+              : voiceMode === "voicevox"
+                ? "選択中の音声"
+                : "ブラウザの音声"}
             で再生します。項目を変えると元に戻ります。
           </p>
           <button

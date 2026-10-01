@@ -34,6 +34,10 @@ import {
   stopRecordedAudio,
   setRecordedAudioVolume,
 } from "@/lib/recordedAudio";
+import {
+  fetchOpenAiTtsStatus,
+  speakWithOpenAiTts,
+} from "@/lib/openaiTts";
 
 /** 簡易ID生成 */
 function makeId() {
@@ -47,7 +51,7 @@ function isLocalhost(): boolean {
   return h === "localhost" || h === "127.0.0.1";
 }
 
-type VoiceMode = "standard" | "voicevox" | "recorded";
+type VoiceMode = "standard" | "voicevox" | "recorded" | "openai";
 type VoicevoxStatus = "unknown" | "connected" | "disconnected" | "fallback";
 type OptionalVoiceModes = {
   standard: boolean;
@@ -131,6 +135,8 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   const [recognitionOk, setRecognitionOk] = useState(true);
 
   const [voiceMode, setVoiceMode] = useState<VoiceMode>("recorded");
+  const [openAiConfigured, setOpenAiConfigured] = useState(false);
+  const [openAiVoice, setOpenAiVoice] = useState("marin");
   const [voicevoxStatus, setVoicevoxStatus] =
     useState<VoicevoxStatus>("unknown");
   const [zundamonStyles, setZundamonStyles] = useState<ZundamonStyle[]>([]);
@@ -161,6 +167,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   const listeningRef = useRef<ListeningHandle | null>(null);
   const voicevoxHandleRef = useRef<VoicevoxHandle | null>(null);
   const voicevoxAbortRef = useRef<AbortController | null>(null);
+  const openAiAbortRef = useRef<AbortController | null>(null);
   const speechGenerationRef = useRef(0);
   const appMountedRef = useRef(true);
   const logRef = useRef<HTMLDivElement | null>(null);
@@ -246,15 +253,17 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
         setOptionalVoiceModes(savedOptionalVoiceModes);
       }
 
-      // 公開環境では VOICEVOX モードを復元しない（localhost のみ有効）
-      if (local) {
-        const savedVoice = window.localStorage.getItem(VOICE_MODE_STORAGE_KEY);
-        const isVisibleOptionalMode =
-          (savedVoice === "standard" && savedOptionalVoiceModes.standard) ||
-          (savedVoice === "voicevox" && savedOptionalVoiceModes.voicevox);
-        if (savedVoice === "recorded" || isVisibleOptionalMode) {
-          setVoiceMode(savedVoice);
-        }
+      const savedVoice = window.localStorage.getItem(VOICE_MODE_STORAGE_KEY);
+      const isVisibleLocalMode =
+        local &&
+        ((savedVoice === "standard" && savedOptionalVoiceModes.standard) ||
+          (savedVoice === "voicevox" && savedOptionalVoiceModes.voicevox));
+      if (
+        savedVoice === "recorded" ||
+        savedVoice === "openai" ||
+        isVisibleLocalMode
+      ) {
+        setVoiceMode(savedVoice as VoiceMode);
       }
       const savedPreset = window.localStorage.getItem(
         VOICEVOX_PRESET_STORAGE_KEY,
@@ -290,6 +299,36 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     } catch {
       /* no-op */
     }
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const disableOpenAi = () => {
+      if (!active) return;
+      setOpenAiConfigured(false);
+      setVoiceMode((current) => {
+        if (current !== "openai") return current;
+        try {
+          window.localStorage.setItem(VOICE_MODE_STORAGE_KEY, "recorded");
+        } catch {
+          /* no-op */
+        }
+        return "recorded";
+      });
+    };
+
+    fetchOpenAiTtsStatus()
+      .then((status) => {
+        if (!active) return;
+        setOpenAiVoice(status.voice);
+        if (status.configured) setOpenAiConfigured(true);
+        else disableOpenAi();
+      })
+      .catch(disableOpenAi);
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   // 標準音声のボイス一覧を取得(ブラウザによっては非同期でロードされる)
@@ -373,8 +412,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       /* no-op */
     }
     setNotice(null);
-    if (mode === "standard" || mode === "recorded")
-      setVoicevoxStatus("unknown");
+    if (mode !== "voicevox") setVoicevoxStatus("unknown");
   }, []);
 
   const handleOptionalVoiceModeChange = useCallback(
@@ -464,6 +502,8 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     speechGenerationRef.current += 1;
     voicevoxAbortRef.current?.abort();
     voicevoxAbortRef.current = null;
+    openAiAbortRef.current?.abort();
+    openAiAbortRef.current = null;
     stopSpeaking();
     stopVoicevox();
     stopRecordedAudio();
@@ -512,6 +552,47 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       };
 
       setIsSpeaking(true);
+
+      if (voiceMode === "openai") {
+        const controller = new AbortController();
+        openAiAbortRef.current = controller;
+
+        const fallbackFromOpenAi = (message: string) => {
+          if (!isCurrent()) return;
+          openAiAbortRef.current = null;
+          setNotice(message);
+          if (audioSrc) {
+            playRecordedAudio(audioSrc, {
+              volume: getAudioVolume(),
+              startAtSec,
+              onEnd: finishIfCurrent,
+              onError: fallbackToStandard,
+            });
+          } else {
+            fallbackToStandard();
+          }
+        };
+
+        const result = await speakWithOpenAiTts(text, {
+          signal: controller.signal,
+          startAtSec,
+          onEnd: finishIfCurrent,
+          onError: () =>
+            fallbackFromOpenAi(
+              "AI音声の再生に失敗したため、別の音声で再生します。",
+            ),
+        });
+
+        if (controller.signal.aborted || !isCurrent()) return;
+        openAiAbortRef.current = null;
+        if (!result.ok) {
+          if (result.reason === "aborted") return;
+          fallbackFromOpenAi(
+            "AI音声を生成できなかったため、別の音声で再生します。",
+          );
+        }
+        return;
+      }
 
       if ((requireRecording || voiceMode === "recorded") && audioSrc) {
         playRecordedAudio(audioSrc, {
@@ -764,6 +845,39 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           {mode === "flow" && (
             <>
               <div className="settings-panel__section">
+                <h3>進行音声</h3>
+                <div className="flow-choice" role="radiogroup" aria-label="進行音声">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={voiceMode === "recorded"}
+                    onClick={() => {
+                      stopAllSpeaking();
+                      handleVoiceModeChange("recorded");
+                    }}
+                  >
+                    録音音声
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={voiceMode === "openai"}
+                    disabled={!openAiConfigured}
+                    onClick={() => {
+                      stopAllSpeaking();
+                      handleVoiceModeChange("openai");
+                    }}
+                  >
+                    AI音声
+                  </button>
+                </div>
+                <p className="flow-muted">
+                  {openAiConfigured
+                    ? `AI音声はOpenAI（${openAiVoice}）で生成します。AI生成音声です。`
+                    : "AI音声はOpenAI APIキー設定後に利用できます。"}
+                </p>
+              </div>
+              <div className="settings-panel__section">
                 <div className="settings-panel__row">
                   <label htmlFor="flow-chime">チャイム</label>
                   <label className="settings-panel__switch">
@@ -874,6 +988,21 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           >
             録音音声
           </button>
+          {openAiConfigured && (
+            <button
+              type="button"
+              role="radio"
+              aria-checked={voiceMode === "openai"}
+              className={`voice-mode__btn ${voiceMode === "openai" ? "voice-mode__btn--active" : ""}`}
+              onClick={() => {
+                stopAllSpeaking();
+                handleVoiceModeChange("openai");
+              }}
+              title="OpenAIのAI生成音声で読み上げます"
+            >
+              AI音声
+            </button>
+          )}
           {optionalVoiceModes.standard && (
             <button
               type="button"
@@ -1129,7 +1258,9 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
               </button>
             </div>
             <p className="footer__credit">
-              音声: VOICEVOX:ずんだもん / ブラウザ標準音声
+              {voiceMode === "openai"
+                ? `音声: AI生成音声（OpenAI / ${openAiVoice}）`
+                : "音声: VOICEVOX:ずんだもん / ブラウザ標準音声"}
               {voiceMode === "recorded" &&
                 "(録音音声は進行モード専用のため、チャットでは標準音声で読み上げます)"}
             </p>
@@ -1168,7 +1299,11 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           </div>
 
           <footer className="footer footer--slim">
-            <p className="footer__credit">音声: VOICEVOX:ずんだもん</p>
+            <p className="footer__credit">
+              {voiceMode === "openai"
+                ? `音声: AI生成音声（OpenAI / ${openAiVoice}）`
+                : "音声: VOICEVOX:ずんだもん"}
+            </p>
           </footer>
         </>
       )}
