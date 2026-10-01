@@ -145,7 +145,7 @@ export default function PageNavigation({
             aria-current={current === "chat" ? "page" : undefined}
             onClick={(event) => visit("chat", event)}
           >
-            <span aria-hidden="true">◇</span>うぃるに聞く
+            <span aria-hidden="true">◇</span>チャット
           </Link>
           <div className="page-menu-divider" />
           {onSettings ? (
@@ -156,7 +156,7 @@ export default function PageNavigation({
                 onSettings();
               }}
             >
-              <span aria-hidden="true">⚙</span>この機能の設定
+              <span aria-hidden="true">⚙</span>設定
             </button>
           ) : (
             <Link

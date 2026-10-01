@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import PageNavigation from "./PageNavigation";
 import { getAudioVolume, setAudioVolume } from "@/lib/audioVolume";
 import { setTransitionCueVolume, stopTransitionCue } from "@/lib/transitionCue";
@@ -682,17 +683,30 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     <div
       className={`app app--${mode}${settingsOpen ? " app--settings-open" : ""}`}
     >
-      {/* ヘッダー */}
+      {/* 共通ヘッダー: ブランド領域は常にHOMEへ戻る */}
       <header className="header">
-        <div className="header__avatar">
-          <Image src="/will.png" alt="うぃる" width={40} height={40} priority />
-        </div>
-        <div className="header__titles">
-          <span className="header__title">うぃる</span>
-          <span className="header__subtitle">
-            {mode === "flow" ? "進行アシスタント" : "うぃるに聞く"}
-          </span>
-        </div>
+        <Link
+          href="/"
+          className="header__brand"
+          aria-label="うぃる HOMEへ"
+          onClick={leavePage}
+        >
+          <div className="header__avatar">
+            <Image
+              src="/will.png"
+              alt="うぃる"
+              width={40}
+              height={40}
+              priority
+            />
+          </div>
+          <div className="header__titles">
+            <span className="header__title">うぃる</span>
+            <span className="header__subtitle">
+              WILL.tennis 公式キャラクター
+            </span>
+          </div>
+        </Link>
         <PageNavigation
           current={mode}
           onNavigate={leavePage}
@@ -1031,6 +1045,11 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       {mode === "chat" ? (
         <>
           <div className="chat-log" ref={logRef}>
+            <header className="content-page-heading content-page-heading--chat">
+              <p>CHAT</p>
+              <h1>チャット</h1>
+              <span>うぃるに気軽に聞いてみる</span>
+            </header>
             {messages.map((m) => (
               <ChatMessage key={m.id} message={m} />
             ))}
@@ -1119,6 +1138,11 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       ) : (
         <>
           <div className="flow-scroll">
+            <header className="content-page-heading">
+              <p>VOICE</p>
+              <h1>進行アシスタント</h1>
+              <span>WILL.tennisの進行を音声でサポート</span>
+            </header>
             <FlowMode
               ref={flowModeRef}
               chimeEnabled={chimeEnabled}

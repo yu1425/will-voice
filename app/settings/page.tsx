@@ -6,21 +6,27 @@ export default function SettingsIndexPage() {
   return (
     <div className="app app--settings-index">
       <header className="header">
-        <div className="header__avatar">
-          <Image src="/will.png" alt="うぃる" width={40} height={40} />
-        </div>
-        <div className="header__titles">
-          <span className="header__title">うぃる</span>
-          <span className="header__subtitle">設定</span>
-        </div>
+        <Link href="/" className="header__brand" aria-label="うぃる HOMEへ">
+          <div className="header__avatar">
+            <Image src="/will.png" alt="うぃる" width={40} height={40} />
+          </div>
+          <div className="header__titles">
+            <span className="header__title">うぃる</span>
+            <span className="header__subtitle">
+              WILL.tennis 公式キャラクター
+            </span>
+          </div>
+        </Link>
         <PageNavigation current="settings" />
       </header>
       <main className="home-scroll">
         <div className="settings-index-page">
           <header className="settings-index-heading">
             <p className="home-kicker">SETTINGS</p>
-            <h1>設定する機能を選ぶ</h1>
-            <p>設定はコンテンツごとに分けています。</p>
+            <h1>設定</h1>
+            <p>
+              設定する機能を選んでください。内容はコンテンツごとに分けています。
+            </p>
           </header>
           <div className="settings-index-grid">
             <Link href="/flow?settings=1">

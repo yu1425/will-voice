@@ -2,7 +2,7 @@
   "name": "will-voice",
   "version": "0.1.0",
   "private": true,
-  "description": "うぃる AIボイスチャット (無料MVP) - WILL.tennis マスコット音声チャットアプリ",
+  "description": "WILL.tennis公式キャラクター「うぃる」の進行・チャットアプリ",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

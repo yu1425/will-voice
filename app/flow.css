@@ -1328,3 +1328,53 @@ details[open].flow-extras > summary::before {
     padding: 13px;
   }
 }
+
+/* Fixed parent-brand header and page-local titles. */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+.header__brand {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 10px;
+}
+.header__brand:focus-visible {
+  outline-offset: 4px;
+}
+.header__brand:hover .header__title {
+  color: var(--flow-accent);
+}
+.content-page-heading {
+  padding: 18px 16px 0;
+}
+.content-page-heading p {
+  margin: 0 0 3px;
+  color: var(--text-soft);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.content-page-heading h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: 25px;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+}
+.content-page-heading > span {
+  display: block;
+  margin-top: 5px;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.chat-log .content-page-heading {
+  padding: 0 0 4px;
+}

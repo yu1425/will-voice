@@ -134,7 +134,7 @@ const settings = async () => {
   await menu();
   await page
     .locator(".page-menu-panel")
-    .getByRole("button", { name: "この機能の設定", exact: true })
+    .getByRole("button", { name: "設定", exact: true })
     .tap();
   await page.getByRole("dialog", { name: "設定" }).waitFor();
 };
@@ -190,12 +190,36 @@ try {
   assert.ok(
     await page.getByRole("link", { name: /進行アシスタント/ }).isVisible(),
   );
-  assert.ok(await page.getByRole("link", { name: /うぃるに聞く/ }).isVisible());
+  assert.ok(await page.locator('a[href="/chat"]').isVisible());
   assert.ok(await page.getByRole("link", { name: /設定/ }).isVisible());
   assert.ok(await page.getByRole("link", { name: /使い方/ }).isVisible());
   pass("HOME is the parent character hub for flow, chat, settings and guide");
   await page.goto(base + "/flow");
   await button("自動進行を開始").waitFor();
+  assert.equal(
+    await page
+      .getByRole("link", { name: "うぃる HOMEへ", exact: true })
+      .getAttribute("href"),
+    "/",
+  );
+  assert.equal(
+    await page.locator(".header__subtitle").innerText(),
+    "WILL.tennis 公式キャラクター",
+  );
+  const fixedHeader = await page.locator(".header").evaluate((el) => ({
+    position: getComputedStyle(el).position,
+    top: getComputedStyle(el).top,
+  }));
+  assert.deepEqual(fixedHeader, { position: "sticky", top: "0px" });
+  assert.ok(
+    await page
+      .getByRole("heading", { name: "進行アシスタント", exact: true })
+      .isVisible(),
+  );
+  pass(
+    "fixed parent-brand header links HOME and page title is separated below it",
+    fixedHeader,
+  );
   assert.equal(await page.locator(".page-navigation").count(), 0);
   assert.equal(await button("もう一度聞く").count(), 0);
   assert.equal(await button("今の音声を止める").count(), 0);
@@ -218,7 +242,7 @@ try {
     .allTextContents();
   assert.deepEqual(
     names.map((x) => x.replace(/[⌂▷◇⚙?]/g, "").trim()),
-    ["ホーム", "進行", "うぃるに聞く", "この機能の設定", "使い方"],
+    ["ホーム", "進行", "チャット", "設定", "使い方"],
   );
   await layout("menu-390");
   await page.keyboard.press("Escape");
@@ -343,9 +367,7 @@ try {
     .locator(".page-menu-panel")
     .getByRole("link", { name: "使い方", exact: false })
     .tap();
-  await page
-    .getByRole("heading", { name: "うぃる進行の使い方", exact: true })
-    .waitFor();
+  await page.getByRole("heading", { name: "使い方", exact: true }).waitFor();
   assert.equal((await stored()).status, "paused");
   await silence();
   await layout("guide-390");
@@ -466,7 +488,7 @@ try {
   await menu();
   await page
     .locator(".page-menu-panel")
-    .getByRole("link", { name: "うぃるに聞く", exact: false })
+    .getByRole("link", { name: "チャット", exact: false })
     .tap();
   await button("送信").waitFor();
   await silence();

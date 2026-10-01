@@ -5,19 +5,23 @@ export default function GuidePage() {
   return (
     <div className="app app--guide">
       <header className="header">
-        <div className="header__avatar">
-          <Image src="/will.png" alt="うぃる" width={40} height={40} />
-        </div>
-        <div className="header__titles">
-          <span className="header__title">うぃる</span>
-          <span className="header__subtitle">使い方</span>
-        </div>
+        <Link href="/" className="header__brand" aria-label="うぃる HOMEへ">
+          <div className="header__avatar">
+            <Image src="/will.png" alt="うぃる" width={40} height={40} />
+          </div>
+          <div className="header__titles">
+            <span className="header__title">うぃる</span>
+            <span className="header__subtitle">
+              WILL.tennis 公式キャラクター
+            </span>
+          </div>
+        </Link>
         <PageNavigation current="guide" />
       </header>
       <main className="guide-scroll">
         <div className="guide-page">
           <p className="flow-eyebrow">GUIDE</p>
-          <h1>うぃる進行の使い方</h1>
+          <h1>使い方</h1>
           <p className="flow-lead">
             標準メニューを任せるなら自動進行。必要な案内だけ使うなら個別進行。
           </p>
@@ -80,7 +84,7 @@ export default function GuidePage() {
             <span className="guide-number">05 / メニュー</span>
             <h2>右上からページと設定へ</h2>
             <p>
-              右上の「メニュー」から、進行・うぃるに聞く・設定・使い方を選べます。Macはカーソルを合わせるかクリック、iPadはタップで開きます。キーボードでも操作でき、Escで閉じます。
+              右上の「メニュー」から、ホーム・進行・チャット・設定・使い方を選べます。Macはカーソルを合わせるかクリック、iPadはタップで開きます。キーボードでも操作でき、Escで閉じます。
             </p>
           </section>
           <section className="flow-surface">

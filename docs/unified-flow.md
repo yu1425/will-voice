@@ -38,7 +38,10 @@ Real iPad Safari, Bluetooth speaker audibility and physical screen locking are n
 
 ## Parent character site / HOME
 
-- `/` is the parent site for the WILL official character `うぃる`, rather than a redirect to `/flow`.
+- `/` is the parent site for the WILL.tennis official character `うぃる`, rather than a redirect to `/flow`.
 - Primary content: progression assistant (`/flow`) and chat (`/chat`). Support: settings (`/settings`) and guide (`/guide`).
 - The header menu order is HOME -> progression -> chat -> contextual settings -> guide. Flow/chat settings open their own content settings; the settings index routes to the appropriate content.
 - Automatic and manual 12-item selectors share a compact 3-column x 4-row visual language to reduce scrolling while preserving direct item selection.
+
+- The fixed header is parent-brand navigation: the character/avatar + `うぃる / WILL.tennis 公式キャラクター` links to HOME. Page-specific titles (progression, chat, settings, guide) live below that header.
+- Two-court practice rotation is sequential, not simultaneous: people first move from one court, then the same number of people who were originally on the destination court move back to the other court.

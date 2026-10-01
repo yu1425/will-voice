@@ -1,6 +1,6 @@
 {
-  "base": "http://127.0.0.1:53557",
-  "auditedAt": "2026-10-01T04:48:10.865Z",
+  "base": "http://127.0.0.1:53558",
+  "auditedAt": "2026-10-01T05:10:54.623Z",
   "checks": [
     {
       "name": "HOME is the parent character hub for flow, chat, settings and guide",
@@ -8,11 +8,19 @@
       "evidence": null
     },
     {
+      "name": "fixed parent-brand header links HOME and page title is separated below it",
+      "pass": true,
+      "evidence": {
+        "position": "sticky",
+        "top": "0px"
+      }
+    },
+    {
       "name": "automatic mode has no detached audio controls or practice timer; setup precedes start",
       "pass": true,
       "evidence": {
-        "setup": 254.1875,
-        "start": 443.25
+        "setup": 346.625,
+        "start": 535.6875
       }
     },
     {
@@ -66,7 +74,7 @@
       "pass": true,
       "evidence": {
         "eventId": "opening",
-        "positionSec": 1.273011,
+        "positionSec": 1.280229,
         "chime": false
       }
     },
@@ -90,8 +98,8 @@
       "name": "one resume restarts both clock and interrupted native WAV",
       "pass": true,
       "evidence": {
-        "src": "http://127.0.0.1:53557/audio/flow/v2/00-opening.wav",
-        "position": 1.273011,
+        "src": "http://127.0.0.1:53558/audio/flow/v2/00-opening.wav",
+        "position": 1.280229,
         "volume": 1,
         "index": 3
       }
@@ -126,7 +134,7 @@
       "name": "pause during chime cancels pending voice; resume plays complete chime and selected two-court cue",
       "pass": true,
       "evidence": {
-        "src": "http://127.0.0.1:53557/audio/flow/v2/20-cross-rally-double.wav",
+        "src": "http://127.0.0.1:53558/audio/flow/v2/20-cross-rally-double.wav",
         "position": 0,
         "volume": 0.3,
         "index": 6
@@ -178,8 +186,8 @@
       "name": "manual mode is select + one play/pause control; selection cancels prior playback",
       "pass": true,
       "evidence": {
-        "src": "http://127.0.0.1:53557/audio/flow/v2/00-opening.wav",
-        "position": 1.193056,
+        "src": "http://127.0.0.1:53558/audio/flow/v2/00-opening.wav",
+        "position": 1.188132,
         "volume": 0.3,
         "index": 14
       }
@@ -349,8 +357,8 @@
       "name": "browser Back/Forward captures and resumes playhead even without header-link callback",
       "pass": true,
       "evidence": {
-        "src": "http://127.0.0.1:53557/audio/flow/v2/00-opening.wav",
-        "position": 1.120942,
+        "src": "http://127.0.0.1:53558/audio/flow/v2/00-opening.wav",
+        "position": 1.112573,
         "volume": 0.3,
         "index": 8
       }

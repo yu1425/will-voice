@@ -6,22 +6,32 @@ export default function HomePage() {
   return (
     <div className="app app--home">
       <header className="header">
-        <div className="header__avatar">
-          <Image src="/will.png" alt="うぃる" width={40} height={40} priority />
-        </div>
-        <div className="header__titles">
-          <span className="header__title">うぃる</span>
-          <span className="header__subtitle">WILL 公式キャラクター</span>
-        </div>
+        <Link href="/" className="header__brand" aria-label="うぃる HOMEへ">
+          <div className="header__avatar">
+            <Image
+              src="/will.png"
+              alt="うぃる"
+              width={40}
+              height={40}
+              priority
+            />
+          </div>
+          <div className="header__titles">
+            <span className="header__title">うぃる</span>
+            <span className="header__subtitle">
+              WILL.tennis 公式キャラクター
+            </span>
+          </div>
+        </Link>
         <PageNavigation current="home" />
       </header>
       <main className="home-scroll">
         <div className="home-page">
           <section className="home-hero" aria-labelledby="will-home-title">
             <div className="home-hero__copy">
-              <p className="home-kicker">WILL OFFICIAL CHARACTER</p>
+              <p className="home-kicker">WILL.TENNIS OFFICIAL CHARACTER</p>
               <h1 id="will-home-title">うぃる</h1>
-              <p>WILLの活動に寄り添う、公式キャラクター。</p>
+              <p>WILL.tennisの活動に寄り添う、公式キャラクター。</p>
             </div>
             <Image
               className="home-hero__character"
@@ -58,7 +68,7 @@ export default function HomePage() {
               </Link>
               <Link className="home-feature-card" href="/chat">
                 <span className="home-feature-card__tag">CHAT</span>
-                <strong>うぃるに聞く</strong>
+                <strong>チャット</strong>
                 <p>うぃると会話して、開催中の疑問やルールを確認。</p>
                 <span className="home-feature-card__arrow" aria-hidden="true">
                   →

@@ -102,11 +102,30 @@ try {
     ),
     "ウィルテニスでらんすうひょう。よんポイントせんしゅ、ふたり、さんきゅう、いちれつ、にほん、さんぼん。ちかくのかた、せんとうのかた、うったかた、つぎのかた。方向と方法。",
   );
+  const doubleScripts = getScriptsForCourt("double");
+  for (const id of ["cross-rally", "serve-return"]) {
+    const script = doubleScripts.find((item) => item.id === id);
+    assert.ok(script);
+    assert.match(script.displayText, /どちらか一つのコートから何人か/);
+    assert.match(
+      script.displayText,
+      /移動先のコートにもともといた人の中から、同じ人数だけ反対のコートへ移動/,
+    );
+    assert.doesNotMatch(script.displayText, /各コートから何人か/);
+  }
   const audit = JSON.parse(
     readFileSync("reports/flow-audio-v2-audit.json", "utf8"),
   );
   assert.equal(audit.files.length, 16);
   assert.ok(audit.files.every((f) => f.readingChecks.every((c) => c.pass)));
+  for (const id of ["cross-rally", "serve-return"]) {
+    const script = doubleScripts.find((item) => item.id === id);
+    const entry = audit.files.find(
+      (file) => file.id === id && file.courtMode === "double",
+    );
+    assert.equal(entry.displayText, script.displayText);
+    assert.equal(readFileSync("public" + entry.audioSrc).length, entry.bytes);
+  }
   const { FLOW_RECORDED_CUES } = require(join(temp, "flowCues.js"));
   const extras = JSON.parse(
     readFileSync("reports/flow-extras-audio-audit.json", "utf8"),

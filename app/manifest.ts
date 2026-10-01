@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "うぃる | WILL公式キャラクター",
+    name: "うぃる | WILL.tennis公式キャラクター",
     short_name: "うぃる",
     description:
-      "WILL公式キャラクター「うぃる」のサイト。進行アシスタントやチャットなどをまとめています。",
+      "WILL.tennis公式キャラクター「うぃる」のサイト。進行アシスタントやチャットなどをまとめています。",
     start_url: "/",
     display: "standalone",
     background_color: "#F7F7F5",
