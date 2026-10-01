@@ -195,7 +195,8 @@ try {
   assert.ok(await page.getByRole("link", { name: /使い方/ }).isVisible());
   assert.equal(await page.getByText("ABOUT WILL", { exact: true }).count(), 0);
   assert.equal(await page.getByRole("heading", { name: "うぃるについて", exact: true }).count(), 0);
-  pass("HOME is the parent character hub without a separate About section");
+  assert.ok(await page.getByText("WILL.tennis🎾公式キャラクター", { exact: true }).isVisible());
+  pass("HOME is the parent character hub with concise character copy and no separate About section");
   await page.goto(base + "/flow");
   await button("自動進行を開始").waitFor();
   assert.equal(
