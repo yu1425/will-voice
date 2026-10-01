@@ -96,6 +96,9 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     const current = eventAtElapsed(events, elapsed);
     const next = nextEventAtElapsed(events, elapsed);
     const later = next ? nextEventAtElapsed(events, next.offsetSec) : null;
+    const menuEvents = events.filter(
+      (event) => event.offsetSec < SESSION_SECONDS,
+    );
     const status = session?.status ?? "idle";
     const progress = getAutoFlowProgress(elapsed);
 
@@ -543,8 +546,8 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
               ? "開始前に順番を確認できます。"
               : "項目を選ぶと、その開始時刻へ移動します。"}
           </p>
-          <ol className="flow-timeline" aria-label="進行メニュー一覧">
-            {events.map((event) => (
+          <ol className="flow-menu-grid" aria-label="進行メニュー一覧">
+            {menuEvents.map((event, index) => (
               <li
                 key={event.id}
                 className={
@@ -558,7 +561,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
                 <button
                   type="button"
                   disabled={status === "idle"}
-                  aria-label={`${offset(event.offsetSec)} ${event.title}`}
+                  aria-label={`${String(index + 1).padStart(2, "0")} ${offset(event.offsetSec)} ${event.title}`}
                   aria-current={
                     event.id === current.id && status !== "idle"
                       ? "step"
@@ -566,12 +569,11 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
                   }
                   onClick={() => seek(event)}
                 >
-                  <span className="flow-timeline__dot" aria-hidden="true" />
+                  <span className="flow-menu-grid__number">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
                   <time>{offset(event.offsetSec)}</time>
-                  <span className="flow-timeline__title">{event.title}</span>
-                  {event.id === current.id && status !== "idle" && (
-                    <span className="flow-timeline__label">現在</span>
-                  )}
+                  <strong>{event.title}</strong>
                 </button>
               </li>
             ))}

@@ -9,8 +9,8 @@ export default function GuidePage() {
           <Image src="/will.png" alt="うぃる" width={40} height={40} />
         </div>
         <div className="header__titles">
-          <span className="header__title">うぃる進行</span>
-          <span className="header__subtitle">WILL.tennis 進行アシスタント</span>
+          <span className="header__title">うぃる</span>
+          <span className="header__subtitle">使い方</span>
         </div>
         <PageNavigation current="guide" />
       </header>

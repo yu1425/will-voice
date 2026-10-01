@@ -2,14 +2,14 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "うぃるくん進行",
+    name: "うぃる | WILL公式キャラクター",
     short_name: "うぃる",
     description:
-      "WILL.tennis マスコット「うぃる」のAI音声アシスタント。テニス会の進行をサポートします。",
+      "WILL公式キャラクター「うぃる」のサイト。進行アシスタントやチャットなどをまとめています。",
     start_url: "/",
     display: "standalone",
-    background_color: "#F3FAF4",
-    theme_color: "#5fae6e",
+    background_color: "#F7F7F5",
+    theme_color: "#455A73",
     orientation: "portrait",
     icons: [
       {

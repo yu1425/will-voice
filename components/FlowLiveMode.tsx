@@ -85,18 +85,22 @@ export default function FlowLiveMode({
         <summary>
           案内を選ぶ<span className="flow-summary-meta">{totalSteps}項目</span>
         </summary>
-        <ol className="flow-step-list">
+        <ol className="flow-menu-grid flow-menu-grid--manual">
           {scriptsForCourt.map((script) => (
-            <li key={script.id}>
+            <li
+              key={script.id}
+              className={s.step === script.step ? "is-current" : ""}
+            >
               <button
                 type="button"
                 aria-label={`${String(script.step).padStart(2, "0")} ${script.title}`}
                 aria-current={s.step === script.step ? "step" : undefined}
                 onClick={() => onStepJump(script.step)}
               >
-                <span>{String(script.step).padStart(2, "0")}</span>
+                <span className="flow-menu-grid__number">
+                  {String(script.step).padStart(2, "0")}
+                </span>
                 <strong>{script.title}</strong>
-                {s.step === script.step && <small>選択中</small>}
               </button>
             </li>
           ))}

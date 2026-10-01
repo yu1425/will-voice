@@ -2,12 +2,13 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+type PageKey = "home" | "flow" | "chat" | "settings" | "guide";
 type Props = {
-  current: "flow" | "guide" | "chat";
+  current: PageKey;
   onNavigate?: () => void;
   onSettings?: () => void;
 };
-/** Site navigation, not an application tab bar. Touch, pointer and keyboard share one menu. */
+/** Site navigation for the parent WILL character site. */
 export default function PageNavigation({
   current,
   onNavigate,
@@ -32,17 +33,12 @@ export default function PageNavigation({
   useEffect(() => {
     if (!open) return;
     const outside = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) {
-        setOpen(false);
-        hoverOpened.current = false;
-      }
+      if (!root.current?.contains(event.target as Node)) close();
     };
     const escape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
-      if (timer.current) clearTimeout(timer.current);
-      setOpen(false);
-      hoverOpened.current = false;
+      close();
       trigger.current?.focus();
     };
     document.addEventListener("pointerdown", outside);
@@ -58,7 +54,7 @@ export default function PageNavigation({
     },
     [],
   );
-  const visit = (page: string, event: React.MouseEvent<HTMLAnchorElement>) => {
+  const visit = (page: PageKey, event: React.MouseEvent<HTMLAnchorElement>) => {
     close();
     if (page === current) event.preventDefault();
     else onNavigate?.();
@@ -66,7 +62,7 @@ export default function PageNavigation({
   return (
     <nav
       className="page-menu"
-      aria-label="ページメニュー"
+      aria-label="うぃるサイトメニュー"
       ref={root}
       onPointerEnter={(event) => {
         clear();
@@ -129,7 +125,14 @@ export default function PageNavigation({
       </button>
       {open && (
         <div className="page-menu-panel" id="app-page-menu">
-          <p className="page-menu-title">WILL voice</p>
+          <p className="page-menu-title">うぃる</p>
+          <Link
+            href="/"
+            aria-current={current === "home" ? "page" : undefined}
+            onClick={(event) => visit("home", event)}
+          >
+            <span aria-hidden="true">⌂</span>ホーム
+          </Link>
           <Link
             href="/flow"
             aria-current={current === "flow" ? "page" : undefined}
@@ -153,15 +156,13 @@ export default function PageNavigation({
                 onSettings();
               }}
             >
-              <span aria-hidden="true">⚙</span>設定
+              <span aria-hidden="true">⚙</span>この機能の設定
             </button>
           ) : (
             <Link
-              href="/flow?settings=1"
-              onClick={() => {
-                close();
-                onNavigate?.();
-              }}
+              href="/settings"
+              aria-current={current === "settings" ? "page" : undefined}
+              onClick={(event) => visit("settings", event)}
             >
               <span aria-hidden="true">⚙</span>設定
             </Link>

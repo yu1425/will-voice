@@ -134,7 +134,7 @@ const settings = async () => {
   await menu();
   await page
     .locator(".page-menu-panel")
-    .getByRole("button", { name: "設定", exact: true })
+    .getByRole("button", { name: "この機能の設定", exact: true })
     .tap();
   await page.getByRole("dialog", { name: "設定" }).waitFor();
 };
@@ -148,7 +148,7 @@ const seek = async (label) => {
   const overview = auto().locator(".flow-overview");
   if (!(await overview.evaluate((el) => el.open)))
     await overview.locator("summary").tap();
-  await overview.getByRole("button", { name: label, exact: true }).tap();
+  await overview.locator(`button[aria-label$="${label}"]`).tap();
 };
 const layout = async (name) => {
   const data = await page.evaluate(() => ({
@@ -185,6 +185,15 @@ const layout = async (name) => {
   pass(name, data);
 };
 try {
+  await page.goto(base + "/");
+  await page.getByRole("heading", { name: "うぃる", exact: true }).waitFor();
+  assert.ok(
+    await page.getByRole("link", { name: /進行アシスタント/ }).isVisible(),
+  );
+  assert.ok(await page.getByRole("link", { name: /うぃるに聞く/ }).isVisible());
+  assert.ok(await page.getByRole("link", { name: /設定/ }).isVisible());
+  assert.ok(await page.getByRole("link", { name: /使い方/ }).isVisible());
+  pass("HOME is the parent character hub for flow, chat, settings and guide");
   await page.goto(base + "/flow");
   await button("自動進行を開始").waitFor();
   assert.equal(await page.locator(".page-navigation").count(), 0);
@@ -208,8 +217,8 @@ try {
     .locator(".page-menu-panel a,.page-menu-panel button")
     .allTextContents();
   assert.deepEqual(
-    names.map((x) => x.replace(/[▷◇⚙?]/g, "").trim()),
-    ["進行", "うぃるに聞く", "設定", "使い方"],
+    names.map((x) => x.replace(/[⌂▷◇⚙?]/g, "").trim()),
+    ["ホーム", "進行", "うぃるに聞く", "この機能の設定", "使い方"],
   );
   await layout("menu-390");
   await page.keyboard.press("Escape");
@@ -218,6 +227,18 @@ try {
     "false",
   );
   pass("touch menu order and Escape");
+  const autoOverview = auto().locator(".flow-overview");
+  await autoOverview.locator("summary").tap();
+  const compactGrid = await autoOverview
+    .locator(".flow-menu-grid")
+    .evaluate((el) => ({
+      count: el.children.length,
+      columns: getComputedStyle(el).gridTemplateColumns.split(" ").length,
+      height: el.getBoundingClientRect().height,
+    }));
+  assert.deepEqual([compactGrid.count, compactGrid.columns], [12, 3]);
+  assert.ok(compactGrid.height < 360);
+  pass("automatic progress menu is compact 3x4", compactGrid);
   await button("2面").tap();
   await button("自動進行を開始").tap();
   await waitVoice("00-opening.wav");
@@ -385,7 +406,15 @@ try {
   await auto().getByRole("button", { name: "再開", exact: true }).waitFor();
   await silence();
   pass("reload is paused and quiet, with no announcement burst");
-  await seek("02:00 進行完了");
+  await auto().getByRole("button", { name: "再開", exact: true }).tap();
+  await page.evaluate(() => {
+    window.__offset += 7200000;
+  });
+  await page.waitForFunction(
+    () =>
+      JSON.parse(localStorage.getItem("will-standard-two-hour-auto-flow"))
+        ?.status === "completed",
+  );
   await silence();
   assert.equal((await stored()).status, "completed");
   assert.equal(
@@ -527,7 +556,7 @@ try {
   await desk.keyboard.press("Tab");
   assert.equal(
     await desk.evaluate(() => document.activeElement.getAttribute("href")),
-    "/flow",
+    "/",
   );
   await desk.keyboard.press("Escape");
   pass(

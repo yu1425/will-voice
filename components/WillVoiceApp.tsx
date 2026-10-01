@@ -202,6 +202,9 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   // 初期化(クライアントのみ)
   useEffect(() => {
     setRecognitionOk(isSpeechRecognitionSupported());
+    if (new URLSearchParams(window.location.search).get("settings") === "1") {
+      setSettingsOpen(true);
+    }
     if (mode === "chat" && !isSpeechRecognitionSupported()) {
       setNotice(
         "このブラウザは音声認識に対応していません。スマホ/PCの Chrome でお試しください😊",
@@ -685,13 +688,9 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           <Image src="/will.png" alt="うぃる" width={40} height={40} priority />
         </div>
         <div className="header__titles">
-          <span className="header__title">
-            {mode === "flow" ? "うぃる進行" : "うぃる AIボイス"}
-          </span>
+          <span className="header__title">うぃる</span>
           <span className="header__subtitle">
-            {mode === "flow"
-              ? "WILL.tennis 進行アシスタント"
-              : "WILL.tennis マスコット"}
+            {mode === "flow" ? "進行アシスタント" : "うぃるに聞く"}
           </span>
         </div>
         <PageNavigation

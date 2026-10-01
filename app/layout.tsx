@@ -3,14 +3,14 @@ import "./globals.css";
 import "./flow.css";
 
 export const metadata: Metadata = {
-  title: "うぃるくん進行",
-  applicationName: "うぃるくん進行",
+  title: "うぃる | WILL公式キャラクター",
+  applicationName: "うぃる",
   description:
-    "社会人テニスサークル WILL.tennis のマスコット「うぃる」のAI音声アシスタント。テニス会の進行サポートに。",
+    "WILL公式キャラクター「うぃる」のサイト。進行アシスタント、チャットなどのコンテンツをまとめています。",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "うぃるくん進行",
+    title: "うぃる | WILL公式キャラクター",
   },
   formatDetection: {
     telephone: false,

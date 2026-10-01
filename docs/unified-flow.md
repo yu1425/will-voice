@@ -35,3 +35,10 @@ Header menu order: Flow, Chat, Settings, Guide. Hover on a fine pointer, click/t
 `node scripts/test-flow.mjs`, `node scripts/test-unified-flow.mjs`, `npx tsc --noEmit`, `npm run build`, and `git diff --check` passed. All 23 WAVs and `lib/transitionCue.ts` are unchanged from the starting SHA. Detailed measured evidence: `docs/unified-flow-audit.json`.
 
 Real iPad Safari, Bluetooth speaker audibility and physical screen locking are not certified by headless browser tests. The visibility-change test is simulated and labeled as such.
+
+## Parent character site / HOME
+
+- `/` is the parent site for the WILL official character `うぃる`, rather than a redirect to `/flow`.
+- Primary content: progression assistant (`/flow`) and chat (`/chat`). Support: settings (`/settings`) and guide (`/guide`).
+- The header menu order is HOME -> progression -> chat -> contextual settings -> guide. Flow/chat settings open their own content settings; the settings index routes to the appropriate content.
+- Automatic and manual 12-item selectors share a compact 3-column x 4-row visual language to reduce scrolling while preserving direct item selection.
