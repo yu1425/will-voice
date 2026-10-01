@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const MODEL = process.env.OPENAI_TTS_MODEL ?? "gpt-4o-mini-tts";
-const VOICE = process.env.OPENAI_TTS_VOICE ?? "ash";
-const SPEED = Number(process.env.OPENAI_TTS_SPEED ?? "1.06");
+const VOICE = process.env.OPENAI_TTS_VOICE ?? "verse";
+const SPEED = Number(process.env.OPENAI_TTS_SPEED ?? "1.08");
 const MAX_TEXT_LENGTH = 1800;
 const DEFAULT_INSTRUCTIONS =
   "Speak in natural Japanese as うぃる, the official WILL.tennis mascot character. " +
-  "Use a bright, catchy, youthful male character voice with the impression of a late-teen to early-20s boy. " +
-  "Keep the register light and clear, with friendly playful energy, a slight smile in the voice, crisp articulation, and a slightly brisk rhythm. " +
-  "Sound approachable and lively for a casual tennis group. " +
-  "Avoid sounding mature, middle-aged, feminine, deep, husky, announcer-like, formal, or overly theatrical. " +
-  "Character-like but natural, not exaggerated anime acting. Keep pauses short and natural. " +
+  "Use a catchy, youthful male mascot voice, like a cheerful late-teen boy or very young adult sidekick. " +
+  "Keep the vocal register light, bright, slightly higher, clean, and agile rather than heavy or chesty. " +
+  "Use upbeat friendly energy, a smile in the voice, crisp articulation, short natural pauses, and a lively slightly brisk rhythm. " +
+  "Sound cute and approachable without sounding like a small child. " +
+  "Do not sound mature, middle-aged, deep, gravelly, husky, authoritative, announcer-like, corporate, sleepy, or serious. " +
+  "Avoid heavy chest resonance and low-pitched delivery. Character-like but natural, not exaggerated anime acting. " +
   "Pronounce WILL.tennis as ウィルテニス.";
 
 function isSameOrigin(req: NextRequest) {
