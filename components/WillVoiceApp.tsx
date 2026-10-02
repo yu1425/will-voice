@@ -1,4 +1,5 @@
 "use client";
+import FlowAudioDiagnostics from "./FlowAudioDiagnostics";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
@@ -34,10 +35,7 @@ import {
   stopRecordedAudio,
   setRecordedAudioVolume,
 } from "@/lib/recordedAudio";
-import {
-  fetchOpenAiTtsStatus,
-  speakWithOpenAiTts,
-} from "@/lib/openaiTts";
+import { fetchOpenAiTtsStatus, speakWithOpenAiTts } from "@/lib/openaiTts";
 
 /** 簡易ID生成 */
 function makeId() {
@@ -308,11 +306,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       setOpenAiConfigured(false);
       setVoiceMode((current) => {
         if (current !== "openai") return current;
-        try {
-          window.localStorage.setItem(VOICE_MODE_STORAGE_KEY, "recorded");
-        } catch {
-          /* no-op */
-        }
+        // Runtime fallback must preserve the user's saved voice preference.
         return "recorded";
       });
     };
@@ -552,8 +546,20 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
       };
 
       setIsSpeaking(true);
+      const recordingFailed = () => {
+        if (!isCurrent()) return;
+        finishIfCurrent();
+        window.dispatchEvent(new Event("will-flow-audio-error"));
+        setNotice(
+          "案内を再生できませんでした。接続または音声準備を確認して、再生または再開ボタンでやり直してください。",
+        );
+      };
+      const offlineRecording =
+        requireRecording && audioSrc && navigator.onLine === false;
+      if (offlineRecording && voiceMode === "openai")
+        setNotice("オフラインのため、今回は固定録音音声で再生します。");
 
-      if (voiceMode === "openai") {
+      if (voiceMode === "openai" && !offlineRecording) {
         const controller = new AbortController();
         openAiAbortRef.current = controller;
 
@@ -566,24 +572,44 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
               volume: getAudioVolume(),
               startAtSec,
               onEnd: finishIfCurrent,
-              onError: fallbackToStandard,
+              onError: requireRecording ? recordingFailed : fallbackToStandard,
             });
           } else {
             fallbackToStandard();
           }
         };
 
+        let fallbackRequested = false;
+        const requestFallback = () => {
+          fallbackRequested = true;
+          controller.abort();
+        };
+        const timeout =
+          requireRecording && audioSrc
+            ? setTimeout(requestFallback, 12000)
+            : undefined;
+        if (requireRecording && audioSrc)
+          window.addEventListener("offline", requestFallback);
         const result = await speakWithOpenAiTts(text, {
           signal: controller.signal,
           startAtSec,
+          flowAudioSrc: requireRecording ? audioSrc : undefined,
           onEnd: finishIfCurrent,
           onError: () =>
             fallbackFromOpenAi(
               "AI音声の再生に失敗したため、別の音声で再生します。",
             ),
         });
-
-        if (controller.signal.aborted || !isCurrent()) return;
+        clearTimeout(timeout);
+        window.removeEventListener("offline", requestFallback);
+        if (!isCurrent()) return;
+        if (controller.signal.aborted) {
+          if (fallbackRequested)
+            fallbackFromOpenAi(
+              "通信が不安定なため、今回は固定録音音声で再生します。",
+            );
+          return;
+        }
         openAiAbortRef.current = null;
         if (!result.ok) {
           if (result.reason === "aborted") return;
@@ -599,16 +625,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
           volume: getAudioVolume(),
           startAtSec,
           onEnd: finishIfCurrent,
-          onError: requireRecording
-            ? () => {
-                if (!isCurrent()) return;
-                finishIfCurrent();
-                window.dispatchEvent(new Event("will-flow-audio-error"));
-                setNotice(
-                  "案内を再生できませんでした。接続を確認して、再生または再開ボタンでやり直してください。",
-                );
-              }
-            : fallbackToStandard,
+          onError: requireRecording ? recordingFailed : fallbackToStandard,
         });
         return;
       }
@@ -846,7 +863,11 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
             <>
               <div className="settings-panel__section">
                 <h3>進行音声</h3>
-                <div className="flow-choice" role="radiogroup" aria-label="進行音声">
+                <div
+                  className="flow-choice"
+                  role="radiogroup"
+                  aria-label="進行音声"
+                >
                   <button
                     type="button"
                     role="radio"
@@ -926,6 +947,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
                   </button>
                 </div>
               </div>
+              <FlowAudioDiagnostics />
               <div className="settings-panel__section settings-panel__about">
                 <h3>アプリについて</h3>
                 <p>VOICEVOX: ずんだもん</p>

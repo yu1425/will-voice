@@ -15,11 +15,16 @@ const preloadCache = new Map<string, HTMLAudioElement>();
 
 type PlaybackFailureReason = "play-rejected" | "media-error";
 
-type PlaybackDiagnostic = {
+export type PlaybackDiagnostic = {
+  version: 2;
+  type: "retry" | "recovery" | "final-failure";
+  /** Transient event flag: count a retry only when its play attempt actually starts. */
+  retryStarted?: boolean;
   at: string;
   src: string;
+  flowAudioSrc?: string;
   attempt: number;
-  reason: PlaybackFailureReason;
+  reason: PlaybackFailureReason | null;
   errorName: string | null;
   errorMessage: string | null;
   mediaErrorCode: number | null;
@@ -29,12 +34,99 @@ type PlaybackDiagnostic = {
   visibilityState: string | null;
 };
 
+export const AUDIO_DIAGNOSTIC_EVENT = "will-recorded-audio-diagnostic";
+export function getRecordedAudioDiagnostics(): PlaybackDiagnostic[] {
+  try {
+    const raw: unknown = JSON.parse(
+      window.localStorage.getItem(DIAGNOSTIC_STORAGE_KEY) ?? "[]",
+    );
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .filter(
+        (value) =>
+          value &&
+          typeof value === "object" &&
+          typeof value.src === "string" &&
+          typeof value.at === "string" &&
+          Number.isFinite(Date.parse(value.at)) &&
+          [1, 2].includes(value.attempt),
+      )
+      .slice(-MAX_DIAGNOSTICS)
+      .map((value) => ({
+        version: 2,
+        type:
+          value.type === "recovery"
+            ? "recovery"
+            : value.attempt === 1
+              ? "retry"
+              : "final-failure",
+        at: value.at,
+        src: value.src,
+        attempt: value.attempt,
+        flowAudioSrc:
+          typeof value.flowAudioSrc === "string"
+            ? value.flowAudioSrc
+            : undefined,
+        reason: ["play-rejected", "media-error"].includes(value.reason)
+          ? value.reason
+          : null,
+        errorName: typeof value.errorName === "string" ? value.errorName : null,
+        errorMessage:
+          typeof value.errorMessage === "string" ? value.errorMessage : null,
+        mediaErrorCode: Number.isFinite(value.mediaErrorCode)
+          ? value.mediaErrorCode
+          : null,
+        networkState: Number.isFinite(value.networkState)
+          ? value.networkState
+          : 0,
+        readyState: Number.isFinite(value.readyState) ? value.readyState : 0,
+        online: typeof value.online === "boolean" ? value.online : null,
+        visibilityState:
+          typeof value.visibilityState === "string"
+            ? value.visibilityState
+            : null,
+      }));
+  } catch {
+    return [];
+  }
+}
+export function clearRecordedAudioDiagnostics(): boolean {
+  try {
+    window.localStorage.removeItem(DIAGNOSTIC_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function getPlaybackAudio(): HTMLAudioElement {
   if (!playbackAudio) {
     playbackAudio = new Audio();
     playbackAudio.preload = "auto";
   }
   return playbackAudio;
+}
+/** Unlock the reused native element in the tap handler, before asynchronous preparation. */
+export async function unlockRecordedAudio(): Promise<void> {
+  const audio = getPlaybackAudio();
+  const generation = playbackGeneration;
+  audio.volume = 0;
+  audio.src =
+    "data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      audio.play(),
+      new Promise<void>((resolve) => {
+        timeout = setTimeout(resolve, 1000);
+      }),
+    ]);
+  } catch {
+    /* Normal playback retry/diagnostics handle a failed unlock. */
+  } finally {
+    clearTimeout(timeout);
+    if (generation === playbackGeneration) audio.pause();
+  }
 }
 function describeError(error: unknown): {
   name: string | null;
@@ -53,17 +145,24 @@ function describeError(error: unknown): {
   };
 }
 
-function recordPlaybackFailure(
+function recordPlaybackDiagnostic(
   audio: HTMLAudioElement,
   src: string,
   attempt: number,
-  reason: PlaybackFailureReason,
+  reason: PlaybackFailureReason | null,
   error?: unknown,
-): void {
+  type: PlaybackDiagnostic["type"] = attempt >= MAX_PLAY_ATTEMPTS
+    ? "final-failure"
+    : "retry",
+  flowAudioSrc?: string,
+): PlaybackDiagnostic {
   const described = describeError(error);
   const diagnostic: PlaybackDiagnostic = {
+    version: 2,
+    type,
     at: new Date().toISOString(),
     src,
+    flowAudioSrc,
     attempt,
     reason,
     errorName: described.name,
@@ -76,14 +175,12 @@ function recordPlaybackFailure(
       typeof document === "undefined" ? null : document.visibilityState,
   };
 
-  console.warn("[WILL Voice] recorded audio playback failed", diagnostic);
-  if (typeof window === "undefined") return;
+  if (type !== "recovery")
+    console.warn("[WILL Voice] recorded audio playback failed", diagnostic);
+  if (typeof window === "undefined") return diagnostic;
 
   try {
-    const parsed = JSON.parse(
-      window.localStorage.getItem(DIAGNOSTIC_STORAGE_KEY) ?? "[]",
-    );
-    const entries = Array.isArray(parsed) ? parsed : [];
+    const entries = getRecordedAudioDiagnostics();
     entries.push(diagnostic);
     window.localStorage.setItem(
       DIAGNOSTIC_STORAGE_KEY,
@@ -92,6 +189,10 @@ function recordPlaybackFailure(
   } catch {
     // Diagnostics must never interfere with playback recovery.
   }
+  window.dispatchEvent(
+    new CustomEvent(AUDIO_DIAGNOSTIC_EVENT, { detail: diagnostic }),
+  );
+  return diagnostic;
 }
 
 function clearPlaybackHandlers(audio: HTMLAudioElement): void {
@@ -131,6 +232,7 @@ export function playRecordedAudio(
     onError?: () => void;
     volume?: number;
     startAtSec?: number;
+    flowAudioSrc?: string;
   },
 ): void {
   stopRecordedAudio();
@@ -146,6 +248,7 @@ export function playRecordedAudio(
   let attempt = 0;
   let attemptSettled = false;
   let finished = false;
+  let lastFailure: PlaybackDiagnostic | null = null;
 
   const ownsPlayback = () =>
     generation === playbackGeneration && currentAudio === audio;
@@ -179,7 +282,15 @@ export function playRecordedAudio(
   ): void => {
     if (finished || !ownsPlayback() || attemptSettled) return;
     attemptSettled = true;
-    recordPlaybackFailure(audio, src, attempt, reason, error);
+    lastFailure = recordPlaybackDiagnostic(
+      audio,
+      src,
+      attempt,
+      reason,
+      error,
+      undefined,
+      options?.flowAudioSrc,
+    );
     audio.onerror = null;
     audio.onloadedmetadata = null;
     audio.pause();
@@ -199,6 +310,7 @@ export function playRecordedAudio(
   const startAttempt = (reload: boolean) => {
     if (finished || !ownsPlayback()) return;
     attempt += 1;
+    const attemptNumber = attempt;
     attemptSettled = false;
     audio.onerror = () => failAttempt("media-error");
     audio.onloadedmetadata = applyStartPosition;
@@ -213,12 +325,44 @@ export function playRecordedAudio(
 
     let playResult: Promise<void>;
     try {
+      if (attemptNumber === 2 && lastFailure)
+        window.dispatchEvent(
+          new CustomEvent(AUDIO_DIAGNOSTIC_EVENT, {
+            detail: {
+              ...lastFailure,
+              at: new Date().toISOString(),
+              attempt: 2,
+              retryStarted: true,
+            },
+          }),
+        );
       playResult = audio.play();
     } catch (error) {
       failAttempt("play-rejected", error);
       return;
     }
-    playResult.catch((error) => failAttempt("play-rejected", error));
+    playResult
+      .then(() => {
+        if (
+          attemptNumber === 2 &&
+          attempt === attemptNumber &&
+          !attemptSettled &&
+          !finished &&
+          ownsPlayback()
+        )
+          recordPlaybackDiagnostic(
+            audio,
+            src,
+            attempt,
+            null,
+            undefined,
+            "recovery",
+            options?.flowAudioSrc,
+          );
+      })
+      .catch((error) => {
+        if (attempt === attemptNumber) failAttempt("play-rejected", error);
+      });
   };
 
   audio.onended = () => finish(options?.onEnd);
@@ -244,7 +388,7 @@ export function pauseRecordedAudio(): void {
 export function resumeRecordedAudio(): void {
   currentAudio?.play().catch((error) => {
     if (!currentAudio) return;
-    recordPlaybackFailure(
+    recordPlaybackDiagnostic(
       currentAudio,
       currentAudio.currentSrc || currentAudio.src,
       1,

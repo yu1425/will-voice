@@ -19,6 +19,8 @@ export type AutoSession = {
   courts: 1 | 2;
   pendingCue: PendingCue | null;
   lastActiveAt: number;
+  /** Optional: preserves v1-v4 saves while linking a local run across seeks/reloads. */
+  runId?: string;
 };
 
 export function sessionElapsed(s: AutoSession, now: number): number {
@@ -130,6 +132,7 @@ export function restoreSession(
         ? Math.min(now, Math.max(s.startedAt!, s.lastActiveAt!))
         : now;
   const base: AutoSession = {
+    runId: typeof s.runId === "string" ? s.runId : undefined,
     version: 4,
     status: s.status === "completed" ? "completed" : "paused",
     startedAt: s.startedAt!,

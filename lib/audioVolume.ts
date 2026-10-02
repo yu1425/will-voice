@@ -8,4 +8,6 @@ export function getAudioVolume(): number {
 }
 export function setAudioVolume(value: number): void {
   volume = clampAudioVolume(value);
+  if (typeof window !== "undefined")
+    window.dispatchEvent(new Event("will-audio-volume-changed"));
 }
