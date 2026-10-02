@@ -3,6 +3,10 @@
   "base": "http://localhost:3100",
   "checks": [
     {
+      "name": "service worker version handshake matches the audio cache manifest",
+      "pass": true
+    },
+    {
       "name": "automatic preparation failure stays idle with explicit retry/online choices",
       "pass": true
     },

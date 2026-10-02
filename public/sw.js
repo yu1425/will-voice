@@ -1,15 +1,38 @@
 /* Audio only: HTML, Next assets, APIs and generated speech always use the network. */
-const CONFIG_CACHE = "will-voice-flow-audio-config";
 const MANIFEST = "/flow-audio-manifest";
+const AUDIO_CACHE_PATTERN = /^will-voice-flow-audio-v\d+$/;
+const CONFIG_CACHE_PATTERN =
+  /^will-voice-flow-audio-config-will-voice-flow-audio-v\d+$/;
+const LEGACY_CONFIG_CACHE = "will-voice-flow-audio-config";
+const VERSION_MESSAGE = "WILL_FLOW_AUDIO_VERSION";
+const WORKER_CACHE = new URL(self.location.href).searchParams.get("audio-cache");
+if (!WORKER_CACHE || !AUDIO_CACHE_PATTERN.test(WORKER_CACHE))
+  throw new Error("Missing or invalid audio cache version");
+const CONFIG_CACHE = `will-voice-flow-audio-config-${WORKER_CACHE}`;
 let configPromise;
+
+function validConfiguration(config) {
+  return (
+    config &&
+    config.cacheName === WORKER_CACHE &&
+    Array.isArray(config.urls) &&
+    config.urls.every(
+      (src) =>
+        typeof src === "string" && src.startsWith("/audio/flow/v2/"),
+    )
+  );
+}
+
 function configuration() {
   if (!configPromise)
     configPromise = caches
       .open(CONFIG_CACHE)
       .then((cache) => cache.match(MANIFEST))
-      .then((response) => {
+      .then(async (response) => {
         if (!response) throw new Error("Audio manifest unavailable");
-        return response.json();
+        const config = await response.json();
+        if (!validConfiguration(config)) throw new Error("Invalid audio manifest");
+        return config;
       })
       .catch((error) => {
         configPromise = null;
@@ -17,45 +40,57 @@ function configuration() {
       });
   return configPromise;
 }
+
+async function cacheComplete(config) {
+  const cache = await caches.open(config.cacheName);
+  return (
+    await Promise.all(config.urls.map((src) => cache.match(src)))
+  ).every((response) => response?.status === 200);
+}
+
+async function cleanupOldVersionCaches(config) {
+  if (!(await cacheComplete(config))) return;
+  for (const key of await caches.keys()) {
+    const obsoleteAudio =
+      AUDIO_CACHE_PATTERN.test(key) && key !== config.cacheName;
+    const obsoleteConfig =
+      (CONFIG_CACHE_PATTERN.test(key) && key !== CONFIG_CACHE) ||
+      key === LEGACY_CONFIG_CACHE;
+    if (obsoleteAudio || obsoleteConfig) await caches.delete(key);
+  }
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const response = await fetch(MANIFEST, { cache: "no-store" });
       if (!response.ok) throw new Error("Audio manifest unavailable");
       const config = await response.clone().json();
-      if (
-        !/^will-voice-flow-audio-v\d+$/.test(config.cacheName) ||
-        !Array.isArray(config.urls)
-      )
-        throw new Error("Invalid audio manifest");
+      if (!validConfiguration(config)) throw new Error("Invalid audio manifest");
       await (await caches.open(CONFIG_CACHE)).put(MANIFEST, response);
       configPromise = Promise.resolve(config);
       await self.skipWaiting();
     })(),
   );
 });
+
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       const config = await configuration();
-      const cache = await caches.open(config.cacheName);
-      const complete = (
-        await Promise.all(config.urls.map((src) => cache.match(src)))
-      ).every((response) => response?.status === 200);
-      // Do not remove a prepared version while its replacement is still empty.
-      if (complete) {
-        for (const key of await caches.keys()) {
-          if (
-            /^will-voice-flow-audio-v\d+$/.test(key) &&
-            key !== config.cacheName
-          )
-            await caches.delete(key);
-        }
-      }
+      await cleanupOldVersionCaches(config);
       await self.clients.claim();
     })(),
   );
 });
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== VERSION_MESSAGE) return;
+  const reply = { type: VERSION_MESSAGE, cacheName: WORKER_CACHE };
+  if (event.ports?.[0]) event.ports[0].postMessage(reply);
+  else event.source?.postMessage(reply);
+});
+
 async function rangeResponse(response, range) {
   if (!range) return response;
   // Native iOS media requests byte ranges even for a fully cached WAV.
@@ -79,6 +114,7 @@ async function rangeResponse(response, range) {
   headers.set("Accept-Ranges", "bytes");
   return new Response(buffer.slice(start, end + 1), { status: 206, headers });
 }
+
 async function audioResponse(request) {
   const config = await configuration();
   const url = new URL(request.url);
@@ -90,10 +126,9 @@ async function audioResponse(request) {
     /* Online degradation. */
   }
   if (response?.status !== 200) {
-    // Fixed v2 URLs are immutable. Keep a running page usable during worker updates.
+    // Keep a running page usable until the prepared replacement can safely retire old audio.
     for (const key of (await caches.keys()).reverse()) {
-      if (!/^will-voice-flow-audio-v\d+$/.test(key) || key === config.cacheName)
-        continue;
+      if (!AUDIO_CACHE_PATTERN.test(key) || key === config.cacheName) continue;
       try {
         response = await (await caches.open(key)).match(url.pathname);
       } catch {
@@ -105,6 +140,7 @@ async function audioResponse(request) {
   if (response?.status !== 200) return fetch(request);
   return rangeResponse(response, request.headers.get("range"));
 }
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (

@@ -54,6 +54,38 @@ try {
   await page.goto(base + "/flow");
   await button("自動進行を開始").waitFor();
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  const workerHandshake = await page.evaluate(async () => {
+    const manifest = await (await fetch("/flow-audio-manifest")).json();
+    const controller = navigator.serviceWorker.controller;
+    const reply = await new Promise((resolve, reject) => {
+      if (!controller) return reject(new Error("No service worker controller"));
+      const channel = new MessageChannel();
+      const timeout = setTimeout(
+        () => reject(new Error("Service worker handshake timeout")),
+        2000,
+      );
+      channel.port1.onmessage = (event) => {
+        clearTimeout(timeout);
+        resolve(event.data);
+      };
+      controller.postMessage(
+        { type: "WILL_FLOW_AUDIO_VERSION" },
+        [channel.port2],
+      );
+    });
+    return {
+      expected: manifest.cacheName,
+      reported: reply.cacheName,
+      scriptURL: controller.scriptURL,
+    };
+  });
+  assert.equal(workerHandshake.reported, workerHandshake.expected);
+  assert.ok(
+    workerHandshake.scriptURL.includes(
+      `audio-cache=${encodeURIComponent(workerHandshake.expected)}`,
+    ),
+  );
+  check("service worker version handshake matches the audio cache manifest");
   // Seed all but one WAV, then disconnect: an actual cache miss must keep start idle.
   await page.evaluate(async () => {
     const manifest = await (await fetch("/flow-audio-manifest")).json();

@@ -85,23 +85,68 @@ try {
   assert.deepEqual(failure.failedUrls, [urls[0]]);
   assert.equal(failure.ready, false);
   assert.equal((await api.checkFlowAudio()).supported, false);
-  // Exercise the actual worker's handlers without a browser: range requests and scoped cleanup.
+  assert.equal(
+    api.getFlowAudioWorkerScriptUrl(),
+    `/sw.js?audio-cache=${api.FLOW_AUDIO_CACHE}`,
+  );
+  const clientDeleted = [];
+  await api.cleanupOldFlowAudioCaches({
+    keys: async () => [
+      api.FLOW_AUDIO_CACHE,
+      "will-voice-flow-audio-v0",
+      `will-voice-flow-audio-config-${api.FLOW_AUDIO_CACHE}`,
+      "will-voice-flow-audio-config-will-voice-flow-audio-v0",
+      "will-voice-flow-audio-config",
+      "unrelated-cache",
+    ],
+    delete: async (name) => {
+      clientDeleted.push(name);
+      return true;
+    },
+  });
+  assert.deepEqual(clientDeleted.sort(), [
+    "will-voice-flow-audio-config",
+    "will-voice-flow-audio-config-will-voice-flow-audio-v0",
+    "will-voice-flow-audio-v0",
+  ]);
+
+  // Exercise a simulated v1 -> v2 worker update. The old prepared cache must
+  // survive activation until v2 is complete, and the worker must report v2.
+  const futureCacheName = "will-voice-flow-audio-v2";
+  const futureEntries = new Map();
+  const oldEntries = new Map(urls.map((src) => [src, audio()]));
+  const configEntries = new Map();
+  const makeCache = (map) => ({
+    match: async (url) => map.get(url)?.clone(),
+    put: async (url, response) => map.set(url, response.clone()),
+  });
+  const namedCaches = new Map([
+    [futureCacheName, makeCache(futureEntries)],
+    [api.FLOW_AUDIO_CACHE, makeCache(oldEntries)],
+    [`will-voice-flow-audio-config-${futureCacheName}`, makeCache(configEntries)],
+  ]);
   const handlers = new Map();
   const deleted = [];
   let claimed = false,
     skipped = false;
-  const configEntries = new Map();
-  const configCache = {
-    match: async (url) => configEntries.get(url)?.clone(),
-    put: async (url, response) => configEntries.set(url, response.clone()),
-  };
+  const cacheKeys = [
+    futureCacheName,
+    api.FLOW_AUDIO_CACHE,
+    `will-voice-flow-audio-config-${futureCacheName}`,
+    `will-voice-flow-audio-config-${api.FLOW_AUDIO_CACHE}`,
+    "will-voice-flow-audio-config",
+    "unrelated-cache",
+  ];
   const sandbox = {
     URL,
     Headers,
     Request,
     Response,
     self: {
-      location: { origin: "https://example.com" },
+      location: {
+        origin: "https://example.com",
+        href: `https://example.com/sw.js?audio-cache=${futureCacheName}`,
+      },
       addEventListener: (type, handler) => handlers.set(type, handler),
       skipWaiting: async () => {
         skipped = true;
@@ -113,17 +158,22 @@ try {
       },
     },
     caches: {
-      open: async (name) => (name.endsWith("config") ? configCache : cache),
-      keys: async () => [
-        api.FLOW_AUDIO_CACHE,
-        "will-voice-flow-audio-v0",
-        "unrelated-cache",
-      ],
-      delete: async (name) => deleted.push(name),
+      open: async (name) => {
+        if (!namedCaches.has(name)) namedCaches.set(name, makeCache(new Map()));
+        return namedCaches.get(name);
+      },
+      keys: async () => [...cacheKeys],
+      delete: async (name) => {
+        deleted.push(name);
+        const index = cacheKeys.indexOf(name);
+        if (index >= 0) cacheKeys.splice(index, 1);
+        namedCaches.delete(name);
+        return true;
+      },
     },
     fetch: async (request) => {
       if (request === "/flow-audio-manifest")
-        return Response.json({ cacheName: api.FLOW_AUDIO_CACHE, urls });
+        return Response.json({ cacheName: futureCacheName, urls });
       throw new Error("network disabled");
     },
   };
@@ -143,15 +193,35 @@ try {
   await work;
   assert.equal(claimed && skipped, true);
   assert.deepEqual(deleted, []);
-  entries.set(urls[0], audio());
+
+  let versionReply;
+  handlers.get("message")({
+    data: { type: "WILL_FLOW_AUDIO_VERSION" },
+    ports: [{ postMessage: (value) => (versionReply = value) }],
+  });
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(versionReply)),
+    { type: "WILL_FLOW_AUDIO_VERSION", cacheName: futureCacheName },
+  );
+
+  for (const src of urls) futureEntries.set(src, audio());
   handlers.get("activate")({
     waitUntil: (promise) => {
       work = promise;
     },
   });
   await work;
-  assert.deepEqual(deleted, ["will-voice-flow-audio-v0"]);
-  entries.set(urls[0], audio());
+  assert.deepEqual(deleted.sort(), [
+    "will-voice-flow-audio-config",
+    `will-voice-flow-audio-config-${api.FLOW_AUDIO_CACHE}`,
+    api.FLOW_AUDIO_CACHE,
+  ].sort());
+  assert.ok(cacheKeys.includes(futureCacheName));
+  assert.ok(
+    cacheKeys.includes(`will-voice-flow-audio-config-${futureCacheName}`),
+  );
+  assert.ok(cacheKeys.includes("unrelated-cache"));
+
   const fetchWorker = async (path, range) => {
     let response;
     handlers.get("fetch")({

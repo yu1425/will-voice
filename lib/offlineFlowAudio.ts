@@ -4,6 +4,22 @@ import { FLOW_VOICE_TEST } from "./flowScripts";
 // Bump when fixed audio contents/URLs change. The worker reads this via the manifest.
 export const FLOW_AUDIO_CACHE = "will-voice-flow-audio-v1";
 export const FLOW_AUDIO_MANIFEST = "/flow-audio-manifest";
+const FLOW_AUDIO_CACHE_PATTERN = /^will-voice-flow-audio-v\d+$/;
+const FLOW_AUDIO_CONFIG_PATTERN =
+  /^will-voice-flow-audio-config-will-voice-flow-audio-v\d+$/;
+const LEGACY_FLOW_AUDIO_CONFIG_CACHE = "will-voice-flow-audio-config";
+const FLOW_AUDIO_WORKER_MESSAGE = "WILL_FLOW_AUDIO_VERSION";
+const FLOW_AUDIO_WORKER_PATH = "/sw.js";
+
+export function getFlowAudioWorkerScriptUrl(
+  cacheName = FLOW_AUDIO_CACHE,
+): string {
+  return `${FLOW_AUDIO_WORKER_PATH}?audio-cache=${encodeURIComponent(cacheName)}`;
+}
+
+function flowAudioConfigCacheName(cacheName: string): string {
+  return `will-voice-flow-audio-config-${cacheName}`;
+}
 export function getOfflineFlowAudioUrls(): string[] {
   return [
     ...new Set(
@@ -108,6 +124,74 @@ export async function prepareAudioCache(
   );
   return audioReadiness(cached, failedUrls);
 }
+type CacheStorageBoundary = Pick<CacheStorage, "keys" | "delete">;
+
+export async function cleanupOldFlowAudioCaches(
+  storage: CacheStorageBoundary,
+  cacheName = FLOW_AUDIO_CACHE,
+): Promise<string[]> {
+  const currentConfig = flowAudioConfigCacheName(cacheName);
+  const deleted: string[] = [];
+  for (const key of await storage.keys()) {
+    const obsoleteAudio =
+      FLOW_AUDIO_CACHE_PATTERN.test(key) && key !== cacheName;
+    const obsoleteConfig =
+      (FLOW_AUDIO_CONFIG_PATTERN.test(key) && key !== currentConfig) ||
+      key === LEGACY_FLOW_AUDIO_CONFIG_CACHE;
+    if ((obsoleteAudio || obsoleteConfig) && (await storage.delete(key)))
+      deleted.push(key);
+  }
+  return deleted;
+}
+
+async function getWorkerAudioCacheName(
+  worker: ServiceWorker | null,
+  timeoutMs = 500,
+): Promise<string | null> {
+  if (!worker || typeof MessageChannel === "undefined") return null;
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    let settled = false;
+    const finish = (value: string | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      channel.port1.close();
+      resolve(value);
+    };
+    const timeout = setTimeout(() => finish(null), timeoutMs);
+    channel.port1.onmessage = (event) => {
+      const data = event.data;
+      finish(
+        data?.type === FLOW_AUDIO_WORKER_MESSAGE &&
+          typeof data.cacheName === "string"
+          ? data.cacheName
+          : null,
+      );
+    };
+    try {
+      worker.postMessage({ type: FLOW_AUDIO_WORKER_MESSAGE }, [channel.port2]);
+    } catch {
+      finish(null);
+    }
+  });
+}
+
+async function expectedWorkerControlsPage(
+  container: ServiceWorkerContainer,
+  timeoutMs = 10000,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (
+      (await getWorkerAudioCacheName(container.controller)) === FLOW_AUDIO_CACHE
+    )
+      return true;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return false;
+}
+
 let registration: Promise<boolean> | null = null;
 export function registerFlowAudioWorker(): Promise<boolean> {
   if (
@@ -117,32 +201,32 @@ export function registerFlowAudioWorker(): Promise<boolean> {
   )
     return Promise.resolve(false);
   if (registration) return registration;
-  registration = new Promise<boolean>((resolve) => {
-    const container = navigator.serviceWorker;
-    const controlled = () =>
-      container.controller?.scriptURL === new URL("/sw.js", location.href).href;
-    const finish = (ok: boolean) => {
-      clearTimeout(timeout);
-      container.removeEventListener("controllerchange", changed);
-      resolve(ok);
-    };
-    const changed = () => {
-      if (controlled()) finish(true);
-    };
-    const timeout = setTimeout(() => finish(false), 10000);
-    container.addEventListener("controllerchange", changed);
-    container
-      .register("/sw.js", { scope: "/", updateViaCache: "none" })
-      .then(() => {
-        if (controlled()) finish(true);
-      })
-      .catch(() => finish(false));
-  }).then((ok) => {
+  registration = (async () => {
+    try {
+      const container = navigator.serviceWorker;
+      await container.register(getFlowAudioWorkerScriptUrl(), {
+        scope: "/",
+        updateViaCache: "none",
+      });
+      return await expectedWorkerControlsPage(container);
+    } catch {
+      return false;
+    }
+  })().then((ok) => {
     if (!ok) registration = null;
     return ok;
   });
   return registration;
 }
+
+async function currentWorkerReady(): Promise<boolean> {
+  if (typeof navigator === "undefined" || !navigator.serviceWorker) return false;
+  return (
+    (await getWorkerAudioCacheName(navigator.serviceWorker.controller)) ===
+    FLOW_AUDIO_CACHE
+  );
+}
+
 let preparation: Promise<AudioReadiness> | null = null;
 export async function checkFlowAudio(): Promise<AudioReadiness> {
   try {
@@ -153,9 +237,7 @@ export async function checkFlowAudio(): Promise<AudioReadiness> {
       undefined,
       false,
     );
-    const workerReady =
-      navigator.serviceWorker?.controller?.scriptURL ===
-      new URL("/sw.js", location.href).href;
+    const workerReady = await currentWorkerReady();
     return { ...result, workerReady, ready: result.ready && workerReady };
   } catch {
     return audioReadiness(0, [], false, false);
@@ -175,7 +257,9 @@ export function prepareFlowAudio(
         (r) =>
           onProgress?.({ ...r, workerReady, ready: r.ready && workerReady }),
       );
-      return { ...result, workerReady, ready: result.ready && workerReady };
+      const ready = result.ready && workerReady;
+      if (ready) await cleanupOldFlowAudioCaches(caches, FLOW_AUDIO_CACHE);
+      return { ...result, workerReady, ready };
     } catch {
       return audioReadiness(0, [], false, false);
     } finally {
