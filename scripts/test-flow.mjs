@@ -140,26 +140,30 @@ try {
   const doubleScripts = getScriptsForCourt("double");
   const crossDouble = doubleScripts.find((item) => item.id === "cross-rally");
   assert.ok(crossDouble);
-  assert.match(crossDouble.displayText, /運営が指定した片側のメンバーだけ/);
-  assert.match(crossDouble.displayText, /両コートのその側から数名ずつ/);
-  assert.match(crossDouble.displayText, /反対側のメンバーはそのまま/);
-  assert.doesNotMatch(crossDouble.displayText, /3人ずつ|主催者|どちらか一つのコートから何人か/);
-  assert.match(crossDouble.voiceText, /うんえいが指定したかたがわ/);
-  assert.match(crossDouble.voiceText, /そのがわからすうめいずつ/);
-  assert.match(crossDouble.voiceText, /はんたいがわのメンバー/);
+  assert.match(crossDouble.displayText, /コートの片面にいるメンバーだけを入れ替えます/);
+  assert.match(crossDouble.displayText, /運営が、各コート、数名ずつ声をかけます/);
+  assert.match(crossDouble.displayText, /声をかけられた人は、隣のコートへ移動/);
+  assert.match(crossDouble.displayText, /反対側のメンバーは、そのまま/);
+  assert.doesNotMatch(crossDouble.displayText, /その側|3人ずつ|主催者|指定した/);
+  assert.match(crossDouble.voiceText, /コートのかためんにいるメンバーだけを入れ替えます/);
+  assert.match(crossDouble.voiceText, /うんえいが、かくコート、すうめいずつ、こえをかけます/);
+  assert.match(crossDouble.voiceText, /こえをかけられたひとは、となりのコートへいどう/);
+  assert.match(crossDouble.voiceText, /はんたいがわのメンバーは、そのまま/);
 
   const serveDouble = doubleScripts.find((item) => item.id === "serve-return");
   assert.ok(serveDouble);
-  assert.match(serveDouble.displayText, /先ほど動かなかった反対側のメンバーだけ/);
-  assert.match(serveDouble.displayText, /両コートのその側から数名ずつ/);
-  assert.match(serveDouble.displayText, /先ほど動いた側のメンバーはそのまま/);
-  assert.doesNotMatch(serveDouble.displayText, /3人ずつ|どちらか一つのコートから何人か/);
-  assert.match(serveDouble.voiceText, /はんたいがわのメンバーだけ/);
-  assert.match(serveDouble.voiceText, /そのがわからすうめいずつ/);
-  assert.match(serveDouble.voiceText, /うごいたがわのメンバー/);
+  assert.match(serveDouble.displayText, /先ほど入れ替えなかった、反対側のメンバーです/);
+  assert.match(serveDouble.displayText, /運営が、各コート、数名ずつ声をかけます/);
+  assert.match(serveDouble.displayText, /声をかけられた人は、隣のコートへ移動/);
+  assert.match(serveDouble.displayText, /先ほど入れ替えた側のメンバーは、そのまま/);
+  assert.doesNotMatch(serveDouble.displayText, /その側|3人ずつ|主催者|指定した/);
+  assert.match(serveDouble.voiceText, /さきほどいれかえなかった、はんたいがわのメンバーです/);
+  assert.match(serveDouble.voiceText, /うんえいが、かくコート、すうめいずつ、こえをかけます/);
+  assert.match(serveDouble.voiceText, /こえをかけられたひとは、となりのコートへいどう/);
+  assert.match(serveDouble.voiceText, /さきほどいれかえたがわのメンバーは、そのまま/);
   assert.match(serveDouble.voiceText, /かたがわがサーブ、はんたいがわがリターン/);
-  assert.match(serveDouble.voiceText, /サーブをするがわは順番にさんきゅう/);
-  assert.match(serveDouble.voiceText, /リターンをするがわは返すところまで/);
+  assert.match(serveDouble.voiceText, /サーブをするがわは、順番にさんきゅう/);
+  assert.match(serveDouble.voiceText, /リターンをするがわは、返すところまで/);
   const audit = JSON.parse(
     readFileSync("reports/flow-audio-v2-audit.json", "utf8"),
   );

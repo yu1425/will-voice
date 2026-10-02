@@ -40,9 +40,9 @@ Header menu order: Flow, Chat, Settings, Guide. Hover on a fine pointer, click/t
 
 ## Two-court member rotation
 
-- At 20:00, before cross rally, only one operations-designated side of the two courts rotates. Several members from that same side of each court exchange courts; the opposite side stays put. This changes both hitting and waiting-group combinations without moving both sides together.
-- At 30:00, before serve/return, the side that did not move at 20:00 rotates in the same way: several members from that side of each court exchange courts. The side that moved at 20:00 stays put.
-- The one-court displayed scripts are unchanged. The 20:00 and 30:00 two-court WAVs were regenerated with VOICEVOX Zundamon Normal to match the displayed scripts. Ambiguous kanji such as `側` and `数名` are converted to explicit phonetic readings only in the TTS input; the displayed Japanese remains natural written text.
+- At 20:00, before cross rally, only the members on one half of each court are rotated. Operations calls several members on each court; only those people move to the neighboring court while the opposite half stays put.
+- At 30:00, before serve/return, the opposite half—the members who were not rotated at 20:00—is handled the same way. The previously rotated half stays put.
+- The one-court displayed scripts are unchanged. The 20:00 and 30:00 two-court WAVs were regenerated with VOICEVOX Zundamon Normal. Display text uses natural Japanese, while the TTS input explicitly spells out ambiguous readings such as `運営`, `片面`, `数名` and `側`; commas are deliberately retained to create short pauses.
 
 ## Verification
 
@@ -56,7 +56,7 @@ Physical iPhone/iPad Safari, Bluetooth speaker audibility and screen locking are
 
 - Open the flow page before the event. Expand **開催前チェック**, use **音声を準備**, and wait for **音声準備完了**. The displayed total is derived from both court timelines plus `FLOW_VOICE_TEST` (currently 16 unique WAVs).
 - Preparation checks Cache Storage, downloads only missing files with at most three concurrent requests, validates full audio responses and verifies writes. A request has a 20-second timeout. Preloading alone does not mean prepared.
-- Readiness requires all files in `will-voice-flow-audio-v2` and a controlling worker that reports the same cache version through the `WILL_FLOW_AUDIO_VERSION` handshake. The worker script is registered as `/sw.js?audio-cache=<cacheName>`, so a stale worker with the same base pathname cannot be mistaken for the current version. Start automatically attempts preparation; failure keeps the session idle and offers retry or explicit online start. Online override cannot start while the browser reports offline. Unsupported Service Worker/Cache Storage environments retain explicit online playback.
+- Readiness requires all files in `will-voice-flow-audio-v3` and a controlling worker that reports the same cache version through the `WILL_FLOW_AUDIO_VERSION` handshake. The worker script is registered as `/sw.js?audio-cache=<cacheName>`, so a stale worker with the same base pathname cannot be mistaken for the current version. Start automatically attempts preparation; failure keeps the session idle and offers retry or explicit online start. Online override cannot start while the browser reports offline. Unsupported Service Worker/Cache Storage environments retain explicit online playback.
 - The check shows connection status, shared volume (warns at 0%), the existing voice test and, when enabled, the existing chime test. Confirm audibility at the connected speaker; the browser cannot certify the Bluetooth output device.
 - Once prepared, the same open page can run the fixed two-hour recordings after disconnecting. This does **not** promise launching a new browser/page completely offline. Cache eviction, private mode, background suspension and physical output still depend on the device/browser.
 - The worker caches only its small generated audio manifest and the selected fixed WAVs. It never applies cache-first to HTML, `/_next/static/`, APIs, generated TTS, other audio, or the protected audio directory. The URL list comes from `/flow-audio-manifest`, using the same event builder as preparation.
