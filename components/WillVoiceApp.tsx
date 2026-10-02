@@ -839,7 +839,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
             <p className="flow-muted">
               {mode === "flow"
                 ? "自動進行・個別進行・声かけに共通です"
-                : "録音・VOICEVOX・転換音は再生中にも反映します。標準音声は次の再生から反映します。"}
+                : "録音・VOICEVOX・チャイムは再生中にも反映します。標準音声は次の再生から反映します。"}
             </p>
           </div>
           {mode === "flow" && (
@@ -879,13 +879,13 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
               </div>
               <div className="settings-panel__section">
                 <div className="settings-panel__row">
-                  <label htmlFor="flow-chime">転換音</label>
+                  <label htmlFor="flow-chime">チャイム</label>
                   <label className="settings-panel__switch">
                     <input
                       id="flow-chime"
                       type="checkbox"
                       role="switch"
-                      aria-label="転換音"
+                      aria-label="チャイム"
                       checked={chimeEnabled}
                       onChange={(e) => handleChimeChange(e.target.checked)}
                     />
@@ -901,7 +901,7 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
                   onClick={() => void flowModeRef.current?.playChimeTest()}
                 >
                   <FlowTransportIcon kind="play" />
-                  転換音を試聴
+                  チャイムを試聴
                 </button>
               </div>
               <div className="settings-panel__section">
@@ -929,13 +929,6 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
               <div className="settings-panel__section settings-panel__about">
                 <h3>アプリについて</h3>
                 <p>VOICEVOX: ずんだもん</p>
-                <p>
-                  効果音: <a href="https://otologic.jp/">OtoLogic</a>（
-                  <a href="https://creativecommons.org/licenses/by/4.0/">
-                    CC BY 4.0
-                  </a>
-                  ）
-                </p>
               </div>
             </>
           )}
