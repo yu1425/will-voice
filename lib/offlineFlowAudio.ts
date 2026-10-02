@@ -2,7 +2,7 @@ import { buildStandardTwoHourEvents } from "./standardTwoHourFlow";
 import { FLOW_VOICE_TEST } from "./flowScripts";
 
 // Bump when fixed audio contents/URLs change. The worker reads this via the manifest.
-export const FLOW_AUDIO_CACHE = "will-voice-flow-audio-v2";
+export const FLOW_AUDIO_CACHE = "will-voice-flow-audio-v3";
 export const FLOW_AUDIO_MANIFEST = "/flow-audio-manifest";
 const FLOW_AUDIO_CACHE_PATTERN = /^will-voice-flow-audio-v\d+$/;
 const FLOW_AUDIO_CONFIG_PATTERN =

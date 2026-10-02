@@ -112,7 +112,7 @@ try {
 
   // Exercise a simulated v1 -> v2 worker update. The old prepared cache must
   // survive activation until v2 is complete, and the worker must report v2.
-  const futureCacheName = "will-voice-flow-audio-v3";
+  const futureCacheName = "will-voice-flow-audio-v4";
   const futureEntries = new Map();
   const oldEntries = new Map(urls.map((src) => [src, audio()]));
   const configEntries = new Map();
