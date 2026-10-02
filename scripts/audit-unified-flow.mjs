@@ -27,6 +27,30 @@ await context.addInitScript(() => {
   window.__synth = 0;
   window.__rejectNextMediaPlay = false;
   window.__rejectMediaPlays = 0;
+  window.__wake = { requests: 0, releases: 0, sentinels: [] };
+  Object.defineProperty(navigator, "wakeLock", {
+    configurable: true,
+    value: {
+      request: async () => {
+        window.__wake.requests++;
+        const listeners = [];
+        const sentinel = {
+          released: false,
+          addEventListener(type, listener) {
+            if (type === "release") listeners.push(listener);
+          },
+          async release() {
+            if (this.released) return;
+            this.released = true;
+            window.__wake.releases++;
+            for (const listener of listeners) listener();
+          },
+        };
+        window.__wake.sentinels.push(sentinel);
+        return sentinel;
+      },
+    },
+  });
   const NativeAudio = window.Audio;
   window.Audio = function (...args) {
     const audio = new NativeAudio(...args);
@@ -166,7 +190,9 @@ const layout = async (name) => {
   const data = await page.evaluate(() => ({
     viewport: innerWidth,
     document: document.documentElement.scrollWidth,
-    app: document.querySelector(".app").getBoundingClientRect().width,
+    app: [...document.querySelectorAll(".app")].find(
+      (el) => el.getClientRects().length,
+    )?.getBoundingClientRect().width ?? 0,
     overflow: [...document.querySelectorAll("button,a,h1,.flow-surface")]
       .filter((el) => el.getClientRects().length)
       .filter((el) => {
@@ -577,26 +603,29 @@ try {
   pass(
     "natural future boundary still plays after pause, resume and backward navigation",
   );
+  assert.ok(await page.evaluate(() => window.__wake.requests >= 1));
   await menu();
   await page
     .locator(".page-menu-panel")
     .getByRole("link", { name: "使い方", exact: false })
     .tap();
   await page.getByRole("heading", { name: "使い方", exact: true }).waitFor();
-  assert.equal((await stored()).status, "paused");
-  await silence();
+  assert.equal((await stored()).status, "running");
   await layout("guide-390");
+  await page.evaluate(() => {
+    window.__offset += 300000;
+  });
+  await waitVoice("10-long-rally.wav");
+  assert.equal((await stored()).status, "running");
   await menu();
   await page
     .locator(".page-menu-panel")
     .getByRole("link", { name: "進行", exact: false })
     .tap();
-  await auto().getByRole("button", { name: "再開", exact: true }).waitFor();
-  await silence();
-  await auto().getByRole("button", { name: "再開", exact: true }).tap();
-  await waitVoice("05-volley.wav");
+  await auto().getByRole("button", { name: "一時停止", exact: true }).waitFor();
+  assert.equal((await stored()).status, "running");
   pass(
-    "actual route changes pause complete session; return requires explicit resume",
+    "internal route changes keep automatic flow mounted, running and announcing",
   );
   await button("個別進行").tap();
   await silence();
@@ -826,46 +855,51 @@ try {
     .locator(".page-menu-panel")
     .getByRole("link", { name: "進行", exact: false })
     .tap();
+  await button("自動進行").tap();
   await auto().getByRole("button", { name: "再開", exact: true }).waitFor();
   await auto().getByRole("button", { name: "再開", exact: true }).tap();
-  await waitVoice("00-opening.wav");
+  const historyStart = await waitVoice("00-opening.wav");
   await page.waitForTimeout(1100);
   await page.goBack();
   await button("送信").waitFor();
-  const historyPause = await stored();
-  assert.equal(historyPause.status, "paused");
-  assert.ok(historyPause.pendingCue.positionSec > 1);
-  await silence();
+  assert.equal((await stored()).status, "running");
+  await page.waitForTimeout(500);
+  const historyBackground = await page.evaluate(() => {
+    const a = window.__media.findLast((item) => !item.paused);
+    return a ? { src: a.src, position: a.currentTime } : null;
+  });
+  assert.ok(historyBackground?.src.endsWith("00-opening.wav"));
+  assert.ok(historyBackground.position > historyStart.position);
   await page.goForward();
-  await auto().getByRole("button", { name: "再開", exact: true }).waitFor();
-  await auto().getByRole("button", { name: "再開", exact: true }).tap();
-  const historyResume = await waitVoice("00-opening.wav");
-  assert.ok(
-    historyResume.position >= historyPause.pendingCue.positionSec - 0.1,
-  );
+  await auto().getByRole("button", { name: "一時停止", exact: true }).waitFor();
+  assert.equal((await stored()).status, "running");
   pass(
-    "browser Back/Forward captures and resumes playhead even without header-link callback",
-    historyResume,
+    "browser Back/Forward keeps the persistent flow runtime and active media running",
+    historyBackground,
   );
-  await page.evaluate(() => {
+  const wakeBeforeBackground = await page.evaluate(() => window.__wake.requests);
+  await page.evaluate(async () => {
     Object.defineProperty(document, "visibilityState", {
       configurable: true,
       get: () => "hidden",
     });
+    const sentinel = window.__wake.sentinels.at(-1);
+    if (sentinel && !sentinel.released) await sentinel.release();
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  assert.equal((await stored()).status, "paused");
-  await silence();
+  assert.equal((await stored()).status, "running");
   await page.evaluate(() => {
     delete document.visibilityState;
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  await page.waitForTimeout(1200);
-  assert.equal((await stored()).status, "paused");
-  pass(
-    "simulated visibility event pauses whole session; foreground does not silently restart",
+  await page.waitForFunction(
+    (before) => window.__wake.requests > before,
+    wakeBeforeBackground,
   );
-  await auto().getByRole("button", { name: "再開", exact: true }).tap();
+  assert.equal((await stored()).status, "running");
+  pass(
+    "visibility changes do not pause flow and foreground reacquires screen wake lock",
+  );
   await waitVoice("00-opening.wav");
   await page.evaluate(() => {
     const a = window.__media.findLast((a) => !a.paused);

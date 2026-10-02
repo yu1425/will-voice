@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./flow.css";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import PersistentFlowHost from "@/components/PersistentFlowHost";
 
 export const metadata: Metadata = {
   title: "うぃる | WILL.tennis公式キャラクター",
@@ -37,7 +38,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body><ServiceWorkerRegistration />{children}</body>
+      <body>
+        <ServiceWorkerRegistration />
+        <PersistentFlowHost>{children}</PersistentFlowHost>
+      </body>
     </html>
   );
 }

@@ -1,6 +1,6 @@
 {
   "base": "http://localhost:3100",
-  "auditedAt": "2026-10-02T08:12:09.876Z",
+  "auditedAt": "2026-10-02T12:58:59.428Z",
   "checks": [
     {
       "name": "HOME is the parent character hub with concise character copy and no separate About section",
@@ -233,12 +233,12 @@
           {
             "src": "/audio/flow/v2/20-cross-rally-double.wav",
             "status": 200,
-            "bytes": 1266220
+            "bytes": 1278508
           },
           {
             "src": "/audio/flow/v2/30-serve-return-double.wav",
             "status": 200,
-            "bytes": 1676332
+            "bytes": 1836588
           },
           {
             "src": "/audio/flow/v2/43-random-table-double.wav",
@@ -263,7 +263,7 @@
       "pass": true,
       "evidence": {
         "eventId": "opening",
-        "positionSec": 1.30512,
+        "positionSec": 1.290807,
         "chime": false
       }
     },
@@ -288,7 +288,7 @@
       "pass": true,
       "evidence": {
         "src": "http://localhost:3100/audio/flow/v2/00-opening.wav",
-        "position": 1.317565,
+        "position": 1.291971,
         "volume": 1,
         "index": 2
       }
@@ -333,7 +333,7 @@
       "pass": true,
       "evidence": {
         "src": "http://localhost:3100/audio/flow/v2/20-cross-rally-double.wav",
-        "position": 0.013411,
+        "position": 0,
         "volume": 0.3,
         "index": 2
       }
@@ -376,7 +376,7 @@
       }
     },
     {
-      "name": "actual route changes pause complete session; return requires explicit resume",
+      "name": "internal route changes keep automatic flow mounted, running and announcing",
       "pass": true,
       "evidence": null
     },
@@ -390,7 +390,7 @@
       "pass": true,
       "evidence": {
         "src": "http://localhost:3100/audio/flow/v2/00-opening.wav",
-        "position": 1.271988,
+        "position": 1.260916,
         "volume": 0.3,
         "index": 2
       }
@@ -470,14 +470,14 @@
       "pass": true,
       "evidence": [
         {
-          "id": "49a4aa23-9856-4481-9ea7-36532f59e467",
-          "startedAt": 1790929068196,
-          "endedAt": 1790936284267,
+          "id": "d6f8a5f3-d965-4fed-9d80-8b51d53294a3",
+          "startedAt": 1790946276571,
+          "endedAt": 1790953491920,
           "courts": 2,
           "status": "completed",
-          "actualDurationSec": 7875.668000000001,
+          "actualDurationSec": 8175.7429999999995,
           "manualPauseCount": 4,
-          "safetyPauseCount": 2,
+          "safetyPauseCount": 1,
           "seekCount": 6,
           "audioRetryCount": 0,
           "audioRecoveryCount": 0,
@@ -486,7 +486,7 @@
           "pauseReasons": {
             "manual": 4,
             "visibility": 0,
-            "navigation": 2,
+            "navigation": 1,
             "audio-error": 0
           },
           "runningSince": null
@@ -650,17 +650,15 @@
       }
     },
     {
-      "name": "browser Back/Forward captures and resumes playhead even without header-link callback",
+      "name": "browser Back/Forward keeps the persistent flow runtime and active media running",
       "pass": true,
       "evidence": {
         "src": "http://localhost:3100/audio/flow/v2/00-opening.wav",
-        "position": 1.143277,
-        "volume": 0.3,
-        "index": 2
+        "position": 1.596286
       }
     },
     {
-      "name": "simulated visibility event pauses whole session; foreground does not silently restart",
+      "name": "visibility changes do not pause flow and foreground reacquires screen wake lock",
       "pass": true,
       "evidence": null
     },
@@ -676,7 +674,5 @@
     }
   ],
   "errors": [],
-  "physicalDeviceChecks": false,
-  "startingMain": "2c5ea5343e693f76becf39896ca9ec2ef094addc",
-  "webkitVerified": false
+  "physicalDeviceChecks": false
 }

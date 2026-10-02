@@ -121,7 +121,15 @@ const DEFAULT_PRESET: VoicevoxPresetName = "明るめ";
 const VOICE_TEST_TEXT =
   "本日はご参加ありがとうございます。ショートラリーとボレーボレーを、それぞれ5分ずつ行います。聞こえ方に問題がなければ、この設定で進行してください。";
 
-export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
+export default function WillVoiceApp({
+  mode,
+  persistentFlow = false,
+  flowRouteActive = true,
+}: {
+  mode: "flow" | "chat";
+  persistentFlow?: boolean;
+  flowRouteActive?: boolean;
+}) {
   const [messages, setMessages] = useState<ChatMessageData[]>([
     { id: makeId(), role: "will", text: WILL_GREETING },
   ]);
@@ -171,9 +179,13 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   const logRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("settings") === "1")
+    if (
+      (mode !== "flow" || flowRouteActive) &&
+      new URLSearchParams(window.location.search).get("settings") === "1"
+    )
       setSettingsOpen(true);
-  }, []);
+    if (mode === "flow" && !flowRouteActive) setSettingsOpen(false);
+  }, [mode, flowRouteActive]);
   useEffect(() => {
     if (!settingsOpen || mode !== "flow") return;
     const panel = document.getElementById("audio-volume-settings");
@@ -208,7 +220,10 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
   // 初期化(クライアントのみ)
   useEffect(() => {
     setRecognitionOk(isSpeechRecognitionSupported());
-    if (new URLSearchParams(window.location.search).get("settings") === "1") {
+    if (
+      (mode !== "flow" || flowRouteActive) &&
+      new URLSearchParams(window.location.search).get("settings") === "1"
+    ) {
       setSettingsOpen(true);
     }
     if (mode === "chat" && !isSpeechRecognitionSupported()) {
@@ -489,10 +504,10 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     }
   }, []);
 
-  /** 全方式の読み上げ停止 */
+  /** 全方式の読み上げ停止。Chat側から背景の自動進行メディアは止めない。 */
   const stopAllSpeaking = useCallback(() => {
     setNotice(null);
-    stopTransitionCue();
+    if (mode === "flow") stopTransitionCue();
     speechGenerationRef.current += 1;
     voicevoxAbortRef.current?.abort();
     voicevoxAbortRef.current = null;
@@ -500,21 +515,21 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     openAiAbortRef.current = null;
     stopSpeaking();
     stopVoicevox();
-    stopRecordedAudio();
+    if (mode === "flow") stopRecordedAudio();
     voicevoxHandleRef.current = null;
     setIsSpeaking(false);
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     appMountedRef.current = true;
     return () => {
       appMountedRef.current = false;
-      // Browser Back/Forward may bypass the header links. Capture the session playhead before releasing its audio.
-      window.dispatchEvent(new Event("will-flow-leave"));
+      if (mode === "flow" && !persistentFlow)
+        window.dispatchEvent(new Event("will-flow-leave"));
       stopAllSpeaking();
       listeningRef.current?.stop();
     };
-  }, [stopAllSpeaking]);
+  }, [mode, persistentFlow, stopAllSpeaking]);
 
   /**
    * 任意のテキストを現在の音声モードで読み上げる(進行モードからも利用)。
@@ -683,11 +698,14 @@ export default function WillVoiceApp({ mode }: { mode: "flow" | "chat" }) {
     [speak],
   );
   const leavePage = useCallback(() => {
-    flowModeRef.current?.pauseForNavigation();
     listeningRef.current?.stop();
-    window.dispatchEvent(new Event("will-flow-leave"));
+    if (mode === "flow" && persistentFlow) return;
+    if (mode === "flow") {
+      flowModeRef.current?.pauseForNavigation();
+      window.dispatchEvent(new Event("will-flow-leave"));
+    }
     stopAllSpeaking();
-  }, [stopAllSpeaking]);
+  }, [mode, persistentFlow, stopAllSpeaking]);
 
   /** ユーザー発話受領 → うぃる返答生成 → 読み上げ */
   const handleUserMessage = useCallback(

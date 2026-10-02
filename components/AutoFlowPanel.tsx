@@ -89,6 +89,23 @@ export function formatClock(seconds: number) {
 const offset = (seconds: number) => formatClock(seconds).slice(0, 5);
 const showPlayer = () =>
   document.querySelector(".flow-scroll")?.scrollTo({ top: 0 });
+const MAX_LATE_CUE_SEC = 90;
+
+type WakeLockSentinelLike = {
+  released: boolean;
+  release: () => Promise<void>;
+  addEventListener: (
+    type: "release",
+    listener: () => void,
+    options?: AddEventListenerOptions,
+  ) => void;
+};
+type WakeLockCapableNavigator = Navigator & {
+  wakeLock?: {
+    request: (type: "screen") => Promise<WakeLockSentinelLike>;
+  };
+};
+type WakeLockState = "idle" | "active" | "unsupported" | "released" | "error";
 
 const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
   function AutoFlowPanel(props, ref) {
@@ -101,6 +118,8 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     const [overviewOpen, setOverviewOpen] = useState(true);
     const readinessRef = useRef<FlowReadinessHandle>(null);
     const [startBlocked, setStartBlocked] = useState(false);
+    const [wakeLockState, setWakeLockState] = useState<WakeLockState>("idle");
+    const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
     const callbacks = useRef(props);
     callbacks.current = props;
     const mounted = useRef(false);
@@ -146,6 +165,52 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       if (mounted.current) {
         setCuePlaying(false);
         setStarting(false);
+      }
+    }, []);
+    const releaseWakeLock = useCallback(async () => {
+      const sentinel = wakeLockRef.current;
+      wakeLockRef.current = null;
+      if (!sentinel || sentinel.released) return;
+      try {
+        await sentinel.release();
+      } catch {
+        /* The browser may have already released it while backgrounding. */
+      }
+    }, []);
+    const requestWakeLock = useCallback(async () => {
+      if (
+        sessionRef.current?.status !== "running" ||
+        document.visibilityState !== "visible"
+      )
+        return;
+      if (wakeLockRef.current && !wakeLockRef.current.released) {
+        setWakeLockState("active");
+        return;
+      }
+      const wakeLock = (navigator as WakeLockCapableNavigator).wakeLock;
+      if (!wakeLock?.request) {
+        setWakeLockState("unsupported");
+        return;
+      }
+      try {
+        const sentinel = await wakeLock.request("screen");
+        if (sessionRef.current?.status !== "running") {
+          await sentinel.release();
+          return;
+        }
+        wakeLockRef.current = sentinel;
+        setWakeLockState("active");
+        sentinel.addEventListener(
+          "release",
+          () => {
+            if (wakeLockRef.current === sentinel) wakeLockRef.current = null;
+            if (mounted.current && sessionRef.current?.status === "running")
+              setWakeLockState("released");
+          },
+          { once: true },
+        );
+      } catch {
+        if (mounted.current) setWakeLockState("error");
       }
     }, []);
     const announce = useCallback(
@@ -255,8 +320,14 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
           cancelPlayback();
           return;
         }
-        // Long gaps consume old cues, not a queue of announcements.
-        if (allowAudio && callbacks.current.active && due.length === 1)
+        // A throttled/background timer may fire late. Play one recent cue, but
+        // never dump a queue of stale announcements after a long suspension.
+        if (
+          allowAudio &&
+          callbacks.current.active &&
+          due.length === 1 &&
+          at - due[0].offsetSec <= MAX_LATE_CUE_SEC
+        )
           void announce(due[0], due[0].chime !== false);
       },
       [save, announce, cancelPlayback],
@@ -288,10 +359,6 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       } catch {
         save(null);
       }
-      const leave = () => pauseAll("navigation");
-      const visibility = () => {
-        if (document.visibilityState === "hidden") pauseAll("visibility");
-      };
       const error = () => {
         const s = sessionRef.current;
         if (!s || s.status !== "running") return;
@@ -334,17 +401,10 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         );
       };
       window.addEventListener(AUDIO_DIAGNOSTIC_EVENT, diagnostic);
-      window.addEventListener("will-flow-leave", leave);
-      window.addEventListener("pagehide", leave);
       window.addEventListener("will-flow-audio-error", error);
-      document.addEventListener("visibilitychange", visibility);
       return () => {
-        pauseAll("navigation");
         mounted.current = false;
-        window.removeEventListener("will-flow-leave", leave);
-        window.removeEventListener("pagehide", leave);
         window.removeEventListener("will-flow-audio-error", error);
-        document.removeEventListener("visibilitychange", visibility);
         window.removeEventListener(AUDIO_DIAGNOSTIC_EVENT, diagnostic);
       };
     }, [save, pauseAll]);
@@ -374,19 +434,33 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     }, [current.audioSrc, next?.audioSrc]);
     useEffect(() => {
       if (status !== "running") return;
-      let last = Date.now();
-      const id = setInterval(() => {
-        const now = Date.now();
-        const uninterrupted = now - last < 2500;
-        last = now;
-        if (document.visibilityState !== "visible") {
-          pauseAll("visibility");
-          return;
-        }
-        advance(uninterrupted);
-      }, 1000);
+      const id = setInterval(() => advance(true), 1000);
       return () => clearInterval(id);
-    }, [status, advance, pauseAll]);
+    }, [status, advance]);
+    useEffect(() => {
+      if (status !== "running") {
+        void releaseWakeLock();
+        setWakeLockState("idle");
+        return;
+      }
+      void requestWakeLock();
+      const visibility = () => {
+        if (document.visibilityState !== "visible") return;
+        void requestWakeLock();
+        // Reconcile the clock immediately after a throttled/background period.
+        advance(true);
+      };
+      document.addEventListener("visibilitychange", visibility);
+      return () => {
+        document.removeEventListener("visibilitychange", visibility);
+        void releaseWakeLock();
+      };
+    }, [
+      status,
+      advance,
+      releaseWakeLock,
+      requestWakeLock,
+    ]);
 
     const start = async (onlineOverride = false) => {
       if (starting) return;
@@ -664,6 +738,17 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
               ? "再開すると、時計と中断した案内が続きます。"
               : "時計と音声をまとめて操作します。"}
           </p>
+          {status === "running" && (
+            <p className="flow-player-hint" role="status">
+              {wakeLockState === "active"
+                ? "画面スリープ防止中。WILL内の別ページに移動しても自動進行は継続します。"
+                : wakeLockState === "unsupported"
+                  ? "このブラウザでは画面スリープ防止を利用できません。自動進行は継続しますが、画面ロック中の動作は端末に依存します。"
+                  : wakeLockState === "error"
+                    ? "画面スリープ防止を開始できませんでした。自動進行は継続しますが、画面ロック中の動作は端末に依存します。"
+                    : "自動進行を継続中です。"}
+            </p>
+          )}
           {confirmEnd && (
             <div className="flow-end-confirm" role="alert">
               <h2>自動進行を終了しますか？</h2>
