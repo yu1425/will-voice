@@ -30,9 +30,9 @@ Header menu order: Flow, Chat, Settings, Guide. Hover on a fine pointer, click/t
 
 ## Two-court member rotation
 
-- At 20:00, before cross rally, only one organizer-designated side of the two courts rotates. Three people from that same side of each court exchange courts; the opposite side stays put. This changes both hitting and waiting-group combinations without moving both sides together.
-- At 30:00, before serve/return, the side that did not move at 20:00 rotates in the same way: three people from that side of each court exchange courts. The side that moved at 20:00 stays put.
-- The one-court scripts are unchanged. The 20:00 and 30:00 two-court WAVs were regenerated with VOICEVOX Zundamon Normal to match the displayed scripts.
+- At 20:00, before cross rally, only one operations-designated side of the two courts rotates. Several members from that same side of each court exchange courts; the opposite side stays put. This changes both hitting and waiting-group combinations without moving both sides together.
+- At 30:00, before serve/return, the side that did not move at 20:00 rotates in the same way: several members from that side of each court exchange courts. The side that moved at 20:00 stays put.
+- The one-court displayed scripts are unchanged. The 20:00 and 30:00 two-court WAVs were regenerated with VOICEVOX Zundamon Normal to match the displayed scripts. Ambiguous kanji such as `側` and `数名` are converted to explicit phonetic readings only in the TTS input; the displayed Japanese remains natural written text.
 
 ## Verification
 
