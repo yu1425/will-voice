@@ -262,7 +262,12 @@ try {
   );
   pass("touch menu order and Escape");
   const autoOverview = auto().locator(".flow-overview");
+  assert.equal(await autoOverview.evaluate((el) => el.open), true);
   await autoOverview.locator("summary").tap();
+  assert.equal(await autoOverview.evaluate((el) => el.open), false);
+  await autoOverview.locator("summary").tap();
+  assert.equal(await autoOverview.evaluate((el) => el.open), true);
+  pass("automatic progress menu is open by default and can be closed");
   const compactGrid = await autoOverview
     .locator(".flow-menu-grid")
     .evaluate((el) => ({

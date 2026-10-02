@@ -78,6 +78,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     const [cuePlaying, setCuePlaying] = useState(false);
     const [confirmEnd, setConfirmEnd] = useState(false);
     const [starting, setStarting] = useState(false);
+    const [overviewOpen, setOverviewOpen] = useState(true);
     const callbacks = useRef(props);
     callbacks.current = props;
     const mounted = useRef(false);
@@ -557,7 +558,11 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
             <p>{current.displayText}</p>
           </details>
         </section>
-        <details className="flow-surface flow-overview">
+        <details
+          className="flow-surface flow-overview"
+          open={overviewOpen}
+          onToggle={(event) => setOverviewOpen(event.currentTarget.open)}
+        >
           <summary>
             <span>進行メニュー</span>
             <span className="flow-summary-meta">
