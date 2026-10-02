@@ -29,7 +29,9 @@ try {
   assert.equal(urls.length, new Set(urls).size);
   assert.ok(
     urls.every(
-      (url) => url.startsWith("/audio/flow/v2/") && url.endsWith(".wav"),
+      (url) =>
+        url.startsWith("/audio/flow/v2/") &&
+        (url.endsWith(".wav") || url.endsWith(".m4a")),
     ),
   );
   for (const courts of [1, 2])
@@ -112,7 +114,7 @@ try {
 
   // Exercise a simulated v1 -> v2 worker update. The old prepared cache must
   // survive activation until v2 is complete, and the worker must report v2.
-  const futureCacheName = "will-voice-flow-audio-v4";
+  const futureCacheName = "will-voice-flow-audio-v5";
   const futureEntries = new Map();
   const oldEntries = new Map(urls.map((src) => [src, audio()]));
   const configEntries = new Map();
@@ -248,7 +250,7 @@ try {
   );
   assert.equal((await fetchWorker(urls[0])).status, 200);
   console.log(
-    `PASS: ${urls.length} unique fixed WAVs, cache readiness/failures, bounded preparation, no redownload, worker range playback and scoped updates`,
+    `PASS: ${urls.length} unique fixed audio assets, cache readiness/failures, bounded preparation, no redownload, worker range playback and scoped updates`,
   );
 } finally {
   rmSync(temp, { recursive: true, force: true });

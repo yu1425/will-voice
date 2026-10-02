@@ -36,6 +36,7 @@ import {
   setRecordedAudioVolume,
 } from "@/lib/recordedAudio";
 import { fetchOpenAiTtsStatus, speakWithOpenAiTts } from "@/lib/openaiTts";
+import { setFlowBackgroundTimelineVolume } from "@/lib/flowBackgroundTimeline";
 
 /** 簡易ID生成 */
 function makeId() {
@@ -483,6 +484,7 @@ export default function WillVoiceApp({
   const handleRecordedVolumeChange = useCallback((v: number) => {
     setAudioVolume(v);
     setRecordedAudioVolume(v);
+    setFlowBackgroundTimelineVolume(v);
     setVoicevoxVolume(v);
     setTransitionCueVolume(v);
     setRecordedVolume(v);
