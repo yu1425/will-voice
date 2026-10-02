@@ -187,7 +187,7 @@ try {
     await b("進行を一時停止").click();
     await page.locator(".auto-flow .flow-overview > summary").click();
     await page
-      .getByRole("button", { name: "00:40 乱数表の説明", exact: true })
+      .getByRole("button", { name: "00:43 乱数表の説明", exact: true })
       .click();
     await b("今の音声を止める").click();
     await page

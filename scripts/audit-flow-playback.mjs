@@ -266,7 +266,7 @@ try {
     await actual(),
   );
   await stop();
-  await b("00:40 乱数表の説明").click();
+  await b("00:43 乱数表の説明").click();
   await b("移動して案内").click();
   await page.waitForFunction(() => window.__chimes.some((c) => c.row.active));
   await stop();
@@ -274,11 +274,11 @@ try {
   await noAudio();
   assert.equal(
     await page.evaluate(() =>
-      window.__plays.some((p) => p.src.endsWith("40-random-table-single.wav")),
+      window.__plays.some((p) => p.src.endsWith("43-random-table-single.wav")),
     ),
     false,
   );
-  await boundary(2580);
+  await boundary(2613);
   await playing("43-game-rules.wav");
   assert.equal((await actual()).volume, 0.3);
   pass(

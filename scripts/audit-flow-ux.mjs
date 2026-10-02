@@ -144,14 +144,14 @@ try {
     await page.locator(".auto-flow .flow-overview > summary").click();
     await shot("timeline", width);
     await page
-      .getByRole("button", { name: "00:40 乱数表の説明", exact: true })
+      .getByRole("button", { name: "00:43 乱数表の説明", exact: true })
       .click();
     await b("移動して案内").click();
     await b("設定を開く").click();
     await setVolume(30);
     await page.waitForFunction(() =>
       window.__media.some(
-        (a) => !a.paused && a.src.endsWith("40-random-table-single.wav"),
+        (a) => !a.paused && a.src.endsWith("43-random-table-single.wav"),
       ),
     );
     assert.equal((await lastAudio()).volume, 0.3);

@@ -45,10 +45,11 @@ try {
     ["cross-rally", 1200],
     ["serve-return", 1800],
     ["serve-return-switch", 2100],
-    ["random-table", 2400],
-    ["game-rules", 2580],
-    ["self-intro", 2760],
-    ["game-start", 3000],
+    ["gather-break", 2400],
+    ["random-table", 2580],
+    ["game-rules", 2613],
+    ["self-intro", 2642],
+    ["game-play", 3000],
     ["mini-game", 6300],
     ["closing", 7020],
     ["completed", 7200],
@@ -60,22 +61,56 @@ try {
       expected,
     );
     for (const e of events.slice(0, -1)) {
-      assert.ok(e.audioSrc);
-      assert.ok(existsSync("public" + e.audioSrc));
-      assert.ok(statSync("public" + e.audioSrc).size > 1000);
       assert.equal(eventAtElapsed(events, e.offsetSec).id, e.id);
       assert.equal(
         eventAtElapsed(events, e.offsetSec - 1).id,
         events[Math.max(0, events.indexOf(e) - 1)].id,
       );
+      if (e.id === "game-play") {
+        assert.equal(e.audioSrc, undefined);
+        assert.equal(e.voiceText, "");
+        assert.equal(e.autoOnly, true);
+        assert.equal(e.chime, false);
+        continue;
+      }
+      assert.ok(e.audioSrc);
+      assert.ok(existsSync("public" + e.audioSrc));
+      assert.ok(statSync("public" + e.audioSrc).size > 1000);
       assert.equal(e.voiceText, sanitizeForVoicevox(e.displayText));
       assert.equal(sanitizeForVoicevox(e.voiceText), e.voiceText);
-      const manual = getScriptsForCourt(
-        courts === 2 ? "double" : "single",
-      ).find((s) => s.step === e.refStep);
-      assert.equal(manual.displayText, e.displayText);
-      assert.equal(manual.audioSrc, e.audioSrc);
+      if (!e.autoOnly) {
+        const manual = getScriptsForCourt(
+          courts === 2 ? "double" : "single",
+        ).find((s) => s.step === e.refStep);
+        assert.ok(manual);
+        assert.equal(manual.displayText, e.displayText);
+        assert.equal(manual.audioSrc, e.audioSrc);
+      }
     }
+    const hydrationBreak = events.find((e) => e.id === "gather-break");
+    assert.ok(hydrationBreak);
+    assert.equal(hydrationBreak.refStep, 7);
+    assert.equal(hydrationBreak.autoOnly, undefined);
+    assert.match(hydrationBreak.displayText, /一度コートから上がって集合/);
+    assert.match(hydrationBreak.displayText, /3分ほど/);
+    assert.match(hydrationBreak.displayText, /必ず水分補給/);
+    assert.equal(nextEventAtElapsed(events, 2400)?.id, "random-table");
+    assert.equal(nextEventAtElapsed(events, 2580)?.id, "game-rules");
+    assert.equal(events.find((e) => e.id === "game-rules")?.chime, false);
+    assert.equal(events.find((e) => e.id === "self-intro")?.chime, false);
+    assert.equal(events.find((e) => e.id === "game-play")?.audioSrc, undefined);
+    assert.equal(getScriptsForCourt(courts === 2 ? "double" : "single").length, 12);
+    const manualBreak = getScriptsForCourt(
+      courts === 2 ? "double" : "single",
+    ).find((s) => s.id === "gather-break");
+    assert.ok(manualBreak);
+    assert.equal(manualBreak.step, 7);
+    assert.equal(
+      getScriptsForCourt(courts === 2 ? "double" : "single").find(
+        (s) => s.id === "random-table",
+      )?.step,
+      8,
+    );
     assert.equal(events.at(-1).audioSrc, undefined);
     assert.equal(events.at(-1).voiceText, "");
     assert.equal(nextEventAtElapsed(events, 7200), null);
@@ -147,7 +182,7 @@ try {
     assert.equal(wav.toString("ascii", 8, 12), "WAVE");
   }
   console.log(
-    "PASS: both court timelines, boundaries, shared scripts/audio, progress, paused clock, normalization, 16 flow WAVs and 7 Zundamon cue/timer WAVs",
+    "PASS: both court timelines, 3-minute hydration break, tight pre-game handoff, silent game phase, boundaries, shared scripts/audio, progress, paused clock, normalization, 16 flow WAVs and 7 Zundamon cue/timer WAVs",
   );
 } finally {
   rmSync(temp, { recursive: true, force: true });

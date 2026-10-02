@@ -11,11 +11,25 @@ export type AutoFlowEvent = {
   voiceText: string;
   audioSrc?: string;
   refStep?: number;
+  /** 自動進行だけで使う補助イベント。通常メニューには表示しない。 */
+  autoOnly?: boolean;
+  /** false の場合は直前案内から続けて読み、チャイムを挟まない。 */
+  chime?: boolean;
 };
 
 export function buildStandardTwoHourEvents(courts: 1 | 2 = 1): AutoFlowEvent[] {
   return [
     ...getFlowScripts(courts),
+    {
+      id: "game-play",
+      offsetSec: 3000,
+      phaseId: "game",
+      title: "ゲーム",
+      displayText: "ゲーム開始は現地で口頭案内してください。",
+      voiceText: "",
+      autoOnly: true,
+      chime: false,
+    },
     {
       id: "completed",
       offsetSec: 7200,
@@ -24,7 +38,7 @@ export function buildStandardTwoHourEvents(courts: 1 | 2 = 1): AutoFlowEvent[] {
       displayText: "2時間の進行が完了しました。お疲れさまでした。",
       voiceText: "",
     },
-  ];
+  ].sort((a, b) => a.offsetSec - b.offsetSec);
 }
 export function eventAtElapsed(
   events: AutoFlowEvent[],

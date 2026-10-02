@@ -96,7 +96,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     const current = eventAtElapsed(events, elapsed);
     const next = nextEventAtElapsed(events, elapsed);
     const menuEvents = events.filter(
-      (event) => event.offsetSec < SESSION_SECONDS,
+      (event) => !event.autoOnly && event.offsetSec < SESSION_SECONDS,
     );
     const previous =
       [...menuEvents]
@@ -183,7 +183,11 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
               chime: false,
             };
           } else if (!s.firedEventIds.includes(event.id)) {
-            pending = { eventId: event.id, positionSec: 0, chime: true };
+            pending = {
+              eventId: event.id,
+              positionSec: 0,
+              chime: event.chime !== false,
+            };
           }
         }
         const paused = pauseSession(s, now, pending);
@@ -222,7 +226,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         }
         // Long gaps consume old cues, not a queue of announcements.
         if (allowAudio && callbacks.current.active && due.length === 1)
-          void announce(due[0], true);
+          void announce(due[0], due[0].chime !== false);
       },
       [save, announce, cancelPlayback],
     );
@@ -351,7 +355,8 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       setElapsed(event.offsetSec);
       setConfirmEnd(false);
       showPlayer();
-      if (moved.status === "running") void announce(event, true);
+      if (moved.status === "running")
+        void announce(event, event.chime !== false);
     };
     const finish = useCallback(() => {
       cancelPlayback();
@@ -555,7 +560,9 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         <details className="flow-surface flow-overview">
           <summary>
             <span>進行メニュー</span>
-            <span className="flow-summary-meta">12項目 · 2時間</span>
+            <span className="flow-summary-meta">
+              {menuEvents.length}項目 · 2時間
+            </span>
           </summary>
           <p className="flow-muted">
             {status === "idle"
