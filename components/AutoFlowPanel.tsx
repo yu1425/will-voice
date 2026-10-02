@@ -10,6 +10,26 @@ import {
   useState,
 } from "react";
 import FlowTransportIcon from "./FlowTransportIcon";
+import FlowReadinessPanel, {
+  type FlowReadinessHandle,
+} from "./FlowReadinessPanel";
+import FlowRunHistory from "./FlowRunHistory";
+import PreGameFlowPanel from "./PreGameFlowPanel";
+import {
+  AUDIO_DIAGNOSTIC_EVENT,
+  type PlaybackDiagnostic,
+  unlockRecordedAudio,
+} from "@/lib/recordedAudio";
+import {
+  checkpointFlowRun,
+  countFlowRun,
+  finishFlowRun,
+  getActiveFlowRun,
+  pauseFlowRun,
+  resumeFlowRun,
+  startFlowRun,
+  type PauseReason,
+} from "@/lib/flowRunHistory";
 import type { FlowConditions } from "@/lib/flowPlan";
 import { FLOW_VOICE_TEST } from "@/lib/flowScripts";
 import {
@@ -79,6 +99,8 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     const [confirmEnd, setConfirmEnd] = useState(false);
     const [starting, setStarting] = useState(false);
     const [overviewOpen, setOverviewOpen] = useState(true);
+    const readinessRef = useRef<FlowReadinessHandle>(null);
+    const [startBlocked, setStartBlocked] = useState(false);
     const callbacks = useRef(props);
     callbacks.current = props;
     const mounted = useRef(false);
@@ -160,56 +182,63 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       [cancelPlayback],
     );
 
-    const pauseAll = useCallback(() => {
-      const s = sessionRef.current;
-      if (s?.status === "running") {
-        const now = Date.now();
-        const at = sessionElapsed(s, now);
-        const event = eventAtElapsed(eventsRef.current, at);
-        const audio = getRecordedAudioPosition();
-        let pending: PendingCue | null = null;
-        if (event.audioSrc) {
-          if (
-            inFlight.current?.eventId === event.id &&
-            inFlight.current.stage === "chime"
-          ) {
-            pending = { eventId: event.id, positionSec: 0, chime: true };
-          } else if (
-            audio &&
-            new URL(audio.src, window.location.href).pathname === event.audioSrc
-          ) {
-            pending = {
-              eventId: event.id,
-              positionSec: audio.positionSec,
-              chime: false,
-            };
-          } else if (!s.firedEventIds.includes(event.id)) {
-            pending = {
-              eventId: event.id,
-              positionSec: 0,
-              chime: event.chime !== false,
-            };
+    const pauseAll = useCallback(
+      (reason: PauseReason = "manual") => {
+        const s = sessionRef.current;
+        if (s?.status === "running") {
+          const now = Date.now();
+          pauseFlowRun(s.runId, reason, now);
+          const at = sessionElapsed(s, now);
+          const event = eventAtElapsed(eventsRef.current, at);
+          const audio = getRecordedAudioPosition();
+          let pending: PendingCue | null = null;
+          if (event.audioSrc) {
+            if (
+              inFlight.current?.eventId === event.id &&
+              inFlight.current.stage === "chime"
+            ) {
+              pending = { eventId: event.id, positionSec: 0, chime: true };
+            } else if (
+              audio &&
+              new URL(audio.src, window.location.href).pathname ===
+                event.audioSrc
+            ) {
+              pending = {
+                eventId: event.id,
+                positionSec: audio.positionSec,
+                chime: false,
+              };
+            } else if (!s.firedEventIds.includes(event.id)) {
+              pending = {
+                eventId: event.id,
+                positionSec: 0,
+                chime: event.chime !== false,
+              };
+            }
           }
+          const paused = pauseSession(s, now, pending);
+          paused.firedEventIds = eventsRef.current
+            .filter((e) => e.offsetSec <= at)
+            .map((e) => e.id);
+          save(
+            at >= SESSION_SECONDS
+              ? { ...paused, status: "completed", pendingCue: null }
+              : paused,
+          );
+          if (at >= SESSION_SECONDS) finishFlowRun(s.runId, true, now);
+          if (mounted.current) setElapsed(at);
         }
-        const paused = pauseSession(s, now, pending);
-        paused.firedEventIds = eventsRef.current
-          .filter((e) => e.offsetSec <= at)
-          .map((e) => e.id);
-        save(
-          at >= SESSION_SECONDS
-            ? { ...paused, status: "completed", pendingCue: null }
-            : paused,
-        );
-        if (mounted.current) setElapsed(at);
-      }
-      cancelPlayback();
-    }, [save, cancelPlayback]);
+        cancelPlayback();
+      },
+      [save, cancelPlayback],
+    );
 
     const advance = useCallback(
       (allowAudio: boolean) => {
         const s = sessionRef.current;
         if (!s || s.status !== "running") return;
         const now = Date.now();
+        checkpointFlowRun(s.runId, now);
         const at = sessionElapsed(s, now);
         const due = eventsRef.current.filter(
           (e) => e.offsetSec <= at && !s.firedEventIds.includes(e.id),
@@ -222,6 +251,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
           firedEventIds: [...s.firedEventIds, ...due.map((e) => e.id)],
         });
         if (at >= SESSION_SECONDS) {
+          finishFlowRun(s.runId, true, now);
           cancelPlayback();
           return;
         }
@@ -241,14 +271,26 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
           buildStandardTwoHourEvents(raw?.courts === 2 ? 2 : 1),
           Date.now(),
         );
+        if (restored) {
+          let run = getActiveFlowRun();
+          if (restored.status !== "completed") {
+            if (!run || (restored.runId && restored.runId !== run.id))
+              run = startFlowRun(restored.courts, restored.startedAt);
+            restored.runId = run.id;
+            if (raw?.status === "running" || run.status === "running")
+              pauseFlowRun(run.id, "navigation", restored.lastActiveAt);
+          } else if (run && run.id === restored.runId) {
+            finishFlowRun(run.id, true, restored.lastActiveAt);
+          }
+        }
         save(restored);
         if (restored) setElapsed(sessionElapsed(restored, Date.now()));
       } catch {
         save(null);
       }
-      const leave = () => pauseAll();
+      const leave = () => pauseAll("navigation");
       const visibility = () => {
-        if (document.visibilityState === "hidden") pauseAll();
+        if (document.visibilityState === "hidden") pauseAll("visibility");
       };
       const error = () => {
         const s = sessionRef.current;
@@ -257,28 +299,57 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
           eventsRef.current,
           sessionElapsed(s, Date.now()),
         );
-        pauseAll();
+        pauseAll("audio-error");
         if (sessionRef.current?.status === "paused" && event.audioSrc)
           save({
             ...sessionRef.current,
             pendingCue: { eventId: event.id, positionSec: 0, chime: false },
           });
       };
+      const diagnostic = (event: Event) => {
+        const detail = (event as CustomEvent<PlaybackDiagnostic>).detail;
+        const s = sessionRef.current;
+        if (
+          !detail ||
+          s?.status !== "running" ||
+          inFlight.current?.stage !== "voice"
+        )
+          return;
+        const cue = eventsRef.current.find(
+          (item) => item.id === inFlight.current?.eventId,
+        );
+        if (cue?.audioSrc !== (detail.flowAudioSrc ?? detail.src)) return;
+        if (detail.type === "retry" && !detail.retryStarted) return;
+        // Generated AI audio may fail then fall back to a fixed recording without pausing.
+        if (detail.type === "final-failure" && detail.src !== cue.audioSrc)
+          return;
+        countFlowRun(
+          s.runId,
+          detail.type === "retry"
+            ? "audioRetryCount"
+            : detail.type === "recovery"
+              ? "audioRecoveryCount"
+              : "audioFinalFailureCount",
+          Date.now(),
+        );
+      };
+      window.addEventListener(AUDIO_DIAGNOSTIC_EVENT, diagnostic);
       window.addEventListener("will-flow-leave", leave);
       window.addEventListener("pagehide", leave);
       window.addEventListener("will-flow-audio-error", error);
       document.addEventListener("visibilitychange", visibility);
       return () => {
-        pauseAll();
+        pauseAll("navigation");
         mounted.current = false;
         window.removeEventListener("will-flow-leave", leave);
         window.removeEventListener("pagehide", leave);
         window.removeEventListener("will-flow-audio-error", error);
         document.removeEventListener("visibilitychange", visibility);
+        window.removeEventListener(AUDIO_DIAGNOSTIC_EVENT, diagnostic);
       };
     }, [save, pauseAll]);
     useEffect(() => {
-      if (!props.active) pauseAll();
+      if (!props.active) pauseAll("navigation");
     }, [props.active, pauseAll]);
     useEffect(() => {
       props.onStatusChange(status);
@@ -309,7 +380,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         const uninterrupted = now - last < 2500;
         last = now;
         if (document.visibilityState !== "visible") {
-          pauseAll();
+          pauseAll("visibility");
           return;
         }
         advance(uninterrupted);
@@ -317,19 +388,37 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       return () => clearInterval(id);
     }, [status, advance, pauseAll]);
 
-    const start = async () => {
+    const start = async (onlineOverride = false) => {
       if (starting) return;
+      if (onlineOverride && navigator.onLine === false) {
+        setStartBlocked(true);
+        return;
+      }
       cancelPlayback();
       setStarting(true);
       const ticket = generation.current;
-      await unlockTransitionCue();
+      // Unlock both native media and Web Audio directly from the user's tap.
+      const unlocking = Promise.all([
+        unlockTransitionCue(),
+        unlockRecordedAudio(),
+      ]);
+      const ready = onlineOverride || (await readinessRef.current?.prepare());
+      await unlocking;
       if (
         !mounted.current ||
         ticket !== generation.current ||
         !callbacks.current.active
       )
         return;
-      save(createSession(props.conditions.courts, Date.now()));
+      if (!ready) {
+        setStartBlocked(true);
+        setStarting(false);
+        return;
+      }
+      setStartBlocked(false);
+      const now = Date.now();
+      const run = startFlowRun(props.conditions.courts, now);
+      save({ ...createSession(props.conditions.courts, now), runId: run.id });
       setElapsed(0);
       setStarting(false);
       setConfirmEnd(false);
@@ -341,6 +430,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       if (!s || s.status !== "paused") return;
       const pending = s.pendingCue;
       cancelPlayback();
+      resumeFlowRun(s.runId, Date.now());
       save(resumeSession(s, Date.now()));
       if (pending) {
         const event = eventsRef.current.find((e) => e.id === pending.eventId);
@@ -351,8 +441,11 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       const s = sessionRef.current;
       if (!s) return;
       cancelPlayback();
+      countFlowRun(s.runId, "seekCount", Date.now());
       const moved = seekSession(s, event, eventsRef.current, Date.now());
       save(moved);
+      if (moved.status === "completed")
+        finishFlowRun(s.runId, true, Date.now());
       setElapsed(event.offsetSec);
       setConfirmEnd(false);
       showPlayer();
@@ -360,21 +453,25 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         void announce(event, event.chime !== false);
     };
     const finish = useCallback(() => {
+      const s = sessionRef.current;
+      if (s && s.status !== "completed")
+        finishFlowRun(s.runId, false, Date.now());
       cancelPlayback();
       save(null);
       setElapsed(0);
       setConfirmEnd(false);
+      setStartBlocked(false);
       showPlayer();
     }, [cancelPlayback, save]);
     const testVoice = useCallback(() => {
-      pauseAll();
+      pauseAll("manual");
       callbacks.current.onSpeak(
         FLOW_VOICE_TEST.displayText,
         FLOW_VOICE_TEST.audioSrc,
       );
     }, [pauseAll]);
     const testChime = useCallback(async () => {
-      pauseAll();
+      pauseAll("manual");
       const ticket = generation.current;
       await unlockTransitionCue();
       if (ticket !== generation.current || !mounted.current) return;
@@ -386,8 +483,8 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     useImperativeHandle(
       ref,
       () => ({
-        pauseForNavigation: pauseAll,
-        stopCurrentAudio: pauseAll,
+        pauseForNavigation: () => pauseAll("navigation"),
+        stopCurrentAudio: () => pauseAll("manual"),
         endSession: finish,
         playChimeTest: testChime,
         playVoiceTest: testVoice,
@@ -445,14 +542,21 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
               {next && (
                 <button
                   type="button"
-                  className="flow-next-card"
+                  className={`flow-next-card${next.offsetSec - elapsed <= 60 ? " flow-next-card--soon" : ""}`}
                   aria-label={`${next.title}へ移動`}
                   onClick={() => seek(next)}
                 >
                   <span className="flow-next-heading">
-                    <span>次のメニュー</span>
+                    <span>
+                      次の案内
+                      {next.offsetSec - elapsed <= 15 ? " · まもなく" : ""}
+                    </span>
                     <span className="flow-countdown">
-                      あと {Math.floor((next.offsetSec - elapsed) / 60)}:
+                      あと{" "}
+                      {String(
+                        Math.floor((next.offsetSec - elapsed) / 60),
+                      ).padStart(2, "0")}
+                      :
                       {String((next.offsetSec - elapsed) % 60).padStart(2, "0")}
                     </span>
                   </span>
@@ -484,6 +588,42 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
                 </button>
               )}
             </>
+          )}
+          {status !== "idle" && status !== "completed" && (
+            <PreGameFlowPanel events={events} elapsed={elapsed} />
+          )}
+          {status === "idle" && (
+            <FlowReadinessPanel
+              ref={readinessRef}
+              chimeEnabled={props.chimeEnabled}
+              onVoiceTest={testVoice}
+              onChimeTest={testChime}
+            />
+          )}
+          {status === "idle" && startBlocked && (
+            <div className="flow-end-confirm" role="alert">
+              <p>
+                固定案内音声の準備が完了していません。通信接続後に再試行してください。オンライン再生で開始する場合、通信が切れると音声を再生できないことがあります。
+              </p>
+              <div className="flow-actions">
+                <button
+                  type="button"
+                  className="flow-btn"
+                  disabled={starting}
+                  onClick={() => void start()}
+                >
+                  再試行
+                </button>
+                <button
+                  type="button"
+                  className="flow-btn"
+                  disabled={starting}
+                  onClick={() => void start(true)}
+                >
+                  オンラインのまま開始
+                </button>
+              </div>
+            </div>
           )}
           <div
             className="flow-player-controls"
@@ -607,6 +747,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
             ))}
           </ol>
         </details>
+        <FlowRunHistory />
       </section>
     );
   },

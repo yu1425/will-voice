@@ -1,9 +1,9 @@
 {
-  "base": "http://127.0.0.1:53559",
-  "auditedAt": "2026-10-01T05:24:43.282Z",
+  "base": "http://localhost:3100",
+  "auditedAt": "2026-10-02T08:12:09.876Z",
   "checks": [
     {
-      "name": "HOME is the parent character hub for flow, chat, settings and guide",
+      "name": "HOME is the parent character hub with concise character copy and no separate About section",
       "pass": true,
       "evidence": null
     },
@@ -20,7 +20,7 @@
       "pass": true,
       "evidence": {
         "setup": 346.625,
-        "start": 535.6875
+        "start": 598.6875
       }
     },
     {
@@ -61,6 +61,11 @@
       "evidence": null
     },
     {
+      "name": "automatic progress menu is open by default and can be closed",
+      "pass": true,
+      "evidence": null
+    },
+    {
       "name": "automatic progress menu is compact 3x4",
       "pass": true,
       "evidence": {
@@ -70,11 +75,195 @@
       }
     },
     {
+      "name": "readiness caches all 16 WAVs with worker control, warns at zero volume and reuses voice/chime tests",
+      "pass": true,
+      "evidence": {
+        "total": 16,
+        "cached": 16,
+        "controlled": true,
+        "urls": [
+          "/audio/flow/v2/00-opening.wav",
+          "/audio/flow/v2/05-volley.wav",
+          "/audio/flow/v2/10-long-rally.wav",
+          "/audio/flow/v2/20-cross-rally-single.wav",
+          "/audio/flow/v2/30-serve-return-single.wav",
+          "/audio/flow/v2/35-serve-return-switch.wav",
+          "/audio/flow/v2/40-gather-break.wav",
+          "/audio/flow/v2/43-random-table-single.wav",
+          "/audio/flow/v2/43-game-rules.wav",
+          "/audio/flow/v2/44-self-intro.wav",
+          "/audio/flow/v2/105-mini-game.wav",
+          "/audio/flow/v2/117-closing.wav",
+          "/audio/flow/v2/20-cross-rally-double.wav",
+          "/audio/flow/v2/30-serve-return-double.wav",
+          "/audio/flow/v2/43-random-table-double.wav",
+          "/audio/flow/v2/voice-test.wav"
+        ]
+      }
+    },
+    {
+      "name": "offline-pregame-390",
+      "pass": true,
+      "evidence": {
+        "viewport": 390,
+        "document": 390,
+        "app": 390,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offline-pregame-320",
+      "pass": true,
+      "evidence": {
+        "viewport": 320,
+        "document": 320,
+        "app": 320,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offline-pregame-480",
+      "pass": true,
+      "evidence": {
+        "viewport": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offline-pregame-1440",
+      "pass": true,
+      "evidence": {
+        "viewport": 1440,
+        "document": 1440,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "offline same-page native WAV playback across all fixed flow positions and byte-range fetch",
+      "pass": true,
+      "evidence": {
+        "offlineFetch": [
+          {
+            "src": "/audio/flow/v2/00-opening.wav",
+            "status": 200,
+            "bytes": 1250348
+          },
+          {
+            "src": "/audio/flow/v2/05-volley.wav",
+            "status": 200,
+            "bytes": 699436
+          },
+          {
+            "src": "/audio/flow/v2/10-long-rally.wav",
+            "status": 200,
+            "bytes": 986156
+          },
+          {
+            "src": "/audio/flow/v2/20-cross-rally-single.wav",
+            "status": 200,
+            "bytes": 733740
+          },
+          {
+            "src": "/audio/flow/v2/30-serve-return-single.wav",
+            "status": 200,
+            "bytes": 1136172
+          },
+          {
+            "src": "/audio/flow/v2/35-serve-return-switch.wav",
+            "status": 200,
+            "bytes": 378924
+          },
+          {
+            "src": "/audio/flow/v2/40-gather-break.wav",
+            "status": 200,
+            "bytes": 1107500
+          },
+          {
+            "src": "/audio/flow/v2/43-random-table-single.wav",
+            "status": 200,
+            "bytes": 1292332
+          },
+          {
+            "src": "/audio/flow/v2/43-game-rules.wav",
+            "status": 200,
+            "bytes": 1313836
+          },
+          {
+            "src": "/audio/flow/v2/44-self-intro.wav",
+            "status": 200,
+            "bytes": 642604
+          },
+          {
+            "src": "/audio/flow/v2/105-mini-game.wav",
+            "status": 200,
+            "bytes": 1356844
+          },
+          {
+            "src": "/audio/flow/v2/117-closing.wav",
+            "status": 200,
+            "bytes": 979500
+          },
+          {
+            "src": "/audio/flow/v2/20-cross-rally-double.wav",
+            "status": 200,
+            "bytes": 1266220
+          },
+          {
+            "src": "/audio/flow/v2/30-serve-return-double.wav",
+            "status": 200,
+            "bytes": 1676332
+          },
+          {
+            "src": "/audio/flow/v2/43-random-table-double.wav",
+            "status": 200,
+            "bytes": 1354796
+          },
+          {
+            "src": "/audio/flow/v2/voice-test.wav",
+            "status": 200,
+            "bytes": 197164
+          }
+        ],
+        "range": {
+          "status": 206,
+          "range": "bytes 0-99/1313836",
+          "bytes": 100
+        }
+      }
+    },
+    {
       "name": "one pause freezes clock and saves native WAV position",
       "pass": true,
       "evidence": {
         "eventId": "opening",
-        "positionSec": 1.260375,
+        "positionSec": 1.30512,
         "chime": false
       }
     },
@@ -98,10 +287,19 @@
       "name": "one resume restarts both clock and interrupted native WAV",
       "pass": true,
       "evidence": {
-        "src": "http://127.0.0.1:53559/audio/flow/v2/00-opening.wav",
-        "position": 1.260375,
+        "src": "http://localhost:3100/audio/flow/v2/00-opening.wav",
+        "position": 1.317565,
         "volume": 1,
-        "index": 3
+        "index": 2
+      }
+    },
+    {
+      "name": "OpenAI TTS availability matches the server-side configuration",
+      "pass": true,
+      "evidence": {
+        "configured": false,
+        "model": "gpt-4o-mini-tts",
+        "voice": "verse"
       }
     },
     {
@@ -134,10 +332,10 @@
       "name": "pause during chime cancels pending voice; resume plays complete chime and selected two-court cue",
       "pass": true,
       "evidence": {
-        "src": "http://127.0.0.1:53559/audio/flow/v2/20-cross-rally-double.wav",
-        "position": 0,
+        "src": "http://localhost:3100/audio/flow/v2/20-cross-rally-double.wav",
+        "position": 0.013411,
         "volume": 0.3,
-        "index": 7
+        "index": 2
       }
     },
     {
@@ -191,10 +389,10 @@
       "name": "manual mode is select + one play/pause control; selection cancels prior playback",
       "pass": true,
       "evidence": {
-        "src": "http://127.0.0.1:53559/audio/flow/v2/00-opening.wav",
-        "position": 1.19474,
+        "src": "http://localhost:3100/audio/flow/v2/00-opening.wav",
+        "position": 1.271988,
         "volume": 0.3,
-        "index": 14
+        "index": 2
       }
     },
     {
@@ -220,6 +418,18 @@
           }
         ]
       }
+    },
+    {
+      "name": "manual timer offers six practical duration presets",
+      "pass": true,
+      "evidence": [
+        "1分",
+        "3分",
+        "5分",
+        "10分",
+        "15分",
+        "20分"
+      ]
     },
     {
       "name": "manual cues toggle on same button; timer ends with Zundamon at shared volume",
@@ -256,12 +466,93 @@
       "evidence": null
     },
     {
+      "name": "one run survives pause, seek, reload, completion and completed reload without duplicates",
+      "pass": true,
+      "evidence": [
+        {
+          "id": "49a4aa23-9856-4481-9ea7-36532f59e467",
+          "startedAt": 1790929068196,
+          "endedAt": 1790936284267,
+          "courts": 2,
+          "status": "completed",
+          "actualDurationSec": 7875.668000000001,
+          "manualPauseCount": 4,
+          "safetyPauseCount": 2,
+          "seekCount": 6,
+          "audioRetryCount": 0,
+          "audioRecoveryCount": 0,
+          "audioFinalFailureCount": 0,
+          "completedNormally": true,
+          "pauseReasons": {
+            "manual": 4,
+            "visibility": 0,
+            "navigation": 2,
+            "audio-error": 0
+          },
+          "runningSince": null
+        }
+      ]
+    },
+    {
       "name": "complete and reset stop everything and clear saved session",
       "pass": true,
       "evidence": null
     },
     {
       "name": "session end confirmation clears clock and media together",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "name": "diagnostics-320",
+      "pass": true,
+      "evidence": {
+        "viewport": 320,
+        "document": 320,
+        "app": 320,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "diagnostics-480",
+      "pass": true,
+      "evidence": {
+        "viewport": 480,
+        "document": 480,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "diagnostics-1440",
+      "pass": true,
+      "evidence": {
+        "viewport": 1440,
+        "document": 1440,
+        "app": 480,
+        "overflow": [],
+        "unframed": [
+          {
+            "background": "rgb(255, 255, 255)",
+            "border": "1px"
+          }
+        ]
+      }
+    },
+    {
+      "name": "one transient media failure retries automatically without pausing",
       "pass": true,
       "evidence": null
     },
@@ -362,10 +653,10 @@
       "name": "browser Back/Forward captures and resumes playhead even without header-link callback",
       "pass": true,
       "evidence": {
-        "src": "http://127.0.0.1:53559/audio/flow/v2/00-opening.wav",
-        "position": 1.120224,
+        "src": "http://localhost:3100/audio/flow/v2/00-opening.wav",
+        "position": 1.143277,
         "volume": 0.3,
-        "index": 8
+        "index": 2
       }
     },
     {
@@ -385,5 +676,7 @@
     }
   ],
   "errors": [],
-  "physicalDeviceChecks": false
+  "physicalDeviceChecks": false,
+  "startingMain": "2c5ea5343e693f76becf39896ca9ec2ef094addc",
+  "webkitVerified": false
 }

@@ -405,6 +405,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .flow-next-heading > :first-child {
   margin: 0;
@@ -416,7 +417,8 @@ a {
   border-radius: 999px;
   padding: 3px 8px;
   background: #fff;
-  font-size: 12px;
+  font-size: clamp(24px, 7vw, 34px);
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--flow-accent);
@@ -426,6 +428,7 @@ a {
   align-items: baseline;
   gap: 10px;
   margin-top: 5px;
+  flex-wrap: wrap;
 }
 .flow-next-menu time,
 .flow-previous-card time {
@@ -435,9 +438,55 @@ a {
   flex-shrink: 0;
 }
 .flow-next-menu strong {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 600;
 }
+.flow-next-card--soon {
+  border-color: var(--flow-accent);
+  box-shadow: inset 3px 0 var(--flow-accent);
+}
+.flow-support > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.flow-readiness {
+  margin-top: 16px;
+  border-top: 1px solid var(--flow-border);
+}
+.flow-support > summary::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+.flow-support[open] > summary::before { transform: rotate(45deg); }
+.flow-support > summary .flow-summary-meta { margin-left: auto; }
+.flow-support-body { padding-top: 8px; font-size: 13px; overflow-wrap: anywhere; }
+.flow-support-body p { margin: 8px 0; }
+.flow-warning { color: var(--flow-warning); }
+.flow-history-list, .flow-diagnostics-list { padding: 0; list-style: none; }
+.flow-history-list > li, .flow-diagnostics-list > li {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--flow-border);
+}
+.flow-support-body details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; }
+.flow-diagnostics-list pre { font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.flow-pregame { margin-top: 16px; border-top: 1px solid var(--flow-border); padding-top: 12px; }
+.flow-pregame h2 { font-size: 15px; margin: 0 0 8px; }
+.flow-pregame ol { list-style: none; padding: 0; margin: 0; }
+.flow-pregame li { display: grid; grid-template-columns: 18px 48px minmax(0, 1fr); gap: 6px; padding: 6px 0; font-size: 13px; }
+.flow-pregame li.is-current { color: var(--flow-accent); font-weight: 700; }
+.flow-pregame li.is-complete { color: var(--text-soft); }
+.flow-pregame time { font-variant-numeric: tabular-nums; }
 .flow-audio-state {
   margin: 10px 0 0;
   color: var(--text-soft);
