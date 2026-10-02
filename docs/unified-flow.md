@@ -17,8 +17,9 @@
 | Auto running              | Select item | Seek to its offset   | Cancel old cue, play selected cue                   |
 | Auto paused               | Select item | Seek and stay paused | Wait until Resume                                   |
 | Auto                      | End         | Clear session        | Cancel all pending playback                         |
-| Navigation or hidden page | Leave       | Pause                | Save current WAV position                           |
-| Reload                    | Restore     | Stay paused          | No unsolicited playback                             |
+| WILL internal navigation  | Leave flow UI | Continue             | Persistent runtime keeps clock/media active         |
+| Hidden/background page    | Background  | Continue if browser runs | Never pauses intentionally; recent cue may catch up |
+| Reload                    | Restore      | Stay paused           | No unsolicited playback                             |
 | Manual                    | Select item | No automatic clock   | Stop old audio, select only                         |
 | Manual                    | Play/pause  | No automatic clock   | Start/pause/resume selected WAV                     |
 
@@ -28,6 +29,15 @@ No independent automatic audio stop/replay toolbar. No timer or quick cues in au
 
 Header menu order: Flow, Chat, Settings, Guide. Hover on a fine pointer, click/tap, keyboard, Escape and outside click are supported. The Guide link is last. Starting court configuration is above the player; running configuration is read-only. Supporting disclosure panels have a defined surface even when collapsed.
 
+## Background continuity and screen sleep
+
+- The flow app is mounted once in the root layout and remains mounted while HOME, Chat, Settings or Guide is shown. Internal App Router navigation therefore does not unmount the automatic flow runtime, stop its clock or release its current fixed recording.
+- Automatic flow no longer pauses on `visibilitychange` or `pagehide`. The session checkpoints `lastActiveAt` while running so a hard reload/crash still restores safely in paused state rather than silently auto-starting.
+- While automatic flow is running and the document is visible, the app requests a Screen Wake Lock. Browsers automatically release it when backgrounded; the app requests it again when visible. Unsupported/denied Wake Lock never blocks flow.
+- Background timer throttling is handled by elapsed wall-clock time rather than interval counts. A single cue that becomes due up to 90 seconds late may still play when the browser runs again; multiple/stale cues are consumed without dumping an announcement backlog.
+- Chat-side cleanup does not stop the persistent flow recording/chime. Scheduled flow announcements retain priority when they occur.
+- This improves tab/app switching and prevents ordinary automatic screen sleep where Screen Wake Lock is supported. It does **not** certify that iOS will execute a brand-new scheduled cue while Safari is fully suspended or the phone is manually locked. Physical iPhone + Bluetooth + lock-screen behavior still requires device testing.
+
 ## Two-court member rotation
 
 - At 20:00, before cross rally, only one operations-designated side of the two courts rotates. Several members from that same side of each court exchange courts; the opposite side stays put. This changes both hitting and waiting-group combinations without moving both sides together.
@@ -36,7 +46,7 @@ Header menu order: Flow, Chat, Settings, Guide. Hover on a fine pointer, click/t
 
 ## Verification
 
-52 production-build Chromium checks passed, including all 16 cached WAV fetches offline, native playback at every fixed flow position, byte-range responses, pre-game display, countdown, cursor resume, silent paused seek, boundaries, Back/Forward, menu controls, shared volume, diagnostics, history and no horizontal overflow at 320/390/480/1440px. A separate readiness audit covers preparation failure, retry, AI fallback, bounded generation waits, completion by seek, history clearing and unavailable browser storage. Native runtime errors: 0. Screenshots are inspected locally and are not committed.
+52 production-build Chromium checks passed, including all 16 cached WAV fetches offline, native playback at every fixed flow position, byte-range responses, pre-game display, countdown, cursor resume, silent paused seek, boundaries, persistent internal-route playback, browser Back/Forward continuity, simulated background visibility without pause, Wake Lock reacquisition, menu controls, shared volume, diagnostics, history and no horizontal overflow at 320/390/480/1440px. A separate readiness audit covers preparation failure, retry, AI fallback, bounded generation waits, completion by seek, history clearing and unavailable browser storage. Native runtime errors: 0. Screenshots are inspected locally and are not committed.
 
 `node scripts/test-recorded-audio.mjs`, `node scripts/test-flow.mjs`, `node scripts/test-unified-flow.mjs`, `node scripts/test-offline-flow-audio.mjs`, `node scripts/test-flow-run-history.mjs`, `npx tsc --noEmit`, `npm run build`, audit script syntax checks, and `git diff --check` passed. The protected untracked audio directory/ZIP, fixed event timing and `lib/transitionCue.ts` remain unchanged. The two updated two-court WAVs are tracked in `reports/flow-audio-v2-audit.json`, and `FLOW_AUDIO_CACHE` is bumped so prepared devices fetch the new recordings. Measured evidence: `docs/unified-flow-audit.json` and `docs/flow-readiness-audit.json`.
 
@@ -61,7 +71,7 @@ Physical iPhone/iPad Safari, Bluetooth speaker audibility and screen locking are
 - `will-recorded-audio-diagnostic` publishes failure/retry, actual retry start (`retryStarted`), recovery and final failure without a React dependency. The auto player subscribes only for its current in-flight voice. Tests, individual playback and stale/canceled retries do not inflate the active run's counts. Generated AI failures that successfully fall back do not count as final safety pauses.
 - **開催履歴** is closed by default below the existing 3x4 progression menu. An active run is stored separately at `will-flow-active-run`; completed/ended runs live at `will-flow-run-history`, retaining the latest 20. The optional `runId` extends AutoSession v4 without invalidating v1-v4 restoration.
 - Reload, pause, resume and seek keep one run identity. Finishing writes/upserts one record; repeated completion/reload cannot duplicate it. Reaching 02:00 saves completion; explicit early end saves an interrupted run. Actual duration counts running wall time, excluding pauses and without adding seek offsets.
-- Manual pauses and safety pauses (visibility, navigation, audio error) are distinguished. Seek, actual audio retry, recovery and final recording failure counts are retained, with safety reasons visible. No participant names or personal details are stored. Storage exceptions leave playback usable; run history is held in memory when localStorage is unavailable and cannot then survive reload.
+- Manual pauses and safety pauses are distinguished. Visibility changes and WILL internal page navigation no longer create pauses; navigation pauses remain available for explicit auto→manual mode changes and reload restoration, while audio errors remain safety pauses. Seek, actual audio retry, recovery and final recording failure counts are retained, with safety reasons visible. No participant names or personal details are stored. Storage exceptions leave playback usable; run history is held in memory when localStorage is unavailable and cannot then survive reload.
 
 ## Next announcement and pre-game display
 
@@ -87,4 +97,4 @@ The readiness audit mocks API availability/failures; it never requests paid TTS 
 - Automatic and manual 12-item selectors share a compact 3-column x 4-row visual language to reduce scrolling while preserving direct item selection.
 
 - The fixed header is parent-brand navigation: the character/avatar + `うぃる / WILL.tennis 公式キャラクター` links to HOME. Page-specific titles (progression, chat, settings, guide) live below that header.
-- Two-court practice rotation is sequential, not simultaneous: people first move from one court, then the same number of people who were originally on the destination court move back to the other court.
+- Two-court practice rotation changes one side at a time: several members on the operations-designated side exchange courts before cross rally, then the previously stationary side exchanges several members before serve/return.
