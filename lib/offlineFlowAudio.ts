@@ -1,8 +1,9 @@
 import { buildStandardTwoHourEvents } from "./standardTwoHourFlow";
 import { FLOW_VOICE_TEST } from "./flowScripts";
+import { FLOW_BACKGROUND_TIMELINE_URLS } from "./flowBackgroundTimeline";
 
 // Bump when fixed audio contents/URLs change. The worker reads this via the manifest.
-export const FLOW_AUDIO_CACHE = "will-voice-flow-audio-v3";
+export const FLOW_AUDIO_CACHE = "will-voice-flow-audio-v4";
 export const FLOW_AUDIO_MANIFEST = "/flow-audio-manifest";
 const FLOW_AUDIO_CACHE_PATTERN = /^will-voice-flow-audio-v\d+$/;
 const FLOW_AUDIO_CONFIG_PATTERN =
@@ -27,6 +28,7 @@ export function getOfflineFlowAudioUrls(): string[] {
         ...buildStandardTwoHourEvents(1),
         ...buildStandardTwoHourEvents(2),
         FLOW_VOICE_TEST,
+        ...FLOW_BACKGROUND_TIMELINE_URLS.map((audioSrc) => ({ audioSrc })),
       ]
         .map((event) => event.audioSrc)
         .filter((src): src is string => Boolean(src)),
@@ -46,7 +48,11 @@ export function getFlowAudioTitle(src: string): string {
     )?.title ??
     (path === FLOW_VOICE_TEST.audioSrc
       ? "音声テスト"
-      : path.split("/").pop() || "音声")
+      : FLOW_BACKGROUND_TIMELINE_URLS.includes(
+            path as (typeof FLOW_BACKGROUND_TIMELINE_URLS)[number],
+          )
+        ? "iPhoneバックグラウンド進行音声"
+        : path.split("/").pop() || "音声")
   );
 }
 export type AudioReadiness = {

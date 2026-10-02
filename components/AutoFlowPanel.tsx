@@ -32,10 +32,7 @@ import {
 } from "@/lib/flowRunHistory";
 import type { FlowConditions } from "@/lib/flowPlan";
 import { FLOW_VOICE_TEST } from "@/lib/flowScripts";
-import {
-  getRecordedAudioPosition,
-  preloadRecordedAudio,
-} from "@/lib/recordedAudio";
+import { preloadRecordedAudio } from "@/lib/recordedAudio";
 import {
   buildStandardTwoHourEvents,
   eventAtElapsed,
@@ -54,13 +51,21 @@ import {
   SESSION_SECONDS,
   type AutoSession,
   type AutoStatus,
-  type PendingCue,
 } from "@/lib/autoFlowSession";
 import {
   playTransitionCue,
   stopTransitionCue,
   unlockTransitionCue,
 } from "@/lib/transitionCue";
+import {
+  getFlowBackgroundTimelinePosition,
+  isFlowBackgroundTimelinePlaying,
+  pauseFlowBackgroundTimeline,
+  playFlowBackgroundTimeline,
+  primeFlowBackgroundTimeline,
+  setFlowBackgroundTimelinePosition,
+  stopFlowBackgroundTimeline,
+} from "@/lib/flowBackgroundTimeline";
 export type { AutoStatus } from "@/lib/autoFlowSession";
 
 export type AutoFlowHandle = {
@@ -120,6 +125,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
     const [startBlocked, setStartBlocked] = useState(false);
     const [wakeLockState, setWakeLockState] = useState<WakeLockState>("idle");
     const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
+    const lastChimeEnabled = useRef(props.chimeEnabled);
     const callbacks = useRef(props);
     callbacks.current = props;
     const mounted = useRef(false);
@@ -213,6 +219,17 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         if (mounted.current) setWakeLockState("error");
       }
     }, []);
+    const playTimelineAt = useCallback(async (positionSec: number) => {
+      const s = sessionRef.current;
+      if (!s || s.status !== "running") return false;
+      return playFlowBackgroundTimeline({
+        courts: s.courts,
+        chimeEnabled: callbacks.current.chimeEnabled,
+        positionSec,
+        onError: () =>
+          window.dispatchEvent(new Event("will-flow-audio-error")),
+      });
+    }, []);
     const announce = useCallback(
       async (event: AutoFlowEvent, chime: boolean, startAtSec = 0) => {
         cancelPlayback();
@@ -253,35 +270,14 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         if (s?.status === "running") {
           const now = Date.now();
           pauseFlowRun(s.runId, reason, now);
-          const at = sessionElapsed(s, now);
-          const event = eventAtElapsed(eventsRef.current, at);
-          const audio = getRecordedAudioPosition();
-          let pending: PendingCue | null = null;
-          if (event.audioSrc) {
-            if (
-              inFlight.current?.eventId === event.id &&
-              inFlight.current.stage === "chime"
-            ) {
-              pending = { eventId: event.id, positionSec: 0, chime: true };
-            } else if (
-              audio &&
-              new URL(audio.src, window.location.href).pathname ===
-                event.audioSrc
-            ) {
-              pending = {
-                eventId: event.id,
-                positionSec: audio.positionSec,
-                chime: false,
-              };
-            } else if (!s.firedEventIds.includes(event.id)) {
-              pending = {
-                eventId: event.id,
-                positionSec: 0,
-                chime: event.chime !== false,
-              };
-            }
-          }
-          const paused = pauseSession(s, now, pending);
+          const timelinePosition = pauseFlowBackgroundTimeline();
+          const at = Math.floor(
+            timelinePosition ?? sessionElapsed(s, now),
+          );
+          const paused = pauseSession(s, now, null);
+          // Keep the saved wall-clock aligned to the native timeline position.
+          paused.startedAt =
+            now - paused.accumulatedPausedMs - at * 1000;
           paused.firedEventIds = eventsRef.current
             .filter((e) => e.offsetSec <= at)
             .map((e) => e.id);
@@ -304,7 +300,12 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         if (!s || s.status !== "running") return;
         const now = Date.now();
         checkpointFlowRun(s.runId, now);
-        const at = sessionElapsed(s, now);
+        const timelinePosition = getFlowBackgroundTimelinePosition();
+        const at = Math.floor(
+          timelinePosition !== null && isFlowBackgroundTimelinePlaying()
+            ? timelinePosition
+            : sessionElapsed(s, now),
+        );
         const due = eventsRef.current.filter(
           (e) => e.offsetSec <= at && !s.firedEventIds.includes(e.id),
         );
@@ -317,6 +318,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         });
         if (at >= SESSION_SECONDS) {
           finishFlowRun(s.runId, true, now);
+          stopFlowBackgroundTimeline();
           cancelPlayback();
           return;
         }
@@ -325,6 +327,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         if (
           allowAudio &&
           callbacks.current.active &&
+          !isFlowBackgroundTimelinePlaying() &&
           due.length === 1 &&
           at - due[0].offsetSec <= MAX_LATE_CUE_SEC
         )
@@ -415,6 +418,16 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       props.onStatusChange(status);
     }, [status, props.onStatusChange]);
     useEffect(() => {
+      if (lastChimeEnabled.current === props.chimeEnabled) return;
+      lastChimeEnabled.current = props.chimeEnabled;
+      if (status !== "running") return;
+      const s = sessionRef.current;
+      if (!s) return;
+      const position =
+        getFlowBackgroundTimelinePosition() ?? sessionElapsed(s, Date.now());
+      void playTimelineAt(position);
+    }, [props.chimeEnabled, status, playTimelineAt]);
+    useEffect(() => {
       props.onChimePlayingChange?.(cuePlaying);
     }, [cuePlaying, props.onChimePlayingChange]);
     useEffect(() => {
@@ -447,8 +460,16 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       const visibility = () => {
         if (document.visibilityState !== "visible") return;
         void requestWakeLock();
-        // Reconcile the clock immediately after a throttled/background period.
-        advance(true);
+        // iOS may pause media while switching apps. Resume the same native
+        // two-hour timeline first, then reconcile the UI without replaying cues.
+        if (!isFlowBackgroundTimelinePlaying()) {
+          const s = sessionRef.current;
+          const position =
+            getFlowBackgroundTimelinePosition() ??
+            (s ? sessionElapsed(s, Date.now()) : 0);
+          void playTimelineAt(position);
+        }
+        advance(false);
       };
       document.addEventListener("visibilitychange", visibility);
       return () => {
@@ -460,6 +481,7 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       advance,
       releaseWakeLock,
       requestWakeLock,
+      playTimelineAt,
     ]);
 
     const start = async (onlineOverride = false) => {
@@ -468,23 +490,30 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
         setStartBlocked(true);
         return;
       }
+      stopFlowBackgroundTimeline();
       cancelPlayback();
       setStarting(true);
       const ticket = generation.current;
-      // Unlock both native media and Web Audio directly from the user's tap.
+      // Prime the real two-hour native media element directly from the user's
+      // tap. This is what allows iOS to keep the session alive after the app
+      // is backgrounded or the screen is locked.
       const unlocking = Promise.all([
+        primeFlowBackgroundTimeline(
+          props.conditions.courts,
+          props.chimeEnabled,
+        ),
         unlockTransitionCue(),
         unlockRecordedAudio(),
       ]);
       const ready = onlineOverride || (await readinessRef.current?.prepare());
-      await unlocking;
+      const [timelinePrimed] = await unlocking;
       if (
         !mounted.current ||
         ticket !== generation.current ||
         !callbacks.current.active
       )
         return;
-      if (!ready) {
+      if (!ready || !timelinePrimed) {
         setStartBlocked(true);
         setStarting(false);
         return;
@@ -494,22 +523,27 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       const run = startFlowRun(props.conditions.courts, now);
       save({ ...createSession(props.conditions.courts, now), runId: run.id });
       setElapsed(0);
-      setStarting(false);
       setConfirmEnd(false);
       showPlayer();
-      void announce(eventsRef.current[0], false);
+      const timelineStarted = await playTimelineAt(0);
+      if (!timelineStarted) {
+        finishFlowRun(run.id, false, Date.now());
+        save(null);
+        setStartBlocked(true);
+      }
+      setStarting(false);
     };
     const resume = () => {
       const s = sessionRef.current;
       if (!s || s.status !== "paused") return;
-      const pending = s.pendingCue;
       cancelPlayback();
-      resumeFlowRun(s.runId, Date.now());
-      save(resumeSession(s, Date.now()));
-      if (pending) {
-        const event = eventsRef.current.find((e) => e.id === pending.eventId);
-        if (event) void announce(event, pending.chime, pending.positionSec);
-      }
+      const now = Date.now();
+      resumeFlowRun(s.runId, now);
+      const resumed = resumeSession(s, now);
+      save(resumed);
+      const position = sessionElapsed(resumed, now);
+      setElapsed(position);
+      void playTimelineAt(position);
     };
     const seek = (event: AutoFlowEvent) => {
       const s = sessionRef.current;
@@ -518,18 +552,24 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
       countFlowRun(s.runId, "seekCount", Date.now());
       const moved = seekSession(s, event, eventsRef.current, Date.now());
       save(moved);
-      if (moved.status === "completed")
+      if (moved.status === "completed") {
         finishFlowRun(s.runId, true, Date.now());
+        stopFlowBackgroundTimeline();
+      } else if (moved.status === "running") {
+        void playTimelineAt(event.offsetSec);
+      } else {
+        pauseFlowBackgroundTimeline();
+        setFlowBackgroundTimelinePosition(event.offsetSec);
+      }
       setElapsed(event.offsetSec);
       setConfirmEnd(false);
       showPlayer();
-      if (moved.status === "running")
-        void announce(event, event.chime !== false);
     };
     const finish = useCallback(() => {
       const s = sessionRef.current;
       if (s && s.status !== "completed")
         finishFlowRun(s.runId, false, Date.now());
+      stopFlowBackgroundTimeline();
       cancelPlayback();
       save(null);
       setElapsed(0);
@@ -741,12 +781,12 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
           {status === "running" && (
             <p className="flow-player-hint" role="status">
               {wakeLockState === "active"
-                ? "画面スリープ防止中。WILL内の別ページに移動しても自動進行は継続します。"
+                ? "iPhoneバックグラウンド進行音声を再生中。別アプリへの切り替えや画面ロック中も、1本の音声タイムラインで案内を継続します。"
                 : wakeLockState === "unsupported"
-                  ? "このブラウザでは画面スリープ防止を利用できません。自動進行は継続しますが、画面ロック中の動作は端末に依存します。"
+                  ? "バックグラウンド進行音声を再生中です。画面スリープ防止には非対応ですが、案内は1本の音声タイムラインで継続します。"
                   : wakeLockState === "error"
-                    ? "画面スリープ防止を開始できませんでした。自動進行は継続しますが、画面ロック中の動作は端末に依存します。"
-                    : "自動進行を継続中です。"}
+                    ? "バックグラウンド進行音声を再生中です。画面スリープ防止の開始には失敗しましたが、音声タイムラインは継続します。"
+                    : "バックグラウンド進行音声を再生中です。"}
             </p>
           )}
           {confirmEnd && (

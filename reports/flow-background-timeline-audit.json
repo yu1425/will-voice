@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-10-02T15:47:35.896Z",
+  "durationSec": 7200,
+  "voiceDelayMs": 3550,
+  "files": [
+    {
+      "courts": 1,
+      "chimeEnabled": false,
+      "src": "/audio/flow/v2/background-timeline-1court-plain.m4a",
+      "bytes": 5555355,
+      "durationSec": 7200,
+      "sha256": "4fbd7bd4a85858b02326f30822f6aa67b4676040533acdfbac760d4594d469bb"
+    },
+    {
+      "courts": 1,
+      "chimeEnabled": true,
+      "src": "/audio/flow/v2/background-timeline-1court-chime.m4a",
+      "bytes": 5776595,
+      "durationSec": 7200,
+      "sha256": "fc56142aba2873e65cf127f6d75b26c73762f10faf599837f631f62c99d919fe"
+    },
+    {
+      "courts": 2,
+      "chimeEnabled": false,
+      "src": "/audio/flow/v2/background-timeline-2court-plain.m4a",
+      "bytes": 5995982,
+      "durationSec": 7200,
+      "sha256": "6b987551c3ca227b1c6a2e482a9718dbbb0bedfca2f06bb1eea18bec73b8f441"
+    },
+    {
+      "courts": 2,
+      "chimeEnabled": true,
+      "src": "/audio/flow/v2/background-timeline-2court-chime.m4a",
+      "bytes": 6214447,
+      "durationSec": 7200,
+      "sha256": "b01dad9207ad7e36a0368c9260b49dc6f421bf21deb80218f911890ea346dd09"
+    }
+  ]
+}

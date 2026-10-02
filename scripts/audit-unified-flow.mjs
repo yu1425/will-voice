@@ -337,7 +337,7 @@ try {
   });
   assert.deepEqual(
     [prepared.total, prepared.cached, prepared.controlled],
-    [16, 16, true],
+    [20, 20, true],
   );
   await settings();
   await setVolume(0);
@@ -355,7 +355,7 @@ try {
   await button("試聴を停止").tap();
   await button("設定を閉じる").tap();
   pass(
-    "readiness caches all 16 WAVs with worker control, warns at zero volume and reuses voice/chime tests",
+    "readiness caches all 20 fixed audio assets including four iPhone background timelines, with worker control, zero-volume warning and voice/chime tests",
     prepared,
   );
   await button("2面").tap();
