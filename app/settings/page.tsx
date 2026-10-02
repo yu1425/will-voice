@@ -32,7 +32,7 @@ export default function SettingsIndexPage() {
             <Link href="/flow?settings=1">
               <span className="home-feature-card__tag">VOICE</span>
               <strong>進行の設定</strong>
-              <p>音声音量、チャイム、音声テスト</p>
+              <p>音声音量、転換音、音声テスト</p>
               <span aria-hidden="true">→</span>
             </Link>
             <Link href="/chat?settings=1">
