@@ -16,6 +16,7 @@ type SpeakOptions = {
   startAtSec?: number;
   onEnd?: () => void;
   onError?: () => void;
+  flowAudioSrc?: string;
 };
 
 const audioCache = new Map<string, string>();
@@ -71,7 +72,17 @@ export async function speakWithOpenAiTts(
             : "AI音声を生成できませんでした。",
       };
     }
-    const blob = await res.blob();
+    let blob: Blob;
+    try {
+      blob = await res.blob();
+    } catch {
+      return {
+        ok: false,
+        reason: options.signal?.aborted
+          ? "aborted"
+          : "AI音声を取得できませんでした。",
+      };
+    }
     if (options.signal?.aborted) return { ok: false, reason: "aborted" };
     url = URL.createObjectURL(blob);
     cacheAudio(input, url);
@@ -82,6 +93,7 @@ export async function speakWithOpenAiTts(
     startAtSec: options.startAtSec,
     onEnd: options.onEnd,
     onError: options.onError,
+    flowAudioSrc: options.flowAudioSrc,
   });
   return { ok: true };
 }

@@ -26,6 +26,7 @@ await context.addInitScript(() => {
   window.__osc = [];
   window.__synth = 0;
   window.__rejectNextMediaPlay = false;
+  window.__rejectMediaPlays = 0;
   const NativeAudio = window.Audio;
   window.Audio = function (...args) {
     const audio = new NativeAudio(...args);
@@ -36,8 +37,12 @@ await context.addInitScript(() => {
   const play = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () {
     const audio = this;
-    if (window.__rejectNextMediaPlay) {
+    if (
+      audio.src.includes("/audio/flow/v2/") &&
+      (window.__rejectNextMediaPlay || window.__rejectMediaPlays > 0)
+    ) {
       window.__rejectNextMediaPlay = false;
+      window.__rejectMediaPlays = Math.max(0, window.__rejectMediaPlays - 1);
       return Promise.reject(
         new DOMException("simulated transient media failure", "AbortError"),
       );
@@ -201,9 +206,20 @@ try {
   assert.ok(await page.getByRole("link", { name: /設定/ }).isVisible());
   assert.ok(await page.getByRole("link", { name: /使い方/ }).isVisible());
   assert.equal(await page.getByText("ABOUT WILL", { exact: true }).count(), 0);
-  assert.equal(await page.getByRole("heading", { name: "うぃるについて", exact: true }).count(), 0);
-  assert.ok(await page.getByText("WILL.tennis🎾 公式キャラクター", { exact: true }).isVisible());
-  pass("HOME is the parent character hub with concise character copy and no separate About section");
+  assert.equal(
+    await page
+      .getByRole("heading", { name: "うぃるについて", exact: true })
+      .count(),
+    0,
+  );
+  assert.ok(
+    await page
+      .getByText("WILL.tennis🎾 公式キャラクター", { exact: true })
+      .isVisible(),
+  );
+  pass(
+    "HOME is the parent character hub with concise character copy and no separate About section",
+  );
   await page.goto(base + "/flow");
   await button("自動進行を開始").waitFor();
   assert.equal(
@@ -278,7 +294,160 @@ try {
   assert.deepEqual([compactGrid.count, compactGrid.columns], [12, 3]);
   assert.ok(compactGrid.height < 360);
   pass("automatic progress menu is compact 3x4", compactGrid);
+  const readiness = page.locator(".flow-readiness");
+  assert.equal(await readiness.count(), 1);
+  await readiness.locator("summary").tap();
+  await button("音声を準備").tap();
+  await readiness.getByText("音声準備完了", { exact: true }).waitFor();
+  const prepared = await page.evaluate(async () => {
+    const manifest = await (await fetch("/flow-audio-manifest")).json();
+    const cache = await caches.open(manifest.cacheName);
+    return {
+      total: manifest.urls.length,
+      cached: (await cache.keys()).length,
+      controlled: Boolean(navigator.serviceWorker.controller),
+      urls: manifest.urls,
+    };
+  });
+  assert.deepEqual(
+    [prepared.total, prepared.cached, prepared.controlled],
+    [16, 16, true],
+  );
+  await settings();
+  await setVolume(0);
+  await button("設定を閉じる").tap();
+  await readiness
+    .getByText("音量が0%です。設定で音量を上げてください。", { exact: true })
+    .waitFor();
+  await settings();
+  await setVolume(100);
+  await page.getByRole("switch", { name: "チャイム", exact: true }).uncheck();
+  await button("設定を閉じる").tap();
+  await button("テスト音を再生").tap();
+  await waitVoice("voice-test.wav");
+  await settings();
+  await button("試聴を停止").tap();
+  await button("設定を閉じる").tap();
+  pass(
+    "readiness caches all 16 WAVs with worker control, warns at zero volume and reuses voice/chime tests",
+    prepared,
+  );
   await button("2面").tap();
+  await context.setOffline(true);
+  const offlineFetch = await page.evaluate(
+    async (urls) =>
+      Promise.all(
+        urls.map(async (src) => {
+          const response = await fetch(src, { cache: "no-store" });
+          return {
+            src,
+            status: response.status,
+            bytes: (await response.arrayBuffer()).byteLength,
+          };
+        }),
+      ),
+    prepared.urls,
+  );
+  assert.ok(
+    offlineFetch.every((item) => item.status === 200 && item.bytes > 44),
+  );
+  const range = await page.evaluate(async () => {
+    const response = await fetch("/audio/flow/v2/43-game-rules.wav", {
+      headers: { Range: "bytes=0-99" },
+    });
+    return {
+      status: response.status,
+      range: response.headers.get("content-range"),
+      bytes: (await response.arrayBuffer()).byteLength,
+    };
+  });
+  assert.equal(range.status, 206);
+  assert.equal(range.bytes, 100);
+  await button("自動進行を開始").tap();
+  await waitVoice("00-opening.wav");
+  for (const [label, suffix] of [
+    ["00:05 ボレーボレー", "05-volley.wav"],
+    ["00:10 ロングラリー", "10-long-rally.wav"],
+    ["00:20 クロスラリー", "20-cross-rally-double.wav"],
+    ["00:30 サーブ・リターン", "30-serve-return-double.wav"],
+    ["00:35 サーブ・リターン交代", "35-serve-return-switch.wav"],
+    ["00:40 集合・水分補給", "40-gather-break.wav"],
+    ["00:43 乱数表の説明", "43-random-table-double.wav"],
+    ["00:43 試合ルール", "43-game-rules.wav"],
+    ["00:44 自己紹介", "44-self-intro.wav"],
+    ["01:45 ミニゲーム（リレーラリー）", "105-mini-game.wav"],
+    ["01:57 終了あいさつ・片付け", "117-closing.wav"],
+  ]) {
+    await seek(label);
+    await waitVoice(suffix);
+    if (label === "00:43 試合ルール") {
+      const pregame = page.locator(".flow-pregame");
+      assert.equal(
+        await pregame.locator('[aria-current="step"]').innerText(),
+        "●\n43:33\n試合ルール",
+      );
+      assert.equal(await pregame.locator("li.is-complete").count(), 2);
+      assert.match(
+        await pregame.innerText(),
+        /50:00\s*主催者が口頭でゲーム開始/,
+      );
+      await layout("offline-pregame-390");
+      for (const width of [320, 480, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        await layout(`offline-pregame-${width}`);
+      }
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.evaluate(() => {
+        window.__offset += 15000;
+      });
+      await page.getByText("次のメニュー", { exact: true }).waitFor();
+      assert.equal(
+        await page
+          .locator(".flow-countdown")
+          .evaluate((el) => getComputedStyle(el).fontSize),
+        "12px",
+      );
+      assert.equal(
+        await page.locator(".flow-next-card--soon").count(),
+        0,
+      );
+    }
+    if (label === "00:44 自己紹介") {
+      const before = await page.evaluate(() => window.__plays.length);
+      await page.evaluate(() => {
+        const session = JSON.parse(
+          localStorage.getItem("will-standard-two-hour-auto-flow"),
+        );
+        window.__offset +=
+          session.startedAt +
+          session.accumulatedPausedMs +
+          3000000 -
+          Date.now();
+      });
+      await auto()
+        .getByRole("heading", { name: "ゲーム", exact: true })
+        .waitFor();
+      assert.equal(await page.locator(".flow-pregame").count(), 0);
+      assert.equal(await page.evaluate(() => window.__plays.length), before);
+    }
+  }
+  assert.equal((await stored()).status, "running");
+  pass(
+    "offline same-page native WAV playback across all fixed flow positions and byte-range fetch",
+    { offlineFetch, range },
+  );
+  await context.setOffline(false);
+  await button("終了").tap();
+  await button("終了する").tap();
+  assert.equal(
+    await page.evaluate(
+      () => JSON.parse(localStorage.getItem("will-flow-run-history")).length,
+    ),
+    1,
+  );
+  await settings();
+  await page.getByRole("switch", { name: "チャイム", exact: true }).check();
+  await button("設定を閉じる").tap();
   await button("自動進行を開始").tap();
   await waitVoice("00-opening.wav");
   await page.waitForTimeout(1300);
@@ -311,7 +480,10 @@ try {
     .getByRole("dialog", { name: "設定" })
     .getByRole("radio", { name: "AI音声", exact: true });
   assert.equal(await aiVoice.isDisabled(), !ttsStatus.configured);
-  pass("OpenAI TTS availability matches the server-side configuration", ttsStatus);
+  pass(
+    "OpenAI TTS availability matches the server-side configuration",
+    ttsStatus,
+  );
   for (const value of [100, 50, 20, 30]) {
     await setVolume(value);
     assert.equal(
@@ -328,6 +500,7 @@ try {
   await auto().getByRole("button", { name: "一時停止", exact: true }).tap();
   await seek("00:20 クロスラリー");
   await silence();
+  assert.match(await page.locator(".flow-countdown").innerText(), /あと 10:00/);
   assert.equal((await stored()).status, "paused");
   assert.equal((await stored()).pendingCue.eventId, "cross-rally");
   assert.ok(
@@ -478,9 +651,16 @@ try {
   await auto().getByRole("button", { name: "再開", exact: true }).waitFor();
   await silence();
   pass("reload is paused and quiet, with no announcement burst");
+  const activeId = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("will-flow-active-run")).id,
+  );
   await auto().getByRole("button", { name: "再開", exact: true }).tap();
   await page.evaluate(() => {
-    window.__offset += 7200000;
+    const session = JSON.parse(
+      localStorage.getItem("will-standard-two-hour-auto-flow"),
+    );
+    window.__offset +=
+      session.startedAt + session.accumulatedPausedMs + 7200000 - Date.now();
   });
   await page.waitForFunction(
     () =>
@@ -489,6 +669,36 @@ try {
   );
   await silence();
   assert.equal((await stored()).status, "completed");
+  const savedRun = await page.evaluate(
+    (id) =>
+      JSON.parse(localStorage.getItem("will-flow-run-history")).filter(
+        (run) => run.id === id,
+      ),
+    activeId,
+  );
+  assert.equal(savedRun.length, 1);
+  assert.equal(savedRun[0].completedNormally, true);
+  assert.ok(
+    savedRun[0].manualPauseCount > 0 &&
+      savedRun[0].safetyPauseCount > 0 &&
+      savedRun[0].seekCount > 0,
+  );
+  await page.reload();
+  await button("開始画面へ").waitFor();
+  assert.equal(
+    await page.evaluate(
+      (id) =>
+        JSON.parse(localStorage.getItem("will-flow-run-history")).filter(
+          (run) => run.id === id,
+        ).length,
+      activeId,
+    ),
+    1,
+  );
+  pass(
+    "one run survives pause, seek, reload, completion and completed reload without duplicates",
+    savedRun,
+  );
   assert.equal(
     await page.getByRole("progressbar").getAttribute("aria-valuenow"),
     "100",
@@ -514,10 +724,37 @@ try {
   const transientDiagnostics = await page.evaluate(() =>
     JSON.parse(localStorage.getItem("will-recorded-audio-diagnostics") ?? "[]"),
   );
-  assert.equal(transientDiagnostics.length, 1);
+  assert.equal(transientDiagnostics.length, 2);
   assert.equal(transientDiagnostics[0].attempt, 1);
   assert.equal(transientDiagnostics[0].reason, "play-rejected");
   assert.equal(transientDiagnostics[0].errorName, "AbortError");
+  assert.deepEqual(
+    transientDiagnostics.map((entry) => entry.type),
+    ["retry", "recovery"],
+  );
+  const recovered = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("will-flow-active-run")),
+  );
+  assert.equal(recovered.audioRetryCount, 1);
+  assert.equal(recovered.audioRecoveryCount, 1);
+  await settings();
+  const diagnosticsPanel = page.locator(".settings-panel .flow-support");
+  await diagnosticsPanel.locator("summary").first().tap();
+  await diagnosticsPanel
+    .getByText("復旧成功（自動再試行）", { exact: true })
+    .waitFor();
+  assert.match(await diagnosticsPanel.innerText(), /開始・ショートラリー/);
+  for (const width of [320, 480, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await layout(`diagnostics-${width}`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await button("診断ログを消去").tap();
+  await button("消去する").tap();
+  await diagnosticsPanel
+    .getByText("診断ログはありません。", { exact: true })
+    .waitFor();
+  await button("設定を閉じる").tap();
   pass("one transient media failure retries automatically without pausing");
   await button("終了").tap();
   await button("終了する").tap();
@@ -528,9 +765,9 @@ try {
   await page.evaluate(() =>
     localStorage.removeItem("will-recorded-audio-diagnostics"),
   );
-  await page.route("**/audio/flow/v2/00-opening.wav", (route) =>
-    route.fulfill({ status: 404, body: "missing" }),
-  );
+  await page.evaluate(() => {
+    window.__rejectMediaPlays = 2;
+  });
   await button("自動進行を開始").tap();
   await page
     .getByRole("alert")
@@ -547,7 +784,16 @@ try {
     persistentDiagnostics.map((entry) => entry.attempt),
     [1, 2],
   );
-  await page.unroute("**/audio/flow/v2/00-opening.wav");
+  assert.deepEqual(
+    persistentDiagnostics.map((entry) => entry.type),
+    ["retry", "final-failure"],
+  );
+  const failedRun = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("will-flow-active-run")),
+  );
+  assert.equal(failedRun.audioFinalFailureCount, 1);
+  assert.equal(failedRun.pauseReasons["audio-error"], 1);
+  assert.equal(failedRun.manualPauseCount, 0);
   await auto().getByRole("button", { name: "再開", exact: true }).tap();
   await waitVoice("00-opening.wav");
   pass(

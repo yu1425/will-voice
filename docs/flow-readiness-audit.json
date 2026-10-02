@@ -1,0 +1,42 @@
+{
+  "engine": "chromium",
+  "base": "http://localhost:3100",
+  "checks": [
+    {
+      "name": "service worker version handshake matches the audio cache manifest",
+      "pass": true
+    },
+    {
+      "name": "automatic preparation failure stays idle with explicit retry/online choices",
+      "pass": true
+    },
+    {
+      "name": "retry downloads missing audio, starts real WAV, and end saves exactly one local run; history clear works",
+      "pass": true
+    },
+    {
+      "name": "AI preference offline uses cached fixed WAV without API requests or saved preference changes",
+      "pass": true
+    },
+    {
+      "name": "online AI generation failure falls back to fixed WAV and preserves preference",
+      "pass": true
+    },
+    {
+      "name": "stalled AI request falls back to fixed WAV within 12 seconds",
+      "pass": true
+    },
+    {
+      "name": "seeking to 02:00 completes and saves one run, including after reload",
+      "pass": true
+    },
+    {
+      "name": "unavailable worker/cache and denied localStorage degrade to explicit online start with in-memory history and no crash",
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "physicalDeviceChecks": false,
+  "startingMain": "2c5ea5343e693f76becf39896ca9ec2ef094addc",
+  "webkitVerified": false
+}
