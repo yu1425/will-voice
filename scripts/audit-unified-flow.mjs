@@ -25,6 +25,7 @@ await context.addInitScript(() => {
   window.__plays = [];
   window.__osc = [];
   window.__synth = 0;
+  window.__rejectNextMediaPlay = false;
   const NativeAudio = window.Audio;
   window.Audio = function (...args) {
     const audio = new NativeAudio(...args);
@@ -35,6 +36,12 @@ await context.addInitScript(() => {
   const play = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () {
     const audio = this;
+    if (window.__rejectNextMediaPlay) {
+      window.__rejectNextMediaPlay = false;
+      return Promise.reject(
+        new DOMException("simulated transient media failure", "AbortError"),
+      );
+    }
     return play.call(audio).then(() => {
       window.__plays.push({
         src: audio.src,
@@ -255,7 +262,12 @@ try {
   );
   pass("touch menu order and Escape");
   const autoOverview = auto().locator(".flow-overview");
+  assert.equal(await autoOverview.evaluate((el) => el.open), true);
   await autoOverview.locator("summary").tap();
+  assert.equal(await autoOverview.evaluate((el) => el.open), false);
+  await autoOverview.locator("summary").tap();
+  assert.equal(await autoOverview.evaluate((el) => el.open), true);
+  pass("automatic progress menu is open by default and can be closed");
   const compactGrid = await autoOverview
     .locator(".flow-menu-grid")
     .evaluate((el) => ({
@@ -491,7 +503,31 @@ try {
   await silence();
   assert.equal(await stored(), null);
   pass("session end confirmation clears clock and media together");
-  // Error must pause, not create a silently running automatic session.
+  // A one-off media play rejection should recover automatically without pausing the flow.
+  await page.evaluate(() => {
+    localStorage.removeItem("will-recorded-audio-diagnostics");
+    window.__rejectNextMediaPlay = true;
+  });
+  await button("自動進行を開始").tap();
+  await waitVoice("00-opening.wav");
+  assert.equal((await stored()).status, "running");
+  const transientDiagnostics = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("will-recorded-audio-diagnostics") ?? "[]"),
+  );
+  assert.equal(transientDiagnostics.length, 1);
+  assert.equal(transientDiagnostics[0].attempt, 1);
+  assert.equal(transientDiagnostics[0].reason, "play-rejected");
+  assert.equal(transientDiagnostics[0].errorName, "AbortError");
+  pass("one transient media failure retries automatically without pausing");
+  await button("終了").tap();
+  await button("終了する").tap();
+  await silence();
+  assert.equal(await stored(), null);
+
+  // Two consecutive failures must still pause instead of silently running.
+  await page.evaluate(() =>
+    localStorage.removeItem("will-recorded-audio-diagnostics"),
+  );
   await page.route("**/audio/flow/v2/00-opening.wav", (route) =>
     route.fulfill({ status: 404, body: "missing" }),
   );
@@ -503,6 +539,14 @@ try {
   assert.equal((await stored()).status, "paused");
   assert.equal((await stored()).pendingCue.eventId, "opening");
   assert.equal(await page.evaluate(() => window.__synth), 0);
+  const persistentDiagnostics = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem("will-recorded-audio-diagnostics") ?? "[]"),
+  );
+  assert.equal(persistentDiagnostics.length, 2);
+  assert.deepEqual(
+    persistentDiagnostics.map((entry) => entry.attempt),
+    [1, 2],
+  );
   await page.unroute("**/audio/flow/v2/00-opening.wav");
   await auto().getByRole("button", { name: "再開", exact: true }).tap();
   await waitVoice("00-opening.wav");
