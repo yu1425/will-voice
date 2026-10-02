@@ -400,15 +400,17 @@ try {
       await page.evaluate(() => {
         window.__offset += 15000;
       });
-      await page.getByText("次の案内 · まもなく", { exact: true }).waitFor();
-      assert.ok(
+      await page.getByText("次のメニュー", { exact: true }).waitFor();
+      assert.equal(
         await page
           .locator(".flow-countdown")
-          .evaluate(
-            (el) => Number.parseFloat(getComputedStyle(el).fontSize) >= 24,
-          ),
+          .evaluate((el) => getComputedStyle(el).fontSize),
+        "12px",
       );
-      assert.ok(await page.locator(".flow-next-card--soon").isVisible());
+      assert.equal(
+        await page.locator(".flow-next-card--soon").count(),
+        0,
+      );
     }
     if (label === "00:44 自己紹介") {
       const before = await page.evaluate(() => window.__plays.length);

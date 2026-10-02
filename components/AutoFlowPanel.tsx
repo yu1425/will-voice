@@ -542,21 +542,14 @@ const AutoFlowPanel = forwardRef<AutoFlowHandle, Props>(
               {next && (
                 <button
                   type="button"
-                  className={`flow-next-card${next.offsetSec - elapsed <= 60 ? " flow-next-card--soon" : ""}`}
+                  className="flow-next-card"
                   aria-label={`${next.title}へ移動`}
                   onClick={() => seek(next)}
                 >
                   <span className="flow-next-heading">
-                    <span>
-                      次の案内
-                      {next.offsetSec - elapsed <= 15 ? " · まもなく" : ""}
-                    </span>
+                    <span>次のメニュー</span>
                     <span className="flow-countdown">
-                      あと{" "}
-                      {String(
-                        Math.floor((next.offsetSec - elapsed) / 60),
-                      ).padStart(2, "0")}
-                      :
+                      あと {Math.floor((next.offsetSec - elapsed) / 60)}:
                       {String((next.offsetSec - elapsed) % 60).padStart(2, "0")}
                     </span>
                   </span>

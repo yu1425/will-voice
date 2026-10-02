@@ -59,7 +59,7 @@ Physical iPhone/iPad Safari, Bluetooth speaker audibility and screen locking are
 
 ## Next announcement and pre-game display
 
-- The existing **次の案内** card remains a seek button. Its single countdown uses the same elapsed clock, freezes on pause and disappears on completion. Remaining time is padded `MM:SS`, large and tabular; 60 seconds adds a quiet accent, 15 seconds adds **まもなく**. No additional sound is introduced.
+- The existing compact **次のメニュー** card remains a seek button. Its countdown uses the same elapsed clock, freezes on pause and disappears on completion. The original small pill-style countdown and typography are retained; no urgency styling or additional sound is introduced.
 - **ゲーム前進行** is visible from the existing gather event at 40:00 until the silent game event at 50:00. It marks completed/current/remaining steps using event offsets: gather, random table (43:00), rules (43:33), introductions (44:02), and **50:00 主催者が口頭でゲーム開始**. The timings and `chime: false` handoff for rules/introductions are unchanged. No game-start recording is added.
 
 ## Reproduce browser verification
