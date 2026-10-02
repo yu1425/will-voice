@@ -138,16 +138,28 @@ try {
     "ウィルテニスでらんすうひょう。よんポイントせんしゅ、ふたり、さんきゅう、いちれつ、にほん、さんぼん。ちかくのかた、せんとうのかた、うったかた、つぎのかた。方向と方法。",
   );
   const doubleScripts = getScriptsForCourt("double");
-  for (const id of ["cross-rally", "serve-return"]) {
-    const script = doubleScripts.find((item) => item.id === id);
-    assert.ok(script);
-    assert.match(script.displayText, /どちらか一つのコートから何人か/);
-    assert.match(
-      script.displayText,
-      /移動先のコートにもともといた人の中から、同じ人数だけ反対のコートへ移動/,
-    );
-    assert.doesNotMatch(script.displayText, /各コートから何人か/);
-  }
+  const crossDouble = doubleScripts.find((item) => item.id === "cross-rally");
+  assert.ok(crossDouble);
+  assert.match(crossDouble.displayText, /運営が指定した片側のメンバーだけ/);
+  assert.match(crossDouble.displayText, /両コートのその側から数名ずつ/);
+  assert.match(crossDouble.displayText, /反対側のメンバーはそのまま/);
+  assert.doesNotMatch(crossDouble.displayText, /3人ずつ|主催者|どちらか一つのコートから何人か/);
+  assert.match(crossDouble.voiceText, /うんえいが指定したかたがわ/);
+  assert.match(crossDouble.voiceText, /そのがわからすうめいずつ/);
+  assert.match(crossDouble.voiceText, /はんたいがわのメンバー/);
+
+  const serveDouble = doubleScripts.find((item) => item.id === "serve-return");
+  assert.ok(serveDouble);
+  assert.match(serveDouble.displayText, /先ほど動かなかった反対側のメンバーだけ/);
+  assert.match(serveDouble.displayText, /両コートのその側から数名ずつ/);
+  assert.match(serveDouble.displayText, /先ほど動いた側のメンバーはそのまま/);
+  assert.doesNotMatch(serveDouble.displayText, /3人ずつ|どちらか一つのコートから何人か/);
+  assert.match(serveDouble.voiceText, /はんたいがわのメンバーだけ/);
+  assert.match(serveDouble.voiceText, /そのがわからすうめいずつ/);
+  assert.match(serveDouble.voiceText, /うごいたがわのメンバー/);
+  assert.match(serveDouble.voiceText, /かたがわがサーブ、はんたいがわがリターン/);
+  assert.match(serveDouble.voiceText, /サーブをするがわは順番にさんきゅう/);
+  assert.match(serveDouble.voiceText, /リターンをするがわは返すところまで/);
   const audit = JSON.parse(
     readFileSync("reports/flow-audio-v2-audit.json", "utf8"),
   );
